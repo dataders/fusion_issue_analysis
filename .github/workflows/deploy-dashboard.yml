@@ -7,6 +7,9 @@ on:
     paths:
       - 'dashboard/**'
       - '.github/workflows/deploy-dashboard.yml'
+  # Run daily at 6am UTC
+  schedule:
+    - cron: '0 6 * * *'
   # Allow manual trigger (e.g., after refreshing data)
   workflow_dispatch:
 
@@ -41,10 +44,17 @@ jobs:
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Build dbt models
+      - name: Build dbt models (local DuckDB)
         run: |
           cd transform
           dbt build --profiles-dir . --static-analysis off
+
+      - name: Build dbt models (MotherDuck prod)
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          cd transform
+          dbt build --profiles-dir . --target prod --static-analysis off
 
       - name: Export dashboards
         env:

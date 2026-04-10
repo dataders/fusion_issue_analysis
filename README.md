@@ -1,3 +1,5 @@
+[![Deploy Dashboard](https://github.com/dbt-labs/fusion_issue_analysis/actions/workflows/deploy-dashboard.yml/badge.svg)](https://github.com/dbt-labs/fusion_issue_analysis/actions/workflows/deploy-dashboard.yml)
+
 # Fusion Issue Analytics
 
 End-to-end analytics pipeline for [dbt-labs/dbt-fusion](https://github.com/dbt-labs/dbt-fusion) GitHub issues.
