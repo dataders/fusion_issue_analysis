@@ -1,0 +1,7 @@
+fusion_issue_analytics:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: ../data/fusion_issues.duckdb
+      threads: 4

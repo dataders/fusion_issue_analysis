@@ -1,0 +1,5 @@
+version: 2
+
+sources:
+  - name: raw_github
+    description: Raw GitHub issue data extracted via dlt to parquet files
