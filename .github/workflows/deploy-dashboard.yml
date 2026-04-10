@@ -37,12 +37,10 @@ jobs:
         run: cd extract && uv run python run.py
 
       - name: Build dbt models
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd transform
-          # Build locally for dashboard export (prod tables already in MotherDuck)
-          dbtf build --profiles-dir .
+          # Use dbt-core (not dbtf) in CI since Fusion CLI isn't available
+          uv run dbt build --profiles-dir .
 
       - name: Export dashboard
         env:
