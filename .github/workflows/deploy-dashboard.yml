@@ -36,11 +36,15 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: cd extract && uv run python run.py
 
+      - name: Install dbt Fusion
+        run: |
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
       - name: Build dbt models
         run: |
           cd transform
-          # Use dbt-core (not dbtf) in CI since Fusion CLI isn't available
-          uv run dbt build --profiles-dir .
+          dbt build --profiles-dir . --static-analysis off
 
       - name: Export dashboard
         env:
