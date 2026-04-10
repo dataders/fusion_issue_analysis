@@ -22,12 +22,17 @@ from prefab_ui.components import (
 from prefab_ui.components.charts import BarChart, ChartSeries, LineChart
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
-DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
+
+# Use MotherDuck if MOTHERDUCK_TOKEN is set, otherwise local DuckDB
+if os.environ.get("MOTHERDUCK_TOKEN"):
+    DB_PATH = "md:fusion_issues"
+else:
+    DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
 
 def query(sql: str) -> list[dict]:
-    # Connect from the transform dir so relative parquet paths in views resolve
     con = duckdb.connect(DB_PATH, read_only=True)
-    con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+    if not DB_PATH.startswith("md:"):
+        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
     result = con.execute(sql).fetchdf()
     con.close()
     return result.to_dict("records")

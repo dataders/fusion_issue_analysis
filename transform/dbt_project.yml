@@ -3,6 +3,9 @@ version: '1.0.0'
 
 profile: fusion_issue_analytics
 
+flags:
+  static_analysis: strict
+
 model-paths: ["models"]
 analysis-paths: ["analyses"]
 test-paths: ["tests"]
@@ -12,3 +15,13 @@ macro-paths: ["macros"]
 clean-targets:
   - "target"
   - "dbt_packages"
+
+# Materialize as tables in prod (MotherDuck) so data is queryable remotely
+# Dev stays as views for fast iteration
+models:
+  fusion_issue_analytics:
+    +materialized: view
+    marts:
+      +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"
+    metrics:
+      +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"

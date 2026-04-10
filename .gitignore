@@ -158,6 +158,10 @@ transform/.user.yml
 # uv
 main.py
 
+# Dashboard build artifacts
+dashboard/index.html
+dashboard/index-bundled.html
+
 # pytype static type analyzer
 .pytype/
 

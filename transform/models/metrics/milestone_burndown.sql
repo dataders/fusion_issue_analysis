@@ -14,12 +14,16 @@ with milestone_issues as (
 ),
 
 -- Generate a date spine from the earliest issue to today
+-- Note: generate_series(timestamp/date, ..., interval) is not recognized
+-- by dbt-fusion strict static analysis (only bigint overloads registered).
+-- Workaround: use integer series + date arithmetic.
 date_spine as (
-    select unnest(generate_series(
-        (select min(created_at::date) from milestone_issues),
-        current_date,
-        interval '1 day'
-    )) as date_day
+    select
+        ((select min(created_at::date) from milestone_issues) + (i || ' days')::interval)::date as date_day
+    from generate_series(
+        0::bigint,
+        (select datediff('day', min(created_at::date), current_date)::bigint from milestone_issues)
+    ) as t(i)
 ),
 
 milestones as (

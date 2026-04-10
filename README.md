@@ -79,6 +79,20 @@ Opens at [http://127.0.0.1:5175](http://127.0.0.1:5175) with:
 - Milestone burndown for active milestones
 - Top labels by issue count
 
+### Production (MotherDuck + GitHub Pages)
+
+The dashboard is deployed to GitHub Pages via CI. Data is also materialized in MotherDuck for remote access.
+
+```bash
+# Build against MotherDuck (requires MOTHERDUCK_TOKEN env var)
+cd transform && dbtf build --profiles-dir . --target prod
+
+# Export static dashboard
+uv run prefab export dashboard/app.py -o dashboard/index.html
+```
+
+The GitHub Actions workflow (`.github/workflows/deploy-dashboard.yml`) automates extract → build → export → deploy on push to main or manual trigger.
+
 ## Data Details
 
 - **Source**: 1,397 issues, 2,616 comments, 3,309 label assignments, 842 assignees

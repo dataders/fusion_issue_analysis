@@ -5,3 +5,7 @@ fusion_issue_analytics:
       type: duckdb
       path: ../data/fusion_issues.duckdb
       threads: 4
+    prod:
+      type: duckdb
+      path: md:fusion_issues
+      threads: 4

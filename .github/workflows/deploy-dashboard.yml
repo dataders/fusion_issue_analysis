@@ -1,0 +1,68 @@
+name: Deploy Dashboard to GitHub Pages
+
+on:
+  # Re-deploy when dashboard code changes on main
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/**'
+      - '.github/workflows/deploy-dashboard.yml'
+  # Allow manual trigger (e.g., after refreshing data)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Extract GitHub issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: cd extract && uv run python run.py
+
+      - name: Build dbt models
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          cd transform
+          # Build locally for dashboard export (prod tables already in MotherDuck)
+          dbtf build --profiles-dir .
+
+      - name: Export dashboard
+        env:
+          # Don't use MotherDuck for export — use local DuckDB with fresh data
+          MOTHERDUCK_TOKEN: ""
+        run: |
+          uv run prefab export dashboard/app.py -o dashboard/index.html
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: dashboard/
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

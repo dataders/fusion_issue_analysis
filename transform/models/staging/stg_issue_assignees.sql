@@ -1,5 +1,5 @@
 with source as (
-    select * from read_parquet('../data/raw/fusion_issues/issues__assignees__nodes/*.parquet')
+    select * from {{ raw_source('issues__assignees__nodes') }}
 ),
 
 renamed as (
