@@ -146,6 +146,16 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
+# Project data files
+data/
+extract/.dlt/secrets.toml
+extract/github_issues/
+
+# dbt
+transform/target/
+transform/dbt_packages/
+transform/logs/
+
 # pytype static type analyzer
 .pytype/
 
