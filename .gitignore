@@ -161,6 +161,8 @@ main.py
 # Dashboard build artifacts
 dashboard/index.html
 dashboard/index-bundled.html
+dashboard/mviz.html
+dashboard/data/
 
 # pytype static type analyzer
 .pytype/
