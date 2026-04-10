@@ -18,13 +18,13 @@ from prefab_ui.components import (
     H4,
     Muted,
     Row,
+    Separator,
     Text,
 )
 from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
 
-# Use MotherDuck if MOTHERDUCK_TOKEN is set, otherwise local DuckDB
 if os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
 else:
@@ -39,21 +39,24 @@ def query(sql: str) -> list[dict]:
     return result.to_dict("records")
 
 
-# ── Summary card data ──────────────────────────────────────────────
+# ── Core filter: exclude EPICs from health metrics ─────────────────
+CORE_FILTER = "issue_category != 'epic'"
 
-summary_cards = query("""
+# ── Summary cards ──────────────────────────────────────────────────
+
+summary_cards = query(f"""
     with recent_window as (
         select
             count(case when created_at >= current_date - interval '28 days' then 1 end) as opened_4w,
             count(case when closed_at >= current_date - interval '28 days' then 1 end) as closed_4w,
             count(case when state = 'OPEN' then 1 end) as open_issues,
             count(*) as total_issues
-        from fct_issues
+        from fct_issues where {CORE_FILTER}
     ),
     rolling_close as (
         select round(median(hours_to_close) / 24, 1) as rolling_median_close_days
         from fct_issues
-        where closed_at >= current_date - interval '28 days'
+        where closed_at >= current_date - interval '28 days' and {CORE_FILTER}
     ),
     sla as (
         select
@@ -63,57 +66,69 @@ summary_cards = query("""
                 * 100, 0
             ) as pct_responded_48h
         from fct_issues
-        where created_at >= current_date - interval '28 days'
+        where created_at >= current_date - interval '28 days' and {CORE_FILTER}
     ),
     stale as (
         select count(*) as stale_count
         from fct_issues
-        where state = 'OPEN' and updated_at < current_date - interval '30 days'
+        where state = 'OPEN' and updated_at < current_date - interval '30 days' and {CORE_FILTER}
     )
     select * from recent_window cross join rolling_close cross join sla cross join stale
 """)[0]
 
 net_flow = summary_cards["closed_4w"] - summary_cards["opened_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
-net_flow_color = "success" if net_flow > 0 else "destructive"
 
-# ── Cumulative issue flow ──────────────────────────────────────────
+# ── Cumulative flow: bugs vs enhancements ──────────────────────────
 
-cumulative_flow = query("""
+cumulative_flow = query(f"""
     with weeks as (
         select
             date_trunc('week', created_at)::date as week,
-            count(*) as opened
-        from fct_issues
+            count(*) as opened,
+            count(case when issue_category = 'bug' then 1 end) as bugs_opened,
+            count(case when issue_category = 'enhancement' then 1 end) as enhancements_opened
+        from fct_issues where {CORE_FILTER}
         group by 1
     ),
     closed_weeks as (
         select
             date_trunc('week', closed_at)::date as week,
-            count(*) as closed
-        from fct_issues where closed_at is not null
+            count(*) as closed,
+            count(case when issue_category = 'bug' then 1 end) as bugs_closed,
+            count(case when issue_category = 'enhancement' then 1 end) as enhancements_closed
+        from fct_issues where closed_at is not null and {CORE_FILTER}
         group by 1
     ),
     combined as (
         select
             coalesce(w.week, c.week) as week,
             coalesce(w.opened, 0) as opened,
-            coalesce(c.closed, 0) as closed
+            coalesce(c.closed, 0) as closed,
+            coalesce(w.bugs_opened, 0) as bugs_opened,
+            coalesce(c.bugs_closed, 0) as bugs_closed,
+            coalesce(w.enhancements_opened, 0) as enh_opened,
+            coalesce(c.enhancements_closed, 0) as enh_closed
         from weeks w
         full outer join closed_weeks c on w.week = c.week
     )
     select
         strftime(week, '%Y-%m-%d') as week,
         sum(opened) over (order by week) as cumulative_opened,
-        sum(closed) over (order by week) as cumulative_closed
+        sum(closed) over (order by week) as cumulative_closed,
+        sum(bugs_opened) over (order by week) as cum_bugs_opened,
+        sum(bugs_closed) over (order by week) as cum_bugs_closed,
+        sum(enh_opened) over (order by week) as cum_enh_opened,
+        sum(enh_closed) over (order by week) as cum_enh_closed
     from combined
     order by week
 """)
 
-# ── Issue age distribution (open issues) ───────────────────────────
+# ── Issue age distribution ─────────────────────────────────────────
 
-age_dist = query("""
+age_dist = query(f"""
     select
+        issue_category,
         case
             when datediff('day', created_at, current_date) <= 7 then '0-7d'
             when datediff('day', created_at, current_date) <= 30 then '8-30d'
@@ -123,87 +138,141 @@ age_dist = query("""
         end as age_bucket,
         count(*) as issue_count
     from fct_issues
-    where state = 'OPEN'
-    group by 1
-    order by case age_bucket
-        when '0-7d' then 1 when '8-30d' then 2 when '31-90d' then 3
-        when '91-180d' then 4 else 5 end
+    where state = 'OPEN' and {CORE_FILTER}
+    group by 1, 2
 """)
+
+# Pivot into chart format
+age_buckets = ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
+age_chart_data = []
+for bucket in age_buckets:
+    row = {"age_bucket": bucket}
+    for cat in ['bug', 'enhancement', 'other']:
+        row[cat] = sum(r["issue_count"] for r in age_dist if r["age_bucket"] == bucket and r["issue_category"] == cat)
+    age_chart_data.append(row)
 
 # ── Response time percentile bands ─────────────────────────────────
 
-response_pctiles = query("""
+response_pctiles = query(f"""
     select
         strftime(date_trunc('week', created_at), '%Y-%m-%d') as week,
         round(quantile_cont(hours_to_first_response, 0.25), 1) as p25,
         round(quantile_cont(hours_to_first_response, 0.50), 1) as p50,
         round(quantile_cont(hours_to_first_response, 0.75), 1) as p75
     from fct_issues
-    where hours_to_first_response is not null
+    where hours_to_first_response is not null and {CORE_FILTER}
     group by date_trunc('week', created_at)
     having count(*) >= 3
     order by week
 """)
 
-# ── Bug fix velocity percentile bands ──────────────────────────────
+# ── Bug vs Enhancement velocity ───────────────────────────────────
 
-bug_velocity_pctiles = query("""
+bug_velocity = query("""
     select
-        strftime(date_trunc('week', f.closed_at), '%Y-%m-%d') as week,
-        count(*) as bugs_closed,
-        round(quantile_cont(f.hours_to_close, 0.25), 1) as p25,
-        round(quantile_cont(f.hours_to_close, 0.50), 1) as p50,
-        round(quantile_cont(f.hours_to_close, 0.75), 1) as p75
-    from fct_issues f
-    inner join fct_issue_labels l on f.issue_dlt_id = l.issue_dlt_id
-    where l.label_name = 'bug' and f.closed_at is not null
-    group by date_trunc('week', f.closed_at)
+        strftime(date_trunc('week', closed_at), '%Y-%m-%d') as week,
+        round(median(hours_to_close) / 24, 1) as median_days
+    from fct_issues
+    where issue_category = 'bug' and closed_at is not null
+    group by date_trunc('week', closed_at)
     having count(*) >= 3
     order by week
 """)
 
+enh_velocity = query("""
+    select
+        strftime(date_trunc('week', closed_at), '%Y-%m-%d') as week,
+        round(median(hours_to_close) / 24, 1) as median_days
+    from fct_issues
+    where issue_category = 'enhancement' and closed_at is not null
+    group by date_trunc('week', closed_at)
+    having count(*) >= 2
+    order by week
+""")
+
+# Merge bug/enhancement velocity into one dataset
+velocity_map = {}
+for r in bug_velocity:
+    velocity_map[r["week"]] = {"week": r["week"], "bugs": r["median_days"], "enhancements": None}
+for r in enh_velocity:
+    if r["week"] in velocity_map:
+        velocity_map[r["week"]]["enhancements"] = r["median_days"]
+    else:
+        velocity_map[r["week"]] = {"week": r["week"], "bugs": None, "enhancements": r["median_days"]}
+velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
+
 # ── Close time by label ────────────────────────────────────────────
 
-close_by_label = query("""
+close_by_label = query(f"""
     select
         l.label_name,
         round(median(f.hours_to_close) / 24, 1) as median_days_to_close,
         count(*) as closed_count
     from fct_issues f
     inner join fct_issue_labels l on f.issue_dlt_id = l.issue_dlt_id
-    where f.closed_at is not null
+    where f.closed_at is not null and f.{CORE_FILTER}
     group by l.label_name
     having count(*) >= 10
     order by median_days_to_close desc
     limit 15
 """)
 
+# ── Triage health ─────────────────────────────────────────────────
+
+triage = query(f"""
+    select
+        count(*) as total_open,
+        round(count(case when is_labeled then 1 end)::float / count(*) * 100, 0) as pct_labeled,
+        round(count(case when is_assigned then 1 end)::float / count(*) * 100, 0) as pct_assigned,
+        round(count(case when has_milestone then 1 end)::float / count(*) * 100, 0) as pct_milestoned,
+        round(count(case when issue_category != 'other' then 1 end)::float / count(*) * 100, 0) as pct_typed,
+        count(case when not is_labeled then 1 end) as unlabeled_count,
+        count(case when not is_assigned then 1 end) as unassigned_count
+    from fct_issues
+    where state = 'OPEN' and {CORE_FILTER}
+""")[0]
+
+# ── EPIC burndown ──────────────────────────────────────────────────
+
+epic_list = query("""
+    select
+        f.issue_number,
+        f.title,
+        f.state,
+        f.created_at,
+        f.closed_at,
+        f.reactions_total_count,
+        f.comments_total_count
+    from fct_issues f
+    where f.issue_category = 'epic'
+    order by f.state desc, f.issue_number
+""")
+
 # ── Assignee workload ──────────────────────────────────────────────
 
-assignee_workload = query("""
+assignee_workload = query(f"""
     select
         a.assignee_login,
-        count(*) as open_issues
+        count(*) as open_issues,
+        count(case when f.issue_category = 'bug' then 1 end) as bugs,
+        count(case when f.issue_category = 'enhancement' then 1 end) as enhancements
     from stg_issue_assignees a
     inner join fct_issues f on a.issue_dlt_id = f.issue_dlt_id
-    where f.state = 'OPEN'
+    where f.state = 'OPEN' and f.{CORE_FILTER}
     group by a.assignee_login
     order by open_issues desc
     limit 15
 """)
 
-# ── Community priorities (top-reacted open issues) ─────────────────
+# ── Community priorities ───────────────────────────────────────────
 
-community_priorities = query("""
+community_priorities = query(f"""
     select
-        issue_number,
-        title,
-        reactions_total_count,
-        comments_total_count,
-        round(datediff('day', created_at, current_date), 0) as age_days,
-        milestone_title
+        issue_number, title, issue_category,
+        reactions_total_count, comments_total_count,
+        round(datediff('day', created_at, current_date), 0) as age_days
     from fct_issues
-    where state = 'OPEN' and reactions_total_count > 0
+    where state = 'OPEN' and reactions_total_count > 0 and {CORE_FILTER}
     order by reactions_total_count desc
     limit 10
 """)
@@ -214,32 +283,31 @@ burndown_data = query("""
     SELECT
         strftime(date_day, '%Y-%m-%d') as date_day,
         milestone_title,
-        open_at_date,
-        cumulative_opened,
-        cumulative_closed
+        open_at_date
     FROM milestone_burndown
     WHERE date_day::date = date_trunc('week', date_day::date)
       AND milestone_title IN (
           SELECT DISTINCT milestone_title
-          FROM dim_milestones
-          WHERE milestone_state = 'OPEN'
+          FROM dim_milestones WHERE milestone_state = 'OPEN'
       )
     ORDER BY milestone_title, date_day
 """)
 open_milestone_titles = sorted({r["milestone_title"] for r in burndown_data})
 
 
-# ── Build Dashboard ────────────────────────────────────────────────
+# ══════════════════════════════════════════════════════════════════
+#  BUILD DASHBOARD
+# ══════════════════════════════════════════════════════════════════
 
 with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     H2("dbt-fusion Issue Health")
-    Muted("Actionable metrics for dbt-labs/dbt-fusion — updated on deploy")
+    Muted("Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)")
 
     # ── Summary cards ──────────────────────────────────────────────
     with Row(gap=3, css_class="mt-6"):
         with Card(css_class="flex-1"):
             with CardHeader():
-                CardTitle("Net Flow (4 weeks)")
+                CardTitle("Net Flow (4 wk)")
             with CardContent():
                 H3(f"{net_flow_sign}{net_flow}")
                 Muted(f"{summary_cards['opened_4w']} opened / {summary_cards['closed_4w']} closed")
@@ -269,13 +337,13 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 CardTitle("Stale Issues")
             with CardContent():
                 H3(str(summary_cards["stale_count"]))
-                Muted("No activity in 30+ days")
+                Muted("No activity 30+ days")
 
-    # ── Cumulative Issue Flow (the #1 chart) ───────────────────────
+    # ── Cumulative Issue Flow ──────────────────────────────────────
     with Card(css_class="mt-6"):
         with CardHeader():
-            CardTitle("Cumulative Issue Flow")
-            Muted("Gap between lines = issue debt")
+            CardTitle("Cumulative Issue Flow (All non-EPIC)")
+            Muted("Gap = issue debt")
         with CardContent():
             AreaChart(
                 data=cumulative_flow,
@@ -285,44 +353,63 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 ],
                 x_axis="week",
                 show_legend=True,
-                height=350,
+                height=300,
             )
 
+    # ── Bug vs Enhancement flow side by side ───────────────────────
     with Row(gap=4, css_class="mt-6"):
-        # ── Issue Age Distribution ─────────────────────────────────
         with Card(css_class="flex-1"):
             with CardHeader():
-                CardTitle("Open Issue Age Distribution")
+                CardTitle("Bug Flow")
             with CardContent():
-                BarChart(
-                    data=age_dist,
-                    series=[ChartSeries(data_key="issue_count", label="Issues")],
-                    x_axis="age_bucket",
-                    show_legend=False,
+                AreaChart(
+                    data=cumulative_flow,
+                    series=[
+                        ChartSeries(data_key="cum_bugs_opened", label="Opened", color="hsl(0, 70%, 60%)"),
+                        ChartSeries(data_key="cum_bugs_closed", label="Closed", color="hsl(140, 70%, 45%)"),
+                    ],
+                    x_axis="week",
+                    show_legend=True,
+                    height=250,
+                )
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Enhancement Flow")
+            with CardContent():
+                AreaChart(
+                    data=cumulative_flow,
+                    series=[
+                        ChartSeries(data_key="cum_enh_opened", label="Opened", color="hsl(30, 80%, 55%)"),
+                        ChartSeries(data_key="cum_enh_closed", label="Closed", color="hsl(200, 70%, 50%)"),
+                    ],
+                    x_axis="week",
+                    show_legend=True,
+                    height=250,
+                )
+
+    # ── Velocity: bugs vs enhancements ─────────────────────────────
+    with Row(gap=4, css_class="mt-6"):
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Median Days to Close: Bugs vs Enhancements")
+            with CardContent():
+                LineChart(
+                    data=velocity_data,
+                    series=[
+                        ChartSeries(data_key="bugs", label="Bugs", color="hsl(0, 70%, 55%)"),
+                        ChartSeries(data_key="enhancements", label="Enhancements", color="hsl(200, 70%, 50%)"),
+                    ],
+                    x_axis="week",
+                    show_legend=True,
+                    curve="smooth",
                     height=300,
                 )
 
-        # ── Close Time by Label ────────────────────────────────────
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Median Days to Close by Label")
-                Muted("Labels with 10+ closed issues")
-            with CardContent():
-                BarChart(
-                    data=close_by_label,
-                    series=[ChartSeries(data_key="median_days_to_close", label="Median Days")],
-                    x_axis="label_name",
-                    show_legend=False,
-                    horizontal=True,
-                    height=400,
-                )
-
-    # ── Percentile band charts ─────────────────────────────────────
-    with Row(gap=4, css_class="mt-6"):
         with Card(css_class="flex-1"):
             with CardHeader():
                 CardTitle("Time to First Response (hours)")
-                Muted("p25 / p50 / p75 bands by week")
+                Muted("p25 / p50 / p75 bands")
             with CardContent():
                 LineChart(
                     data=response_pctiles,
@@ -337,29 +424,71 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                     height=300,
                 )
 
+    # ── Age distribution + close time by label ─────────────────────
+    with Row(gap=4, css_class="mt-6"):
         with Card(css_class="flex-1"):
             with CardHeader():
-                CardTitle("Bug Fix Velocity (hours to close)")
-                Muted("p25 / p50 / p75 bands by week")
+                CardTitle("Open Issue Age (by type)")
             with CardContent():
-                LineChart(
-                    data=bug_velocity_pctiles,
+                BarChart(
+                    data=age_chart_data,
                     series=[
-                        ChartSeries(data_key="p75", label="p75", color="hsl(0, 60%, 70%)"),
-                        ChartSeries(data_key="p50", label="Median", color="hsl(25, 90%, 55%)"),
-                        ChartSeries(data_key="p25", label="p25", color="hsl(140, 60%, 60%)"),
+                        ChartSeries(data_key="bug", label="Bug", color="hsl(0, 70%, 55%)"),
+                        ChartSeries(data_key="enhancement", label="Enhancement", color="hsl(200, 70%, 50%)"),
+                        ChartSeries(data_key="other", label="Other", color="hsl(0, 0%, 60%)"),
                     ],
-                    x_axis="week",
+                    x_axis="age_bucket",
+                    stacked=True,
                     show_legend=True,
-                    curve="smooth",
                     height=300,
                 )
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Median Days to Close by Label")
+            with CardContent():
+                BarChart(
+                    data=close_by_label,
+                    series=[ChartSeries(data_key="median_days_to_close", label="Days")],
+                    x_axis="label_name",
+                    horizontal=True,
+                    show_legend=False,
+                    height=400,
+                )
+
+    # ── Triage Health ──────────────────────────────────────────────
+    with Card(css_class="mt-6"):
+        with CardHeader():
+            CardTitle("Triage Health (Open Issues)")
+            Muted("How well-organized is the backlog?")
+        with CardContent():
+            with Row(gap=4):
+                with Card(css_class="flex-1"):
+                    with CardContent():
+                        H3(f"{int(triage['pct_labeled'])}%")
+                        Muted("Have labels")
+                with Card(css_class="flex-1"):
+                    with CardContent():
+                        H3(f"{int(triage['pct_typed'])}%")
+                        Muted("Have type (bug/enhancement)")
+                with Card(css_class="flex-1"):
+                    with CardContent():
+                        H3(f"{int(triage['pct_assigned'])}%")
+                        Muted("Are assigned")
+                with Card(css_class="flex-1"):
+                    with CardContent():
+                        H3(f"{int(triage['pct_milestoned'])}%")
+                        Muted("In a milestone")
+                with Card(css_class="flex-1"):
+                    with CardContent():
+                        H3(str(triage["unlabeled_count"]))
+                        Muted("Unlabeled issues")
 
     # ── Milestone Burndown ─────────────────────────────────────────
     if burndown_data:
         with Card(css_class="mt-6"):
             with CardHeader():
-                CardTitle("Milestone Burndown (Open Issues)")
+                CardTitle("Milestone Burndown")
             with CardContent():
                 burndown_by_date: dict[str, dict] = {}
                 for r in burndown_data:
@@ -368,45 +497,61 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                         burndown_by_date[d] = {"date": d}
                     burndown_by_date[d][r["milestone_title"]] = r["open_at_date"]
                 merged_burndown = sorted(burndown_by_date.values(), key=lambda x: x["date"])
-
                 LineChart(
                     data=merged_burndown,
-                    series=[
-                        ChartSeries(data_key=title, label=title)
-                        for title in open_milestone_titles
-                    ],
+                    series=[ChartSeries(data_key=t, label=t) for t in open_milestone_titles],
                     x_axis="date",
                     show_legend=True,
-                    height=350,
+                    height=300,
                 )
 
+    # ── EPICs ──────────────────────────────────────────────────────
+    with Card(css_class="mt-6"):
+        with CardHeader():
+            CardTitle("EPICs")
+            Muted(f"{sum(1 for e in epic_list if e['state'] == 'OPEN')} open / {len(epic_list)} total")
+        with CardContent():
+            for epic in epic_list:
+                if epic["state"] == "OPEN":
+                    with Row(gap=2, css_class="py-1 border-b"):
+                        Badge(f"#{epic['issue_number']}", variant="outline")
+                        Text(
+                            epic["title"][:70] + ("..." if len(epic["title"]) > 70 else ""),
+                            css_class="flex-1 text-sm",
+                        )
+                        Badge(f"{epic['reactions_total_count']} reactions", variant="secondary")
+                        Badge(f"{epic['comments_total_count']} comments", variant="secondary")
+
+    # ── Assignee workload + community priorities ───────────────────
     with Row(gap=4, css_class="mt-6"):
-        # ── Assignee Workload ──────────────────────────────────────
         with Card(css_class="flex-1"):
             with CardHeader():
                 CardTitle("Open Issues by Assignee")
-                Muted("Bus factor / workload distribution")
             with CardContent():
                 BarChart(
                     data=assignee_workload,
-                    series=[ChartSeries(data_key="open_issues", label="Open Issues")],
+                    series=[
+                        ChartSeries(data_key="bugs", label="Bugs", color="hsl(0, 70%, 55%)"),
+                        ChartSeries(data_key="enhancements", label="Enhancements", color="hsl(200, 70%, 50%)"),
+                    ],
                     x_axis="assignee_login",
-                    show_legend=False,
+                    stacked=True,
                     horizontal=True,
+                    show_legend=True,
                     height=400,
                 )
 
-        # ── Community Priorities ───────────────────────────────────
         with Card(css_class="flex-1"):
             with CardHeader():
                 CardTitle("Community Priorities")
                 Muted("Most-reacted open issues")
             with CardContent():
-                for issue in community_priorities[:10]:
+                for issue in community_priorities:
                     with Row(gap=2, css_class="py-1 border-b"):
                         Badge(f"#{issue['issue_number']}", variant="outline")
+                        Badge(issue["issue_category"], variant="secondary")
                         Text(
-                            issue["title"][:60] + ("..." if len(issue["title"]) > 60 else ""),
+                            issue["title"][:55] + ("..." if len(issue["title"]) > 55 else ""),
                             css_class="flex-1 text-sm",
                         )
-                        Badge(f"{issue['reactions_total_count']} reactions", variant="secondary")
+                        Badge(f"{issue['reactions_total_count']} reactions", variant="default")
