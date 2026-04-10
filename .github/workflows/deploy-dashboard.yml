@@ -46,12 +46,17 @@ jobs:
           cd transform
           dbt build --profiles-dir . --static-analysis off
 
-      - name: Export dashboard
+      - name: Export dashboards
         env:
           # Don't use MotherDuck for export — use local DuckDB with fresh data
           MOTHERDUCK_TOKEN: ""
         run: |
           uv run prefab export dashboard/app.py -o dashboard/index.html
+          # Export additional dashboard variants
+          for f in dashboard/app_*.py; do
+            name=$(basename "$f" .py)
+            uv run prefab export "$f" -o "dashboard/${name}.html" || true
+          done
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
