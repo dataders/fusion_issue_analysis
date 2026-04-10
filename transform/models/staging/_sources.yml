@@ -1,0 +1,84 @@
+version: 2
+
+sources:
+  - name: raw_github
+    description: >
+      Raw GitHub issue data extracted via dlt from dbt-labs/dbt-fusion.
+      Parquet files in data/raw/fusion_issues/. Gitignored — run extract/run.py to populate.
+
+models:
+  - name: stg_issues
+    description: Cleaned issues from dbt-labs/dbt-fusion
+    columns:
+      - name: issue_dlt_id
+        description: Unique identifier from dlt
+        tests:
+          - unique
+          - not_null
+      - name: issue_number
+        description: GitHub issue number
+        tests:
+          - unique
+          - not_null
+      - name: state
+        description: Issue state (OPEN or CLOSED)
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'CLOSED']
+      - name: created_at
+        tests:
+          - not_null
+
+  - name: stg_issue_comments
+    description: Comments on issues
+    columns:
+      - name: comment_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: issue_dlt_id
+        description: Foreign key to stg_issues
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_issues')
+                field: issue_dlt_id
+      - name: created_at
+        tests:
+          - not_null
+
+  - name: stg_issue_labels
+    description: Labels assigned to issues (many-to-many)
+    columns:
+      - name: label_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: issue_dlt_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_issues')
+                field: issue_dlt_id
+      - name: label_name
+        tests:
+          - not_null
+
+  - name: stg_issue_assignees
+    description: Users assigned to issues
+    columns:
+      - name: assignee_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: issue_dlt_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_issues')
+                field: issue_dlt_id
