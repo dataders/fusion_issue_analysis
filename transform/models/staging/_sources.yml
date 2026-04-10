@@ -82,3 +82,18 @@ models:
               arguments:
                 to: ref('stg_issues')
                 field: issue_dlt_id
+
+  - name: stg_pull_requests
+    description: Cleaned pull requests from dbt-labs/dbt-fusion
+    columns:
+      - name: pr_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: pr_number
+        tests:
+          - unique
+          - not_null
+      - name: created_at
+        tests:
+          - not_null

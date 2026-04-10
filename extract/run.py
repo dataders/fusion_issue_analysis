@@ -52,7 +52,7 @@ def main():
         name="dbt-fusion",
         access_token=access_token,
         items_per_page=100,
-    ).with_resources("issues")
+    ).with_resources("issues", "pull_requests")
 
     loader_kwargs = {}
     if not args.motherduck:

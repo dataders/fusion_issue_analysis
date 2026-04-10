@@ -13,6 +13,8 @@ from prefab_ui.components import (
     CardHeader,
     CardTitle,
     Column,
+    DataTable,
+    DataTableColumn,
     H2,
     H3,
     H4,
@@ -294,6 +296,34 @@ burndown_data = query("""
 """)
 open_milestone_titles = sorted({r["milestone_title"] for r in burndown_data})
 
+# ── Open issues table ──────────────────────────────────────────────
+
+open_issues_table = query(f"""
+    select
+        issue_number as "#",
+        title,
+        issue_category as type,
+        round(datediff('day', created_at, current_date), 0) as age_days,
+        reactions_total_count as reactions,
+        comments_total_count as comments,
+        coalesce(milestone_title, '') as milestone
+    from fct_issues
+    where state = 'OPEN' and {CORE_FILTER}
+    order by created_at asc
+    limit 50
+""")
+
+# ── Contributor leaderboard ────────────────────────────────────────
+
+leaderboard = query(f"""
+    select author_login, count(*) as issues_closed
+    from fct_issues
+    where state = 'CLOSED' and {CORE_FILTER}
+    group by author_login
+    order by issues_closed desc
+    limit 15
+""")
+
 
 # ══════════════════════════════════════════════════════════════════
 #  BUILD DASHBOARD
@@ -555,3 +585,39 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                             css_class="flex-1 text-sm",
                         )
                         Badge(f"{issue['reactions_total_count']} reactions", variant="default")
+
+    # ── Open Issues Table ──────────────────────────────────────────
+    with Card(css_class="mt-6"):
+        with CardHeader():
+            CardTitle("Oldest Open Issues")
+            Muted("Top 50 by age")
+        with CardContent():
+            DataTable(
+                data=open_issues_table,
+                columns=[
+                    DataTableColumn(key="#", header="#", sortable=True),
+                    DataTableColumn(key="title", header="Title"),
+                    DataTableColumn(key="type", header="Type", sortable=True),
+                    DataTableColumn(key="age_days", header="Age (days)", sortable=True),
+                    DataTableColumn(key="reactions", header="Reactions", sortable=True),
+                    DataTableColumn(key="comments", header="Comments", sortable=True),
+                    DataTableColumn(key="milestone", header="Milestone"),
+                ],
+                search=True,
+                pagination=15,
+            )
+
+    # ── Contributor Leaderboard ────────────────────────────────────
+    with Card(css_class="mt-6"):
+        with CardHeader():
+            CardTitle("Contributor Leaderboard")
+            Muted("Top 15 by issues closed (all time)")
+        with CardContent():
+            BarChart(
+                data=leaderboard,
+                series=[ChartSeries(data_key="issues_closed", label="Issues Closed", color="hsl(260, 70%, 60%)")],
+                x_axis="author_login",
+                horizontal=True,
+                show_legend=False,
+                height=400,
+            )

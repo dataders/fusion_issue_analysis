@@ -1,0 +1,66 @@
+version: 2
+
+semantic_models:
+  - name: fct_issues
+    description: Semantic model for GitHub issue analytics
+    model: ref('fct_issues')
+    defaults:
+      agg_time_dimension: created_at
+
+    entities:
+      - name: issue
+        type: primary
+        expr: issue_dlt_id
+
+    dimensions:
+      - name: issue_category
+        type: categorical
+        description: Classification based on labels (bug, enhancement, documentation, other)
+      - name: state
+        type: categorical
+        description: Issue state (OPEN or CLOSED)
+      - name: milestone_title
+        type: categorical
+        description: Title of the associated milestone, if any
+      - name: author_login
+        type: categorical
+        description: GitHub username of the issue author
+      - name: is_labeled
+        type: categorical
+        description: Whether the issue has any labels
+      - name: is_assigned
+        type: categorical
+        description: Whether the issue has any assignees
+      - name: has_milestone
+        type: categorical
+        description: Whether the issue is associated with a milestone
+      - name: responded_within_48h
+        type: categorical
+        expr: "hours_to_first_response <= 48"
+        description: Whether the issue received a non-author response within 48 hours
+      - name: created_at
+        type: time
+        type_params:
+          time_granularity: day
+
+    measures:
+      - name: issue_count
+        agg: count
+        expr: issue_dlt_id
+        description: Total number of issues
+      - name: avg_hours_to_close
+        agg: average
+        expr: hours_to_close
+        description: Average hours from creation to close
+      - name: median_hours_to_close
+        agg: median
+        expr: hours_to_close
+        description: Median hours from creation to close
+      - name: total_reactions
+        agg: sum
+        expr: reactions_total_count
+        description: Sum of all reaction counts across issues
+      - name: avg_hours_to_first_response
+        agg: average
+        expr: hours_to_first_response
+        description: Average hours until first non-author response

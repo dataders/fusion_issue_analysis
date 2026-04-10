@@ -1,0 +1,62 @@
+version: 2
+
+metrics:
+  - name: open_issue_count
+    description: Count of issues currently in OPEN state
+    type: simple
+    label: Open Issues
+    type_params:
+      measure: issue_count
+    filter:
+      - "{{ Dimension('issue__state') }} = 'OPEN'"
+
+  - name: issues_opened_per_week
+    description: Number of issues opened, aggregated by week
+    type: simple
+    label: Issues Opened Per Week
+    type_params:
+      measure: issue_count
+
+  - name: bug_fix_velocity
+    description: Average hours to close bug issues
+    type: simple
+    label: Bug Fix Velocity (hours)
+    type_params:
+      measure: avg_hours_to_close
+    filter:
+      - "{{ Dimension('issue__issue_category') }} = 'bug'"
+
+  - name: avg_time_to_close
+    description: Average hours to close across all issues
+    type: simple
+    label: Average Time to Close (hours)
+    type_params:
+      measure: avg_hours_to_close
+
+  - name: response_sla_rate
+    description: >
+      Percentage of issues that received a first non-author response
+      within 48 hours.
+    type: derived
+    label: Response SLA Rate (%)
+    type_params:
+      expr: cast(responded_within_sla as double) * 100.0 / nullif(cast(all_issues as double), 0)
+      metrics:
+        - name: responded_within_sla
+        - name: all_issues
+
+  - name: responded_within_sla
+    description: Count of issues responded to within 48 hours
+    type: simple
+    label: Issues Responded Within 48h
+    type_params:
+      measure: issue_count
+    filter:
+      - "{{ Dimension('issue__responded_within_48h') }} = true"
+
+  - name: all_issues
+    description: Total count of all issues
+    type: simple
+    label: All Issues
+    type_params:
+      measure: issue_count
