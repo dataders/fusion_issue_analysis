@@ -1,0 +1,43 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v6
+
+      - name: Install dependencies
+        run: uv sync
+
+      - name: Extract GitHub issues
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: cd extract && uv run python run.py
+
+      - name: Install dbt Fusion
+        run: |
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Build dbt models
+        run: |
+          cd transform
+          dbt build --profiles-dir . --static-analysis off
+
+      - name: Export dashboards
+        env:
+          MOTHERDUCK_TOKEN: ""
+        run: |
+          uv run prefab export dashboard/app.py -o /tmp/index.html
+          for f in dashboard/app_*.py; do
+            [ -f "$f" ] && uv run prefab export "$f" -o "/tmp/$(basename "$f" .py).html" || true
+          done
+          echo "All dashboards exported successfully"
