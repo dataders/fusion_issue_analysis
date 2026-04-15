@@ -50,13 +50,15 @@ jobs:
           dbt build --profiles-dir . --static-analysis off
 
       - name: Build dbt models (MotherDuck prod)
-        # TODO: Remove || true once dbt-labs/dbt-fusion#1574 is fixed
-        # Fusion crashes with SIGFPE on Linux when connecting to MotherDuck
+        # TODO: Remove timeout + || true once dbt-labs/dbt-fusion#1574 is fixed
+        # Fusion hangs or crashes (SIGFPE) on Linux when connecting to MotherDuck
+        timeout-minutes: 5
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd transform
-          dbt build --profiles-dir . --target prod --static-analysis off || true
+          dbt build --profiles-dir . --target prod --static-analysis off
 
       - name: Export Prefab dashboards
         env:
