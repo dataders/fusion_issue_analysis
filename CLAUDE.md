@@ -18,18 +18,19 @@ cd transform && dbtf build --profiles-dir . --target prod
 # Run tests
 cd transform && dbtf test --profiles-dir .
 
-# Serve dashboard locally
+# Serve a dashboard locally
 uv run prefab serve dashboard/app.py --reload
 
-# Export dashboard to static HTML
-uv run prefab export dashboard/app.py -o dashboard/index.html
+# Export Prefab dashboards (index.html is the bakeoff wrapper, committed to repo)
+uv run prefab export dashboard/app.py -o dashboard/app.html
+uv run prefab export dashboard/app_myspace.py -o dashboard/app_myspace.html
 ```
 
 ## Architecture
 
 - `extract/` — dlt pipeline (GitHub GraphQL → parquet or MotherDuck)
 - `transform/` — dbt Fusion project (staging → marts → metrics)
-- `dashboard/` — Prefab dashboards (app.py = main, app_myspace.py = nostalgia mode)
+- `dashboard/` — Visualization framework bakeoff: `index.html` = neutral tab wrapper; `app.py` = Prefab health; `app_myspace.py` = Prefab MySpace; `ggsql_spike/` = ggsql + Vega-Lite; `mviz_dashboard.md` = mviz
 - `data/` — gitignored, local DuckDB + parquet files
 
 ## Conventions
@@ -49,7 +50,7 @@ uv run prefab export dashboard/app.py -o dashboard/index.html
   ```
 - Use feature branches, never push directly to main.
 - Commit messages should explain "why" not "what".
-- PRs that change the dashboard should verify the export works: `uv run prefab export dashboard/app.py -o /tmp/test.html`
+- PRs that change a Prefab dashboard should verify the export works: `uv run prefab export dashboard/app.py -o /tmp/test.html`
 
 ## Dashboard
 

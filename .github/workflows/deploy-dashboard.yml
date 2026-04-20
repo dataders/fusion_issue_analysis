@@ -64,8 +64,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ""
         run: |
-          uv run prefab export dashboard/app.py -o dashboard/index.html
-          for f in dashboard/app_*.py; do
+          for f in dashboard/app*.py; do
             name=$(basename "$f" .py)
             uv run prefab export "$f" -o "dashboard/${name}.html" || true
           done

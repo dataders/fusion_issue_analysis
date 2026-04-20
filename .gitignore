@@ -158,8 +158,9 @@ transform/.user.yml
 # uv
 main.py
 
-# Dashboard build artifacts
-dashboard/index.html
+# Dashboard build artifacts (index.html is the bakeoff wrapper, tracked in git)
+dashboard/app.html
+dashboard/app_myspace.html
 dashboard/index-bundled.html
 dashboard/mviz.html
 dashboard/ggsql_spike/index.html

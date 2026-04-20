@@ -39,12 +39,23 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ""
         run: |
-          mkdir -p preview
+          mkdir -p preview/ggsql_spike
+          cp dashboard/index.html preview/index.html
           for f in dashboard/app*.py; do
             name=$(basename "$f" .py)
             uv run prefab export "$f" -o "preview/${name}.html" --bundled || true
           done
-          cp preview/app.html preview/index.html 2>/dev/null || true
+
+      - name: Export ggsql spike
+        run: |
+          uv run dashboard/ggsql_spike/build.py || true
+          cp dashboard/ggsql_spike/index.html preview/ggsql_spike/index.html 2>/dev/null || true
+
+      - name: Build mviz dashboard
+        run: |
+          cd dashboard
+          uv run python generate_data.py
+          npx mviz mviz_dashboard.md -o ../preview/mviz.html || true
 
       - name: Export ggsql spike
         run: |
@@ -71,10 +82,13 @@ jobs:
               '',
               '| File | Description |',
               '|------|-------------|',
-              '| `index.html` | Main dashboard |',
-              '| `app_myspace.html` | MySpace/Xanga theme |',
+              '| `index.html` | Bakeoff landing page (tabs to all 4 frameworks) |',
+              '| `app.html` | Prefab health dashboard |',
+              '| `app_myspace.html` | Prefab MySpace edition |',
+              '| `ggsql_spike/index.html` | ggsql + Vega-Lite |',
+              '| `mviz.html` | mviz |',
               '',
-              `_Bundled HTML (works offline, ~6MB each). [Workflow run](${runUrl})_`,
+              `_[Workflow run](${runUrl})_`,
             ].join('\n');
 
             const { data: comments } = await github.rest.issues.listComments({
