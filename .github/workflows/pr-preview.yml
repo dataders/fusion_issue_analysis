@@ -46,6 +46,11 @@ jobs:
           done
           cp preview/app.html preview/index.html 2>/dev/null || true
 
+      - name: Export ggsql spike
+        run: |
+          uv run dashboard/ggsql_spike/build.py || true
+          cp dashboard/ggsql_spike/index.html preview/ggsql_spike.html 2>/dev/null || true
+
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
         with:

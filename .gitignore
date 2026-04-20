@@ -162,6 +162,7 @@ main.py
 dashboard/index.html
 dashboard/index-bundled.html
 dashboard/mviz.html
+dashboard/ggsql_spike/index.html
 dashboard/data/
 
 # pytype static type analyzer

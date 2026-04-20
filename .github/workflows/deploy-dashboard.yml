@@ -76,6 +76,9 @@ jobs:
           uv run python generate_data.py
           npx mviz mviz_dashboard.md -o mviz.html
 
+      - name: Build ggsql spike dashboard
+        run: uv run dashboard/ggsql_spike/build.py
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
