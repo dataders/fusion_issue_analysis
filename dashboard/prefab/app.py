@@ -26,14 +26,6 @@ from prefab_ui.components import (
 from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-HERE = os.path.dirname(os.path.abspath(__file__))
-QUERIES_DIR = os.path.join(HERE, "queries")
-
-
-def load_sql(name: str) -> str:
-    with open(os.path.join(QUERIES_DIR, f"{name}.sql")) as f:
-        return f.read()
-
 
 if os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
@@ -51,18 +43,18 @@ def query(sql: str) -> list[dict]:
 
 # ── Summary cards ──────────────────────────────────────────────────
 
-summary_cards = query(load_sql("summary_kpis"))[0]
+summary_cards = query("SELECT * FROM summary_kpis")[0]
 
 net_flow = summary_cards["closed_4w"] - summary_cards["opened_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
 
 # ── Cumulative flow: bugs vs enhancements ──────────────────────────
 
-cumulative_flow = query(load_sql("cumulative_flow"))
+cumulative_flow = query("SELECT * FROM cumulative_flow")
 
 # ── Issue age distribution ─────────────────────────────────────────
 
-age_dist = query(load_sql("age_distribution"))
+age_dist = query("SELECT * FROM age_distribution")
 
 # Pivot into chart format
 age_buckets = ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
@@ -75,13 +67,13 @@ for bucket in age_buckets:
 
 # ── Response time percentile bands ─────────────────────────────────
 
-response_pctiles = query(load_sql("response_pctiles"))
+response_pctiles = query("SELECT * FROM response_pctiles")
 
 # ── Bug vs Enhancement velocity ───────────────────────────────────
 
-bug_velocity = query(load_sql("bug_velocity"))
+bug_velocity = query("SELECT * FROM bug_velocity")
 
-enh_velocity = query(load_sql("enh_velocity"))
+enh_velocity = query("SELECT * FROM enh_velocity")
 
 # Merge bug/enhancement velocity into one dataset
 velocity_map = {}
@@ -96,36 +88,36 @@ velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
 
 # ── Close time by label ────────────────────────────────────────────
 
-close_by_label = query(load_sql("close_by_label"))
+close_by_label = query("SELECT * FROM close_by_label")
 
 # ── Triage health ─────────────────────────────────────────────────
 
-triage = query(load_sql("triage_health"))[0]
+triage = query("SELECT * FROM triage_health")[0]
 
 # ── EPIC burndown ──────────────────────────────────────────────────
 
-epic_list = query(load_sql("epic_list"))
+epic_list = query("SELECT * FROM epic_list")
 
 # ── Assignee workload ──────────────────────────────────────────────
 
-assignee_workload = query(load_sql("assignee_workload"))
+assignee_workload = query("SELECT * FROM assignee_workload")
 
 # ── Community priorities ───────────────────────────────────────────
 
-community_priorities = query(load_sql("community_priorities"))
+community_priorities = query("SELECT * FROM community_priorities")
 
 # ── Milestone burndown ─────────────────────────────────────────────
 
-burndown_data = query(load_sql("milestone_burndown"))
+burndown_data = query("SELECT * FROM milestone_burndown_weekly")
 open_milestone_titles = sorted({r["milestone_title"] for r in burndown_data})
 
 # ── Open issues table ──────────────────────────────────────────────
 
-open_issues_table = query(load_sql("open_issues_table"))
+open_issues_table = query("SELECT * FROM open_issues_table")
 
 # ── Contributor leaderboard ────────────────────────────────────────
 
-leaderboard = query(load_sql("leaderboard"))
+leaderboard = query("SELECT * FROM leaderboard")
 
 
 # ══════════════════════════════════════════════════════════════════

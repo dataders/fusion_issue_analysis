@@ -25,7 +25,7 @@ const {summary, flow, velocity, triage, top_issues} = data;
 </div>
 
 <div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
-  <div style="font-size:32px;font-weight:bold;color:#89dceb">${summary.median_close_days ?? 'N/A'}</div>
+  <div style="font-size:32px;font-weight:bold;color:#89dceb">${summary.rolling_median_close_days ?? 'N/A'}</div>
   <div style="color:#a6adc8;font-size:13px">Median Close Days (4 wk)</div>
 </div>
 

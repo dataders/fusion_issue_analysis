@@ -1,0 +1,5483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>dbt-fusion Issue Health</title>
+  <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.0/dist/echarts.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:wght@400;600;700&display=swap');
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* CSS Variables for theming */
+    :root {
+      --bg: #f8f8f8;
+      --fg: #231f20;
+      --text: #231f20;
+      --text-muted: #6a6a6a;
+      --grid: #d4d4d4;
+      --red: #bc1200;
+      --link: #0777b3;
+      --font-family: 'Helvetica Neue', Helvetica, Arial, sans-serif;
+      --font-mono: 'Consolas', 'Monaco', monospace;
+    }
+    body.theme-dark {
+      --bg: #231f20;
+      --fg: #ffffff;
+      --text: #ffffff;
+      --text-muted: #888888;
+      --grid: #3a3a3a;
+      --red: #bc1200;
+      --link: #0777b3;
+    }
+
+    html, body {
+      width: 100%; min-height: 100%;
+      background-color: var(--bg);
+      font-family: var(--font-family);
+      color: var(--text);
+      font-size: 12px;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    .dashboard {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 16px;
+      position: relative;
+      overflow-x: hidden;
+    }
+    .title-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 12px;
+    }
+    .title-row .page-title {
+      margin-bottom: 0;
+    }
+    .theme-toggle {
+      background: transparent;
+      border: none;
+      padding: 4px;
+      cursor: pointer;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: color 0.3s;
+    }
+    .theme-toggle:hover {
+      color: var(--text);
+    }
+    .theme-toggle svg {
+      width: 16px;
+      height: 16px;
+    }
+    .theme-toggle .icon-moon { display: block; }
+    .theme-toggle .icon-sun { display: none; }
+    body.theme-dark .theme-toggle .icon-moon { display: none; }
+    body.theme-dark .theme-toggle .icon-sun { display: block; }
+    .red-line {
+      width: 100%;
+      height: 2px;
+      background-color: var(--red);
+      margin-bottom: 8px;
+    }
+    .page-title {
+      font-family: var(--font-family);
+      font-size: 18px;
+      font-weight: 900;
+      margin-bottom: 12px;
+      color: var(--text);
+    }
+    .dashboard-section {
+      margin-bottom: 16px;
+    }
+    /* Visual divider only appears with explicit --- separator */
+    .dashboard-section.has-divider {
+      margin-top: 32px;
+      padding-top: 20px;
+      border-top: 1px solid var(--grid);
+    }
+    .section-title {
+      font-family: var(--font-family);
+      font-size: 14px;
+      font-weight: 900;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: var(--text);
+      margin-bottom: 16px;
+    }
+    .chart-title {
+      font-family: var(--font-family); font-weight: 700;
+      font-size: 10px;
+      font-weight: bold;
+      color: var(--text);
+      margin-bottom: 4px;
+    }
+    .row {
+      display: grid;
+      grid-template-columns: repeat(16, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+    @media (max-width: 720px) {
+      .row { grid-template-columns: repeat(8, 1fr); }
+      /* Scale spans proportionally: preserve original span but cap at grid width */
+      .row > * { grid-column: span min(var(--col-span, 8), 8); }
+    }
+    @media (max-width: 480px) {
+      .row { grid-template-columns: 1fr; }
+      .row > * { grid-column: span 1; }
+      .grid-item { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    }
+    @media print {
+      @page { size: letter portrait; margin: 0.5in; }
+      .dashboard { max-width: 100%; padding: 0; }
+      .row { gap: 6px; margin-bottom: 6px; break-inside: avoid; page-break-inside: avoid; }
+      .grid-item { break-inside: avoid; page-break-inside: avoid; }
+      .dashboard-section { break-inside: avoid; page-break-inside: avoid; }
+      .dashboard-section.page-break { page-break-before: always; }
+      .section-title { break-after: avoid; page-break-after: avoid; }
+      .data-table { break-inside: avoid; page-break-inside: avoid; }
+      .theme-toggle { display: none; }
+      .title-row { break-after: avoid; page-break-after: avoid; }
+    }
+    .grid-item {
+      background: var(--bg);
+      padding: 4px;
+      transition: background-color 0.3s;
+    }
+    .mermaid-container svg {
+      max-width: 100%;
+      height: auto;
+      transition: background 0.3s;
+    }
+    .big-value {
+      font-family: var(--font-family); font-weight: 700;
+      font-size: 28px;
+      font-weight: bold;
+      color: var(--text);
+      line-height: 1;
+    }
+    .delta {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+    .delta .arrow {
+      font-size: 16px;
+    }
+    .delta .value {
+      font-family: var(--font-family);
+      font-size: 16px;
+      font-weight: bold;
+    }
+    .label {
+      font-size: 10px;
+      color: var(--text-muted);
+      margin-top: 4px;
+    }
+    .alert {
+      display: flex;
+      align-items: flex-start;
+      gap: 8px;
+      padding: 8px 10px;
+      border-left: 2px solid;
+    }
+    .alert .icon {
+      font-size: 12px;
+      flex-shrink: 0;
+    }
+    .alert .message {
+      font-size: 11px;
+      line-height: 1.4;
+    }
+    .note {
+      border-left: 3px solid var(--red);
+      background-color: color-mix(in srgb, var(--grid) 25%, transparent);
+      padding: 8px 12px;
+    }
+    .note-warning {
+      border-left-color: #C5A000;
+    }
+    .note-tip {
+      border-left-color: #00887d;
+    }
+    .note-content {
+      font-size: 11px;
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .note-content strong {
+      font-weight: 700;
+    }
+    .text-content {
+      font-size: 11px;
+      line-height: 1.5;
+      color: var(--text);
+    }
+    pre.mermaid {
+      background: transparent;
+      text-align: center;
+      padding: 16px 0;
+    }
+    .data-table {
+      width: 100%; border-collapse: collapse; font-size: 11px;
+    }
+    .data-table th {
+      font-family: var(--font-family); font-size: 9px; font-weight: bold;
+      color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.03em;
+      padding: 6px 8px; border-bottom: 1px solid var(--text); text-align: left;
+    }
+    .data-table td {
+      padding: 5px 8px; color: var(--text); border-bottom: 1px solid var(--grid);
+    }
+    .data-table tr.table-striped td {
+      background-color: color-mix(in srgb, var(--grid) 19%, transparent);
+    }
+    .data-table.table-compact th, .data-table.table-compact td {
+      padding: 4px 6px;
+    }
+    .markdown-content {
+      font-size: 11px; color: var(--text); line-height: 1.5;
+    }
+    .markdown-content h1 { font-size: 18px; font-weight: 900; margin: 12px 0 6px 0; }
+    .markdown-content h2 { font-size: 14px; font-weight: 700; margin: 10px 0 4px 0; }
+    .markdown-content h3 { font-size: 12px; font-weight: 700; margin: 8px 0 4px 0; }
+    .markdown-content p { margin: 6px 0; }
+    .markdown-content ul, .markdown-content ol { margin: 6px 0; padding-left: 20px; }
+    .markdown-content li { margin: 3px 0; }
+    .markdown-content code {
+      background: color-mix(in srgb, var(--grid) 25%, transparent); padding: 1px 4px; border-radius: 2px;
+      font-family: var(--font-mono); font-size: 10px;
+    }
+    .markdown-content pre {
+      background: color-mix(in srgb, var(--grid) 25%, transparent); padding: 8px; border-radius: 3px;
+      overflow-x: auto; margin: 8px 0;
+    }
+    .markdown-content pre code { background: none; padding: 0; }
+    .markdown-content blockquote {
+      border-left: 2px solid var(--red); margin: 8px 0; padding-left: 12px;
+      color: var(--text-muted); font-style: italic;
+    }
+    .markdown-content a { color: var(--link); text-decoration: none; }
+    .markdown-content a:hover { text-decoration: underline; }
+    .markdown-content strong { font-weight: 700; }
+    .markdown-content em { font-style: italic; }
+    .empty-space { background: transparent; }
+    /* Inline header styles (### soft headers) */
+    .inline-header {
+      margin-top: 12px;
+      margin-bottom: 4px;
+    }
+    .inline-header-text {
+      font-family: var(--font-family);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--text);
+      margin: 0;
+    }
+    /* Progress bar sparkline styles */
+    .pct-bar-wrapper {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 4px 0;
+    }
+    .pct-bar-container {
+      flex: 1;
+      height: 12px;
+      background-color: var(--grid);
+      border-radius: 2px;
+      overflow: hidden;
+      min-width: 60px;
+    }
+    .pct-bar-fill {
+      height: 100%;
+      background-color: #0777b3;
+      border-radius: 2px 0 0 2px;
+    }
+    .pct-bar-value {
+      font-size: 11px;
+      color: var(--text);
+      font-family: var(--font-family);
+      font-weight: 700;
+      min-width: 32px;
+      flex-shrink: 0;
+    }
+    /* Sparkline tooltip styles - immediate display on hover */
+    .spark-tooltip {
+      position: relative;
+      display: inline-block;
+    }
+    .spark-tooltip::after {
+      content: attr(data-tooltip);
+      position: absolute;
+      bottom: 100%;
+      left: 50%;
+      transform: translateX(-50%);
+      background: rgba(0, 0, 0, 0.85);
+      color: #fff;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: var(--font-family);
+      white-space: nowrap;
+      opacity: 0;
+      visibility: hidden;
+      transition: opacity 0.15s ease;
+      pointer-events: none;
+      z-index: 1000;
+      margin-bottom: 4px;
+    }
+    .spark-tooltip:hover::after {
+      opacity: 1;
+      visibility: visible;
+    }
+    
+    .mviz-export-menu {
+      position: fixed;
+      z-index: 10000;
+      background: #ffffff;
+      border: 1px solid #e0e0e0;
+      border-radius: 4px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      padding: 4px 0;
+      min-width: 200px;
+      font-family: var(--font-family, 'Helvetica Neue', Helvetica, Arial, sans-serif);
+      font-size: 12px;
+      color: #231f20;
+    }
+    body.theme-dark .mviz-export-menu {
+      background: #424242;
+      border-color: #757575;
+      color: #eeeeee;
+    }
+    .mviz-export-menu-header {
+      padding: 6px 12px 4px;
+      font-size: 10px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: #9e9e9e;
+    }
+    body.theme-dark .mviz-export-menu-header { color: #757575; }
+    .mviz-export-menu-item {
+      padding: 6px 12px;
+      cursor: pointer;
+    }
+    .mviz-export-menu-item:hover {
+      background: #f5f5f5;
+    }
+    body.theme-dark .mviz-export-menu-item:hover {
+      background: #3a3a3a;
+    }
+    @media print {
+      .mviz-export-menu { display: none; }
+    }
+  </style>
+</head>
+<body class="theme-dark">
+  <div class="dashboard dashboard-continuous">
+    <div class="red-line"></div>
+    <div class="title-row">
+      <h1 class="page-title">dbt-fusion Issue Health</h1>
+      <button class="theme-toggle" onclick="toggleTheme()" aria-label="Toggle theme">
+        <svg class="icon-moon" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+        <svg class="icon-sun" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+      </button>
+    </div>
+    
+        <section class="dashboard-section">
+          <h2 class="section-title">DBT-FUSION ISSUE HEALTH</h2>
+        </section>
+        <section class="dashboard-section">
+          <h2 class="section-title">KEY METRICS</h2>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 3; grid-column: span 3;">
+      <div class="big-value">50</div>
+      <div class="label">Net Flow (4wk)</div>
+    </div>
+    <div class="grid-item" style="--col-span: 3; grid-column: span 3;">
+      <div class="big-value">354</div>
+      <div class="label">Open Issues</div>
+    </div>
+    <div class="grid-item" style="--col-span: 3; grid-column: span 3;">
+      <div class="big-value">96.50</div>
+      <div class="label">Median Close (4wk, days)</div>
+    </div>
+    <div class="grid-item" style="--col-span: 3; grid-column: span 3;">
+      <div class="big-value">80%</div>
+      <div class="label">48h Response SLA</div>
+    </div>
+    <div class="grid-item" style="--col-span: 4; grid-column: span 4;">
+      <div class="big-value">210</div>
+      <div class="label">Stale Issues (30d+)</div>
+    </div>
+          </div>
+        </section>
+        <section class="dashboard-section">
+          <h2 class="section-title">CUMULATIVE ISSUE FLOW</h2>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Cumulative Opened vs Closed (excludes EPICs)</h3>
+      <div id="chart_6" style="width: 100%; height: 168px;"></div>
+    </div>
+          </div>
+        </section>
+        <section class="dashboard-section">
+          <h2 class="section-title">VELOCITY &amp; RESPONSE TIME</h2>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 8; grid-column: span 8;">
+      <h3 class="chart-title">Median Days to Close: Bugs vs Enhancements</h3>
+      <div id="chart_7" style="width: 100%; height: 168px;"></div>
+    </div>
+    <div class="grid-item" style="--col-span: 8; grid-column: span 8;">
+      <h3 class="chart-title">Time to First Response (hours)</h3>
+      <div id="chart_8" style="width: 100%; height: 168px;"></div>
+    </div>
+          </div>
+        </section>
+        <section class="dashboard-section">
+          <h2 class="section-title">ISSUE DISTRIBUTION</h2>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 8; grid-column: span 8;">
+      <h3 class="chart-title">Open Issue Age by Type</h3>
+      <div id="chart_9" style="width: 100%; height: 168px;"></div>
+    </div>
+    <div class="grid-item" style="--col-span: 8; grid-column: span 8;">
+      <h3 class="chart-title">Median Days to Close by Label</h3>
+      <div id="chart_10" style="width: 100%; height: 168px;"></div>
+    </div>
+          </div>
+        </section>
+        <section class="dashboard-section">
+          <h2 class="section-title">ASSIGNEE WORKLOAD</h2>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Open Issues by Assignee</h3>
+      <div id="chart_11" style="width: 100%; height: 168px;"></div>
+    </div>
+          </div>
+        </section>
+        <section class="dashboard-section">
+          <h2 class="section-title">COMMUNITY PRIORITIES</h2>
+          <div class="row">
+            
+    <div class="grid-item" style="--col-span: 16; grid-column: span 16;">
+      <h3 class="chart-title">Top Reacted Open Issues</h3>
+      <table class="data-table" style="width: 100%; border-collapse: collapse; font-size: 11px;">
+        <thead>
+          <tr><th style="text-align: left; padding: 6px 8px; font-size: 11px;">#</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Title</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Type</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Reactions</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Comments</th><th style="text-align: left; padding: 6px 8px; font-size: 11px;">Age (days)</th></tr>
+        </thead>
+        <tbody>
+          <tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>39</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Release Starburst Trino support</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>46</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">14</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">328</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>31</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Release Postgres adapter support</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>33</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">328</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>9</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Create a modern local documentation experience</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>31</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">2</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">328</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>11</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Implement a high-performance linter compatible with existing SQLFluff rules</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>28</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">6</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">328</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>829</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Release AWS Athena support</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>27</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">7</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">206</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>10</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Expose a Python API with Rust bindings, enabling programmatic invocations of top-level dbt commands</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>22</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">10</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">328</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>84</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">[FEAT] Adapter support for ClickHouse</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">enhancement</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>20</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">8</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">326</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>78</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Support binary distribution via PyPI</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">enhancement</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>18</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">326</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>703</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">[FEAT] Support macros or `generate_database/schema_name` in source configurations</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">enhancement</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>11</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">4</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">227</td></tr><tr><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>46</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">Support for custom adapters</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">other</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  "><strong>10</strong></td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">3</td><td style="text-align: left; padding: 5px 8px; font-size: 11px;  ">328</td></tr>
+        </tbody>
+      </table>
+    </div>
+          </div>
+        </section>
+  </div>
+  <script>
+    // Theme toggle function
+    function toggleTheme() {
+      var isDark = document.body.classList.contains('theme-dark');
+      var newTheme = isDark ? 'light' : 'dark';
+      document.body.classList.remove('theme-light', 'theme-dark');
+      document.body.classList.add('theme-' + newTheme);
+
+      // Update all charts
+      if (window.chartInstances && window.chartOptions) {
+        for (var id in window.chartInstances) {
+          window.chartInstances[id].setOption(window.chartOptions[id][newTheme]);
+        }
+      }
+    }
+
+    
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_6'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_6'] = chart;
+      window.chartOptions['chart_6'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "14%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "time",
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "hideOverlap": true,
+      "formatter": function(value) {
+            var d = new Date(value);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getDate();
+          }
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "cumulative_opened",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          106
+        ],
+        [
+          "2025-06-02",
+          168
+        ],
+        [
+          "2025-06-09",
+          207
+        ],
+        [
+          "2025-06-16",
+          241
+        ],
+        [
+          "2025-06-23",
+          281
+        ],
+        [
+          "2025-06-30",
+          312
+        ],
+        [
+          "2025-07-07",
+          346
+        ],
+        [
+          "2025-07-14",
+          391
+        ],
+        [
+          "2025-07-21",
+          412
+        ],
+        [
+          "2025-07-28",
+          446
+        ],
+        [
+          "2025-08-04",
+          477
+        ],
+        [
+          "2025-08-11",
+          501
+        ],
+        [
+          "2025-08-18",
+          532
+        ],
+        [
+          "2025-08-25",
+          571
+        ],
+        [
+          "2025-09-01",
+          622
+        ],
+        [
+          "2025-09-08",
+          655
+        ],
+        [
+          "2025-09-15",
+          690
+        ],
+        [
+          "2025-09-22",
+          727
+        ],
+        [
+          "2025-09-29",
+          755
+        ],
+        [
+          "2025-10-06",
+          786
+        ],
+        [
+          "2025-10-13",
+          810
+        ],
+        [
+          "2025-10-20",
+          839
+        ],
+        [
+          "2025-10-27",
+          860
+        ],
+        [
+          "2025-11-03",
+          885
+        ],
+        [
+          "2025-11-10",
+          899
+        ],
+        [
+          "2025-11-17",
+          918
+        ],
+        [
+          "2025-11-24",
+          935
+        ],
+        [
+          "2025-12-01",
+          960
+        ],
+        [
+          "2025-12-08",
+          984
+        ],
+        [
+          "2025-12-15",
+          1011
+        ],
+        [
+          "2025-12-22",
+          1017
+        ],
+        [
+          "2025-12-29",
+          1025
+        ],
+        [
+          "2026-01-05",
+          1049
+        ],
+        [
+          "2026-01-12",
+          1072
+        ],
+        [
+          "2026-01-19",
+          1088
+        ],
+        [
+          "2026-01-26",
+          1113
+        ],
+        [
+          "2026-02-02",
+          1131
+        ],
+        [
+          "2026-02-09",
+          1164
+        ],
+        [
+          "2026-02-16",
+          1188
+        ],
+        [
+          "2026-02-23",
+          1202
+        ],
+        [
+          "2026-03-02",
+          1233
+        ],
+        [
+          "2026-03-09",
+          1259
+        ],
+        [
+          "2026-03-16",
+          1291
+        ],
+        [
+          "2026-03-23",
+          1310
+        ],
+        [
+          "2026-03-30",
+          1329
+        ],
+        [
+          "2026-04-06",
+          1356
+        ]
+      ],
+      "smooth": false,
+      "areaStyle": {
+        "opacity": 0.5
+      },
+      "symbol": "none",
+      "lineStyle": {
+        "width": 0
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      }
+    },
+    {
+      "name": "cumulative_closed",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          6
+        ],
+        [
+          "2025-06-02",
+          28
+        ],
+        [
+          "2025-06-09",
+          43
+        ],
+        [
+          "2025-06-16",
+          50
+        ],
+        [
+          "2025-06-23",
+          100
+        ],
+        [
+          "2025-06-30",
+          126
+        ],
+        [
+          "2025-07-07",
+          173
+        ],
+        [
+          "2025-07-14",
+          197
+        ],
+        [
+          "2025-07-21",
+          216
+        ],
+        [
+          "2025-07-28",
+          245
+        ],
+        [
+          "2025-08-04",
+          271
+        ],
+        [
+          "2025-08-11",
+          294
+        ],
+        [
+          "2025-08-18",
+          322
+        ],
+        [
+          "2025-08-25",
+          339
+        ],
+        [
+          "2025-09-01",
+          373
+        ],
+        [
+          "2025-09-08",
+          389
+        ],
+        [
+          "2025-09-15",
+          414
+        ],
+        [
+          "2025-09-22",
+          452
+        ],
+        [
+          "2025-09-29",
+          471
+        ],
+        [
+          "2025-10-06",
+          492
+        ],
+        [
+          "2025-10-13",
+          497
+        ],
+        [
+          "2025-10-20",
+          506
+        ],
+        [
+          "2025-10-27",
+          520
+        ],
+        [
+          "2025-11-03",
+          531
+        ],
+        [
+          "2025-11-10",
+          541
+        ],
+        [
+          "2025-11-17",
+          556
+        ],
+        [
+          "2025-11-24",
+          565
+        ],
+        [
+          "2025-12-01",
+          575
+        ],
+        [
+          "2025-12-08",
+          589
+        ],
+        [
+          "2025-12-15",
+          604
+        ],
+        [
+          "2025-12-22",
+          606
+        ],
+        [
+          "2025-12-29",
+          606
+        ],
+        [
+          "2026-01-05",
+          616
+        ],
+        [
+          "2026-01-12",
+          630
+        ],
+        [
+          "2026-01-19",
+          651
+        ],
+        [
+          "2026-01-26",
+          699
+        ],
+        [
+          "2026-02-02",
+          711
+        ],
+        [
+          "2026-02-09",
+          727
+        ],
+        [
+          "2026-02-16",
+          739
+        ],
+        [
+          "2026-02-23",
+          754
+        ],
+        [
+          "2026-03-02",
+          772
+        ],
+        [
+          "2026-03-09",
+          828
+        ],
+        [
+          "2026-03-16",
+          887
+        ],
+        [
+          "2026-03-23",
+          937
+        ],
+        [
+          "2026-03-30",
+          958
+        ],
+        [
+          "2026-04-06",
+          1002
+        ]
+      ],
+      "smooth": false,
+      "areaStyle": {
+        "opacity": 0.5
+      },
+      "symbol": "none",
+      "lineStyle": {
+        "width": 0
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      }
+    }
+  ],
+  "legend": {
+    "data": [
+      "cumulative_opened",
+      "cumulative_closed"
+    ],
+    "top": 0,
+    "textStyle": {
+      "color": "#6a6a6a",
+      "fontSize": 11
+    },
+    "itemWidth": 14,
+    "itemHeight": 3,
+    "itemGap": 24
+  },
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "14%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "time",
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "hideOverlap": true,
+      "formatter": function(value) {
+            var d = new Date(value);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getDate();
+          }
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "cumulative_opened",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          106
+        ],
+        [
+          "2025-06-02",
+          168
+        ],
+        [
+          "2025-06-09",
+          207
+        ],
+        [
+          "2025-06-16",
+          241
+        ],
+        [
+          "2025-06-23",
+          281
+        ],
+        [
+          "2025-06-30",
+          312
+        ],
+        [
+          "2025-07-07",
+          346
+        ],
+        [
+          "2025-07-14",
+          391
+        ],
+        [
+          "2025-07-21",
+          412
+        ],
+        [
+          "2025-07-28",
+          446
+        ],
+        [
+          "2025-08-04",
+          477
+        ],
+        [
+          "2025-08-11",
+          501
+        ],
+        [
+          "2025-08-18",
+          532
+        ],
+        [
+          "2025-08-25",
+          571
+        ],
+        [
+          "2025-09-01",
+          622
+        ],
+        [
+          "2025-09-08",
+          655
+        ],
+        [
+          "2025-09-15",
+          690
+        ],
+        [
+          "2025-09-22",
+          727
+        ],
+        [
+          "2025-09-29",
+          755
+        ],
+        [
+          "2025-10-06",
+          786
+        ],
+        [
+          "2025-10-13",
+          810
+        ],
+        [
+          "2025-10-20",
+          839
+        ],
+        [
+          "2025-10-27",
+          860
+        ],
+        [
+          "2025-11-03",
+          885
+        ],
+        [
+          "2025-11-10",
+          899
+        ],
+        [
+          "2025-11-17",
+          918
+        ],
+        [
+          "2025-11-24",
+          935
+        ],
+        [
+          "2025-12-01",
+          960
+        ],
+        [
+          "2025-12-08",
+          984
+        ],
+        [
+          "2025-12-15",
+          1011
+        ],
+        [
+          "2025-12-22",
+          1017
+        ],
+        [
+          "2025-12-29",
+          1025
+        ],
+        [
+          "2026-01-05",
+          1049
+        ],
+        [
+          "2026-01-12",
+          1072
+        ],
+        [
+          "2026-01-19",
+          1088
+        ],
+        [
+          "2026-01-26",
+          1113
+        ],
+        [
+          "2026-02-02",
+          1131
+        ],
+        [
+          "2026-02-09",
+          1164
+        ],
+        [
+          "2026-02-16",
+          1188
+        ],
+        [
+          "2026-02-23",
+          1202
+        ],
+        [
+          "2026-03-02",
+          1233
+        ],
+        [
+          "2026-03-09",
+          1259
+        ],
+        [
+          "2026-03-16",
+          1291
+        ],
+        [
+          "2026-03-23",
+          1310
+        ],
+        [
+          "2026-03-30",
+          1329
+        ],
+        [
+          "2026-04-06",
+          1356
+        ]
+      ],
+      "smooth": false,
+      "areaStyle": {
+        "opacity": 0.5
+      },
+      "symbol": "none",
+      "lineStyle": {
+        "width": 0
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      }
+    },
+    {
+      "name": "cumulative_closed",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          6
+        ],
+        [
+          "2025-06-02",
+          28
+        ],
+        [
+          "2025-06-09",
+          43
+        ],
+        [
+          "2025-06-16",
+          50
+        ],
+        [
+          "2025-06-23",
+          100
+        ],
+        [
+          "2025-06-30",
+          126
+        ],
+        [
+          "2025-07-07",
+          173
+        ],
+        [
+          "2025-07-14",
+          197
+        ],
+        [
+          "2025-07-21",
+          216
+        ],
+        [
+          "2025-07-28",
+          245
+        ],
+        [
+          "2025-08-04",
+          271
+        ],
+        [
+          "2025-08-11",
+          294
+        ],
+        [
+          "2025-08-18",
+          322
+        ],
+        [
+          "2025-08-25",
+          339
+        ],
+        [
+          "2025-09-01",
+          373
+        ],
+        [
+          "2025-09-08",
+          389
+        ],
+        [
+          "2025-09-15",
+          414
+        ],
+        [
+          "2025-09-22",
+          452
+        ],
+        [
+          "2025-09-29",
+          471
+        ],
+        [
+          "2025-10-06",
+          492
+        ],
+        [
+          "2025-10-13",
+          497
+        ],
+        [
+          "2025-10-20",
+          506
+        ],
+        [
+          "2025-10-27",
+          520
+        ],
+        [
+          "2025-11-03",
+          531
+        ],
+        [
+          "2025-11-10",
+          541
+        ],
+        [
+          "2025-11-17",
+          556
+        ],
+        [
+          "2025-11-24",
+          565
+        ],
+        [
+          "2025-12-01",
+          575
+        ],
+        [
+          "2025-12-08",
+          589
+        ],
+        [
+          "2025-12-15",
+          604
+        ],
+        [
+          "2025-12-22",
+          606
+        ],
+        [
+          "2025-12-29",
+          606
+        ],
+        [
+          "2026-01-05",
+          616
+        ],
+        [
+          "2026-01-12",
+          630
+        ],
+        [
+          "2026-01-19",
+          651
+        ],
+        [
+          "2026-01-26",
+          699
+        ],
+        [
+          "2026-02-02",
+          711
+        ],
+        [
+          "2026-02-09",
+          727
+        ],
+        [
+          "2026-02-16",
+          739
+        ],
+        [
+          "2026-02-23",
+          754
+        ],
+        [
+          "2026-03-02",
+          772
+        ],
+        [
+          "2026-03-09",
+          828
+        ],
+        [
+          "2026-03-16",
+          887
+        ],
+        [
+          "2026-03-23",
+          937
+        ],
+        [
+          "2026-03-30",
+          958
+        ],
+        [
+          "2026-04-06",
+          1002
+        ]
+      ],
+      "smooth": false,
+      "areaStyle": {
+        "opacity": 0.5
+      },
+      "symbol": "none",
+      "lineStyle": {
+        "width": 0
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      }
+    }
+  ],
+  "legend": {
+    "data": [
+      "cumulative_opened",
+      "cumulative_closed"
+    ],
+    "top": 0,
+    "textStyle": {
+      "color": "#888888",
+      "fontSize": 11
+    },
+    "itemWidth": 14,
+    "itemHeight": 3,
+    "itemGap": 24
+  },
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_6'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_7'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_7'] = chart;
+      window.chartOptions['chart_7'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "time",
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "hideOverlap": true,
+      "formatter": function(value) {
+            var d = new Date(value);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getDate();
+          }
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "bugs",
+      "type": "line",
+      "data": [
+        [
+          "2025-06-02",
+          2.9
+        ],
+        [
+          "2025-06-09",
+          3
+        ],
+        [
+          "2025-06-16",
+          5.4
+        ],
+        [
+          "2025-06-23",
+          10.1
+        ],
+        [
+          "2025-06-30",
+          5.8
+        ],
+        [
+          "2025-07-07",
+          6
+        ],
+        [
+          "2025-07-14",
+          12.5
+        ],
+        [
+          "2025-07-21",
+          5.8
+        ],
+        [
+          "2025-07-28",
+          14.3
+        ],
+        [
+          "2025-08-04",
+          14.8
+        ],
+        [
+          "2025-08-11",
+          9.2
+        ],
+        [
+          "2025-08-18",
+          6
+        ],
+        [
+          "2025-08-25",
+          16.1
+        ],
+        [
+          "2025-09-01",
+          7.8
+        ],
+        [
+          "2025-09-08",
+          12.9
+        ],
+        [
+          "2025-09-15",
+          5.2
+        ],
+        [
+          "2025-09-22",
+          3.7
+        ],
+        [
+          "2025-09-29",
+          11
+        ],
+        [
+          "2025-10-06",
+          3.5
+        ],
+        [
+          "2025-10-13",
+          1.7
+        ],
+        [
+          "2025-10-20",
+          20.1
+        ],
+        [
+          "2025-10-27",
+          3.5
+        ],
+        [
+          "2025-11-03",
+          38
+        ],
+        [
+          "2025-11-10",
+          8
+        ],
+        [
+          "2025-11-17",
+          24.4
+        ],
+        [
+          "2025-11-24",
+          28
+        ],
+        [
+          "2025-12-01",
+          35.7
+        ],
+        [
+          "2025-12-08",
+          48.2
+        ],
+        [
+          "2025-12-15",
+          49.4
+        ],
+        [
+          "2026-01-05",
+          23.8
+        ],
+        [
+          "2026-01-12",
+          27.2
+        ],
+        [
+          "2026-01-19",
+          38.9
+        ],
+        [
+          "2026-01-26",
+          50.5
+        ],
+        [
+          "2026-02-02",
+          2
+        ],
+        [
+          "2026-02-09",
+          5.9
+        ],
+        [
+          "2026-02-16",
+          3.2
+        ],
+        [
+          "2026-02-23",
+          198.7
+        ],
+        [
+          "2026-03-02",
+          24
+        ],
+        [
+          "2026-03-09",
+          112
+        ],
+        [
+          "2026-03-16",
+          102.7
+        ],
+        [
+          "2026-03-23",
+          47.5
+        ],
+        [
+          "2026-03-30",
+          54.8
+        ],
+        [
+          "2026-04-06",
+          142.9
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "enhancements",
+      "type": "line",
+      "data": [
+        [
+          "2025-06-02",
+          0
+        ],
+        [
+          "2025-06-09",
+          5
+        ],
+        [
+          "2025-06-16",
+          0
+        ],
+        [
+          "2025-06-23",
+          12.4
+        ],
+        [
+          "2025-06-30",
+          11.1
+        ],
+        [
+          "2025-07-07",
+          39.9
+        ],
+        [
+          "2025-07-14",
+          0
+        ],
+        [
+          "2025-07-21",
+          0
+        ],
+        [
+          "2025-07-28",
+          23.6
+        ],
+        [
+          "2025-08-04",
+          20.8
+        ],
+        [
+          "2025-08-11",
+          22.8
+        ],
+        [
+          "2025-08-18",
+          16
+        ],
+        [
+          "2025-08-25",
+          0
+        ],
+        [
+          "2025-09-01",
+          11
+        ],
+        [
+          "2025-09-08",
+          3.5
+        ],
+        [
+          "2025-09-15",
+          32.4
+        ],
+        [
+          "2025-09-22",
+          59.5
+        ],
+        [
+          "2025-09-29",
+          21
+        ],
+        [
+          "2025-10-06",
+          0.5
+        ],
+        [
+          "2025-10-13",
+          0
+        ],
+        [
+          "2025-10-20",
+          0
+        ],
+        [
+          "2025-10-27",
+          54.7
+        ],
+        [
+          "2025-11-03",
+          0
+        ],
+        [
+          "2025-11-10",
+          14.2
+        ],
+        [
+          "2025-11-17",
+          166.8
+        ],
+        [
+          "2025-11-24",
+          0
+        ],
+        [
+          "2025-12-01",
+          0
+        ],
+        [
+          "2025-12-08",
+          88.2
+        ],
+        [
+          "2025-12-15",
+          0
+        ],
+        [
+          "2026-01-05",
+          0
+        ],
+        [
+          "2026-01-12",
+          0
+        ],
+        [
+          "2026-01-19",
+          40.1
+        ],
+        [
+          "2026-01-26",
+          142.2
+        ],
+        [
+          "2026-02-02",
+          239.8
+        ],
+        [
+          "2026-02-09",
+          0
+        ],
+        [
+          "2026-02-16",
+          73.5
+        ],
+        [
+          "2026-02-23",
+          265.7
+        ],
+        [
+          "2026-03-02",
+          0
+        ],
+        [
+          "2026-03-09",
+          218.7
+        ],
+        [
+          "2026-03-16",
+          205.8
+        ],
+        [
+          "2026-03-23",
+          227.4
+        ],
+        [
+          "2026-03-30",
+          0
+        ],
+        [
+          "2026-04-06",
+          171.1
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "time",
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "hideOverlap": true,
+      "formatter": function(value) {
+            var d = new Date(value);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getDate();
+          }
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "bugs",
+      "type": "line",
+      "data": [
+        [
+          "2025-06-02",
+          2.9
+        ],
+        [
+          "2025-06-09",
+          3
+        ],
+        [
+          "2025-06-16",
+          5.4
+        ],
+        [
+          "2025-06-23",
+          10.1
+        ],
+        [
+          "2025-06-30",
+          5.8
+        ],
+        [
+          "2025-07-07",
+          6
+        ],
+        [
+          "2025-07-14",
+          12.5
+        ],
+        [
+          "2025-07-21",
+          5.8
+        ],
+        [
+          "2025-07-28",
+          14.3
+        ],
+        [
+          "2025-08-04",
+          14.8
+        ],
+        [
+          "2025-08-11",
+          9.2
+        ],
+        [
+          "2025-08-18",
+          6
+        ],
+        [
+          "2025-08-25",
+          16.1
+        ],
+        [
+          "2025-09-01",
+          7.8
+        ],
+        [
+          "2025-09-08",
+          12.9
+        ],
+        [
+          "2025-09-15",
+          5.2
+        ],
+        [
+          "2025-09-22",
+          3.7
+        ],
+        [
+          "2025-09-29",
+          11
+        ],
+        [
+          "2025-10-06",
+          3.5
+        ],
+        [
+          "2025-10-13",
+          1.7
+        ],
+        [
+          "2025-10-20",
+          20.1
+        ],
+        [
+          "2025-10-27",
+          3.5
+        ],
+        [
+          "2025-11-03",
+          38
+        ],
+        [
+          "2025-11-10",
+          8
+        ],
+        [
+          "2025-11-17",
+          24.4
+        ],
+        [
+          "2025-11-24",
+          28
+        ],
+        [
+          "2025-12-01",
+          35.7
+        ],
+        [
+          "2025-12-08",
+          48.2
+        ],
+        [
+          "2025-12-15",
+          49.4
+        ],
+        [
+          "2026-01-05",
+          23.8
+        ],
+        [
+          "2026-01-12",
+          27.2
+        ],
+        [
+          "2026-01-19",
+          38.9
+        ],
+        [
+          "2026-01-26",
+          50.5
+        ],
+        [
+          "2026-02-02",
+          2
+        ],
+        [
+          "2026-02-09",
+          5.9
+        ],
+        [
+          "2026-02-16",
+          3.2
+        ],
+        [
+          "2026-02-23",
+          198.7
+        ],
+        [
+          "2026-03-02",
+          24
+        ],
+        [
+          "2026-03-09",
+          112
+        ],
+        [
+          "2026-03-16",
+          102.7
+        ],
+        [
+          "2026-03-23",
+          47.5
+        ],
+        [
+          "2026-03-30",
+          54.8
+        ],
+        [
+          "2026-04-06",
+          142.9
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "enhancements",
+      "type": "line",
+      "data": [
+        [
+          "2025-06-02",
+          0
+        ],
+        [
+          "2025-06-09",
+          5
+        ],
+        [
+          "2025-06-16",
+          0
+        ],
+        [
+          "2025-06-23",
+          12.4
+        ],
+        [
+          "2025-06-30",
+          11.1
+        ],
+        [
+          "2025-07-07",
+          39.9
+        ],
+        [
+          "2025-07-14",
+          0
+        ],
+        [
+          "2025-07-21",
+          0
+        ],
+        [
+          "2025-07-28",
+          23.6
+        ],
+        [
+          "2025-08-04",
+          20.8
+        ],
+        [
+          "2025-08-11",
+          22.8
+        ],
+        [
+          "2025-08-18",
+          16
+        ],
+        [
+          "2025-08-25",
+          0
+        ],
+        [
+          "2025-09-01",
+          11
+        ],
+        [
+          "2025-09-08",
+          3.5
+        ],
+        [
+          "2025-09-15",
+          32.4
+        ],
+        [
+          "2025-09-22",
+          59.5
+        ],
+        [
+          "2025-09-29",
+          21
+        ],
+        [
+          "2025-10-06",
+          0.5
+        ],
+        [
+          "2025-10-13",
+          0
+        ],
+        [
+          "2025-10-20",
+          0
+        ],
+        [
+          "2025-10-27",
+          54.7
+        ],
+        [
+          "2025-11-03",
+          0
+        ],
+        [
+          "2025-11-10",
+          14.2
+        ],
+        [
+          "2025-11-17",
+          166.8
+        ],
+        [
+          "2025-11-24",
+          0
+        ],
+        [
+          "2025-12-01",
+          0
+        ],
+        [
+          "2025-12-08",
+          88.2
+        ],
+        [
+          "2025-12-15",
+          0
+        ],
+        [
+          "2026-01-05",
+          0
+        ],
+        [
+          "2026-01-12",
+          0
+        ],
+        [
+          "2026-01-19",
+          40.1
+        ],
+        [
+          "2026-01-26",
+          142.2
+        ],
+        [
+          "2026-02-02",
+          239.8
+        ],
+        [
+          "2026-02-09",
+          0
+        ],
+        [
+          "2026-02-16",
+          73.5
+        ],
+        [
+          "2026-02-23",
+          265.7
+        ],
+        [
+          "2026-03-02",
+          0
+        ],
+        [
+          "2026-03-09",
+          218.7
+        ],
+        [
+          "2026-03-16",
+          205.8
+        ],
+        [
+          "2026-03-23",
+          227.4
+        ],
+        [
+          "2026-03-30",
+          0
+        ],
+        [
+          "2026-04-06",
+          171.1
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_7'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_8'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_8'] = chart;
+      window.chartOptions['chart_8'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#0777b3",
+    "#bd4e35",
+    "#2d7a00",
+    "#e18727",
+    "#638CAD",
+    "#adadad"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "time",
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "hideOverlap": true,
+      "formatter": function(value) {
+            var d = new Date(value);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getDate();
+          }
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "p25",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          63
+        ],
+        [
+          "2025-06-02",
+          42.5
+        ],
+        [
+          "2025-06-09",
+          47
+        ],
+        [
+          "2025-06-16",
+          29.5
+        ],
+        [
+          "2025-06-23",
+          6
+        ],
+        [
+          "2025-06-30",
+          5.8
+        ],
+        [
+          "2025-07-07",
+          6
+        ],
+        [
+          "2025-07-14",
+          12.8
+        ],
+        [
+          "2025-07-21",
+          20
+        ],
+        [
+          "2025-07-28",
+          4
+        ],
+        [
+          "2025-08-04",
+          48.5
+        ],
+        [
+          "2025-08-11",
+          56.5
+        ],
+        [
+          "2025-08-18",
+          9
+        ],
+        [
+          "2025-08-25",
+          5
+        ],
+        [
+          "2025-09-01",
+          18.5
+        ],
+        [
+          "2025-09-08",
+          10
+        ],
+        [
+          "2025-09-15",
+          7.3
+        ],
+        [
+          "2025-09-22",
+          9.3
+        ],
+        [
+          "2025-09-29",
+          8
+        ],
+        [
+          "2025-10-06",
+          30.5
+        ],
+        [
+          "2025-10-13",
+          20.5
+        ],
+        [
+          "2025-10-20",
+          167
+        ],
+        [
+          "2025-10-27",
+          6.5
+        ],
+        [
+          "2025-11-03",
+          100.5
+        ],
+        [
+          "2025-11-10",
+          411.5
+        ],
+        [
+          "2025-11-17",
+          25
+        ],
+        [
+          "2025-11-24",
+          201
+        ],
+        [
+          "2025-12-01",
+          1478
+        ],
+        [
+          "2025-12-08",
+          124.3
+        ],
+        [
+          "2025-12-15",
+          28
+        ],
+        [
+          "2025-12-29",
+          349.5
+        ],
+        [
+          "2026-01-05",
+          11
+        ],
+        [
+          "2026-01-12",
+          17.8
+        ],
+        [
+          "2026-01-19",
+          99
+        ],
+        [
+          "2026-01-26",
+          17.5
+        ],
+        [
+          "2026-02-02",
+          258.3
+        ],
+        [
+          "2026-02-09",
+          250.8
+        ],
+        [
+          "2026-02-16",
+          9
+        ],
+        [
+          "2026-02-23",
+          17
+        ],
+        [
+          "2026-03-02",
+          16.8
+        ],
+        [
+          "2026-03-09",
+          98.3
+        ],
+        [
+          "2026-03-16",
+          21
+        ],
+        [
+          "2026-03-30",
+          2.3
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#0777b3",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "p50",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          720
+        ],
+        [
+          "2025-06-02",
+          481.5
+        ],
+        [
+          "2025-06-09",
+          185
+        ],
+        [
+          "2025-06-16",
+          167
+        ],
+        [
+          "2025-06-23",
+          21
+        ],
+        [
+          "2025-06-30",
+          51.5
+        ],
+        [
+          "2025-07-07",
+          42
+        ],
+        [
+          "2025-07-14",
+          78.5
+        ],
+        [
+          "2025-07-21",
+          53
+        ],
+        [
+          "2025-07-28",
+          33
+        ],
+        [
+          "2025-08-04",
+          153
+        ],
+        [
+          "2025-08-11",
+          111
+        ],
+        [
+          "2025-08-18",
+          20
+        ],
+        [
+          "2025-08-25",
+          32
+        ],
+        [
+          "2025-09-01",
+          68
+        ],
+        [
+          "2025-09-08",
+          43
+        ],
+        [
+          "2025-09-15",
+          1430.5
+        ],
+        [
+          "2025-09-22",
+          39.5
+        ],
+        [
+          "2025-09-29",
+          95
+        ],
+        [
+          "2025-10-06",
+          104.5
+        ],
+        [
+          "2025-10-13",
+          203
+        ],
+        [
+          "2025-10-20",
+          1422
+        ],
+        [
+          "2025-10-27",
+          90.5
+        ],
+        [
+          "2025-11-03",
+          196
+        ],
+        [
+          "2025-11-10",
+          1618
+        ],
+        [
+          "2025-11-17",
+          600
+        ],
+        [
+          "2025-11-24",
+          212
+        ],
+        [
+          "2025-12-01",
+          2315
+        ],
+        [
+          "2025-12-08",
+          1653
+        ],
+        [
+          "2025-12-15",
+          833
+        ],
+        [
+          "2025-12-29",
+          600
+        ],
+        [
+          "2026-01-05",
+          68.5
+        ],
+        [
+          "2026-01-12",
+          93.5
+        ],
+        [
+          "2026-01-19",
+          507
+        ],
+        [
+          "2026-01-26",
+          331
+        ],
+        [
+          "2026-02-02",
+          414
+        ],
+        [
+          "2026-02-09",
+          800
+        ],
+        [
+          "2026-02-16",
+          129
+        ],
+        [
+          "2026-02-23",
+          163
+        ],
+        [
+          "2026-03-02",
+          95
+        ],
+        [
+          "2026-03-09",
+          133.5
+        ],
+        [
+          "2026-03-16",
+          26
+        ],
+        [
+          "2026-03-30",
+          12
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#bd4e35",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "p75",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          3030.5
+        ],
+        [
+          "2025-06-02",
+          1388
+        ],
+        [
+          "2025-06-09",
+          1063
+        ],
+        [
+          "2025-06-16",
+          573.5
+        ],
+        [
+          "2025-06-23",
+          163
+        ],
+        [
+          "2025-06-30",
+          180
+        ],
+        [
+          "2025-07-07",
+          109
+        ],
+        [
+          "2025-07-14",
+          994.8
+        ],
+        [
+          "2025-07-21",
+          197
+        ],
+        [
+          "2025-07-28",
+          217.5
+        ],
+        [
+          "2025-08-04",
+          1133.8
+        ],
+        [
+          "2025-08-11",
+          186.5
+        ],
+        [
+          "2025-08-18",
+          175
+        ],
+        [
+          "2025-08-25",
+          783
+        ],
+        [
+          "2025-09-01",
+          597.5
+        ],
+        [
+          "2025-09-08",
+          1178
+        ],
+        [
+          "2025-09-15",
+          4066
+        ],
+        [
+          "2025-09-22",
+          1968.5
+        ],
+        [
+          "2025-09-29",
+          3983
+        ],
+        [
+          "2025-10-06",
+          1070
+        ],
+        [
+          "2025-10-13",
+          2009.5
+        ],
+        [
+          "2025-10-20",
+          3061.8
+        ],
+        [
+          "2025-10-27",
+          779.8
+        ],
+        [
+          "2025-11-03",
+          725
+        ],
+        [
+          "2025-11-10",
+          2884.3
+        ],
+        [
+          "2025-11-17",
+          2678
+        ],
+        [
+          "2025-11-24",
+          1223
+        ],
+        [
+          "2025-12-01",
+          2384
+        ],
+        [
+          "2025-12-08",
+          2174.3
+        ],
+        [
+          "2025-12-15",
+          2207
+        ],
+        [
+          "2025-12-29",
+          1196
+        ],
+        [
+          "2026-01-05",
+          1085.3
+        ],
+        [
+          "2026-01-12",
+          727.5
+        ],
+        [
+          "2026-01-19",
+          1186
+        ],
+        [
+          "2026-01-26",
+          743
+        ],
+        [
+          "2026-02-02",
+          518
+        ],
+        [
+          "2026-02-09",
+          853
+        ],
+        [
+          "2026-02-16",
+          505
+        ],
+        [
+          "2026-02-23",
+          395
+        ],
+        [
+          "2026-03-02",
+          265.3
+        ],
+        [
+          "2026-03-09",
+          242.3
+        ],
+        [
+          "2026-03-16",
+          176
+        ],
+        [
+          "2026-03-30",
+          25.5
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#2d7a00",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "color": [
+    "#3da8e0",
+    "#e06b4e",
+    "#6ed020",
+    "#f5a84a",
+    "#7faac4",
+    "#c0c0c0"
+  ],
+  "tooltip": {
+    "trigger": "axis",
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "18%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "time",
+    "boundaryGap": false,
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "hideOverlap": true,
+      "formatter": function(value) {
+            var d = new Date(value);
+            var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+            return months[d.getMonth()] + ' ' + d.getDate();
+          }
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "p25",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          63
+        ],
+        [
+          "2025-06-02",
+          42.5
+        ],
+        [
+          "2025-06-09",
+          47
+        ],
+        [
+          "2025-06-16",
+          29.5
+        ],
+        [
+          "2025-06-23",
+          6
+        ],
+        [
+          "2025-06-30",
+          5.8
+        ],
+        [
+          "2025-07-07",
+          6
+        ],
+        [
+          "2025-07-14",
+          12.8
+        ],
+        [
+          "2025-07-21",
+          20
+        ],
+        [
+          "2025-07-28",
+          4
+        ],
+        [
+          "2025-08-04",
+          48.5
+        ],
+        [
+          "2025-08-11",
+          56.5
+        ],
+        [
+          "2025-08-18",
+          9
+        ],
+        [
+          "2025-08-25",
+          5
+        ],
+        [
+          "2025-09-01",
+          18.5
+        ],
+        [
+          "2025-09-08",
+          10
+        ],
+        [
+          "2025-09-15",
+          7.3
+        ],
+        [
+          "2025-09-22",
+          9.3
+        ],
+        [
+          "2025-09-29",
+          8
+        ],
+        [
+          "2025-10-06",
+          30.5
+        ],
+        [
+          "2025-10-13",
+          20.5
+        ],
+        [
+          "2025-10-20",
+          167
+        ],
+        [
+          "2025-10-27",
+          6.5
+        ],
+        [
+          "2025-11-03",
+          100.5
+        ],
+        [
+          "2025-11-10",
+          411.5
+        ],
+        [
+          "2025-11-17",
+          25
+        ],
+        [
+          "2025-11-24",
+          201
+        ],
+        [
+          "2025-12-01",
+          1478
+        ],
+        [
+          "2025-12-08",
+          124.3
+        ],
+        [
+          "2025-12-15",
+          28
+        ],
+        [
+          "2025-12-29",
+          349.5
+        ],
+        [
+          "2026-01-05",
+          11
+        ],
+        [
+          "2026-01-12",
+          17.8
+        ],
+        [
+          "2026-01-19",
+          99
+        ],
+        [
+          "2026-01-26",
+          17.5
+        ],
+        [
+          "2026-02-02",
+          258.3
+        ],
+        [
+          "2026-02-09",
+          250.8
+        ],
+        [
+          "2026-02-16",
+          9
+        ],
+        [
+          "2026-02-23",
+          17
+        ],
+        [
+          "2026-03-02",
+          16.8
+        ],
+        [
+          "2026-03-09",
+          98.3
+        ],
+        [
+          "2026-03-16",
+          21
+        ],
+        [
+          "2026-03-30",
+          2.3
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#3da8e0",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "p50",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          720
+        ],
+        [
+          "2025-06-02",
+          481.5
+        ],
+        [
+          "2025-06-09",
+          185
+        ],
+        [
+          "2025-06-16",
+          167
+        ],
+        [
+          "2025-06-23",
+          21
+        ],
+        [
+          "2025-06-30",
+          51.5
+        ],
+        [
+          "2025-07-07",
+          42
+        ],
+        [
+          "2025-07-14",
+          78.5
+        ],
+        [
+          "2025-07-21",
+          53
+        ],
+        [
+          "2025-07-28",
+          33
+        ],
+        [
+          "2025-08-04",
+          153
+        ],
+        [
+          "2025-08-11",
+          111
+        ],
+        [
+          "2025-08-18",
+          20
+        ],
+        [
+          "2025-08-25",
+          32
+        ],
+        [
+          "2025-09-01",
+          68
+        ],
+        [
+          "2025-09-08",
+          43
+        ],
+        [
+          "2025-09-15",
+          1430.5
+        ],
+        [
+          "2025-09-22",
+          39.5
+        ],
+        [
+          "2025-09-29",
+          95
+        ],
+        [
+          "2025-10-06",
+          104.5
+        ],
+        [
+          "2025-10-13",
+          203
+        ],
+        [
+          "2025-10-20",
+          1422
+        ],
+        [
+          "2025-10-27",
+          90.5
+        ],
+        [
+          "2025-11-03",
+          196
+        ],
+        [
+          "2025-11-10",
+          1618
+        ],
+        [
+          "2025-11-17",
+          600
+        ],
+        [
+          "2025-11-24",
+          212
+        ],
+        [
+          "2025-12-01",
+          2315
+        ],
+        [
+          "2025-12-08",
+          1653
+        ],
+        [
+          "2025-12-15",
+          833
+        ],
+        [
+          "2025-12-29",
+          600
+        ],
+        [
+          "2026-01-05",
+          68.5
+        ],
+        [
+          "2026-01-12",
+          93.5
+        ],
+        [
+          "2026-01-19",
+          507
+        ],
+        [
+          "2026-01-26",
+          331
+        ],
+        [
+          "2026-02-02",
+          414
+        ],
+        [
+          "2026-02-09",
+          800
+        ],
+        [
+          "2026-02-16",
+          129
+        ],
+        [
+          "2026-02-23",
+          163
+        ],
+        [
+          "2026-03-02",
+          95
+        ],
+        [
+          "2026-03-09",
+          133.5
+        ],
+        [
+          "2026-03-16",
+          26
+        ],
+        [
+          "2026-03-30",
+          12
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#e06b4e",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    },
+    {
+      "name": "p75",
+      "type": "line",
+      "data": [
+        [
+          "2025-05-26",
+          3030.5
+        ],
+        [
+          "2025-06-02",
+          1388
+        ],
+        [
+          "2025-06-09",
+          1063
+        ],
+        [
+          "2025-06-16",
+          573.5
+        ],
+        [
+          "2025-06-23",
+          163
+        ],
+        [
+          "2025-06-30",
+          180
+        ],
+        [
+          "2025-07-07",
+          109
+        ],
+        [
+          "2025-07-14",
+          994.8
+        ],
+        [
+          "2025-07-21",
+          197
+        ],
+        [
+          "2025-07-28",
+          217.5
+        ],
+        [
+          "2025-08-04",
+          1133.8
+        ],
+        [
+          "2025-08-11",
+          186.5
+        ],
+        [
+          "2025-08-18",
+          175
+        ],
+        [
+          "2025-08-25",
+          783
+        ],
+        [
+          "2025-09-01",
+          597.5
+        ],
+        [
+          "2025-09-08",
+          1178
+        ],
+        [
+          "2025-09-15",
+          4066
+        ],
+        [
+          "2025-09-22",
+          1968.5
+        ],
+        [
+          "2025-09-29",
+          3983
+        ],
+        [
+          "2025-10-06",
+          1070
+        ],
+        [
+          "2025-10-13",
+          2009.5
+        ],
+        [
+          "2025-10-20",
+          3061.8
+        ],
+        [
+          "2025-10-27",
+          779.8
+        ],
+        [
+          "2025-11-03",
+          725
+        ],
+        [
+          "2025-11-10",
+          2884.3
+        ],
+        [
+          "2025-11-17",
+          2678
+        ],
+        [
+          "2025-11-24",
+          1223
+        ],
+        [
+          "2025-12-01",
+          2384
+        ],
+        [
+          "2025-12-08",
+          2174.3
+        ],
+        [
+          "2025-12-15",
+          2207
+        ],
+        [
+          "2025-12-29",
+          1196
+        ],
+        [
+          "2026-01-05",
+          1085.3
+        ],
+        [
+          "2026-01-12",
+          727.5
+        ],
+        [
+          "2026-01-19",
+          1186
+        ],
+        [
+          "2026-01-26",
+          743
+        ],
+        [
+          "2026-02-02",
+          518
+        ],
+        [
+          "2026-02-09",
+          853
+        ],
+        [
+          "2026-02-16",
+          505
+        ],
+        [
+          "2026-02-23",
+          395
+        ],
+        [
+          "2026-03-02",
+          265.3
+        ],
+        [
+          "2026-03-09",
+          242.3
+        ],
+        [
+          "2026-03-16",
+          176
+        ],
+        [
+          "2026-03-30",
+          25.5
+        ]
+      ],
+      "smooth": false,
+      "symbol": "none",
+      "lineStyle": {
+        "width": 2
+      },
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "endLabel": {
+        "show": true,
+        "formatter": "{a}",
+        "color": "#6ed020",
+        "fontSize": 10,
+        "offset": [
+          5,
+          0
+        ]
+      },
+      "labelLayout": {
+        "moveOverlap": "shiftY"
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_8'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_9'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_9'] = chart;
+      window.chartOptions['chart_9'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    },
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "14%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "0-7d",
+      "8-30d",
+      "31-90d",
+      "91-180d",
+      "180d+"
+    ],
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "fontSize": 11,
+      "margin": 10,
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "bug",
+      "type": "bar",
+      "data": [
+        0,
+        28,
+        54,
+        57,
+        51
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#6a6a6a",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    },
+    {
+      "name": "enhancement",
+      "type": "bar",
+      "data": [
+        0,
+        8,
+        22,
+        24,
+        63
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#6a6a6a",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    },
+    {
+      "name": "other",
+      "type": "bar",
+      "data": [
+        0,
+        14,
+        13,
+        4,
+        16
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#2d7a00"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#6a6a6a",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    }
+  ],
+  "legend": {
+    "data": [
+      "bug",
+      "enhancement",
+      "other"
+    ],
+    "top": 0,
+    "textStyle": {
+      "color": "#6a6a6a",
+      "fontSize": 11
+    },
+    "itemWidth": 14,
+    "itemHeight": 3,
+    "itemGap": 24
+  },
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    },
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "14%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "0-7d",
+      "8-30d",
+      "31-90d",
+      "91-180d",
+      "180d+"
+    ],
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "fontSize": 11,
+      "margin": 10,
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    }
+  },
+  "series": [
+    {
+      "name": "bug",
+      "type": "bar",
+      "data": [
+        0,
+        28,
+        54,
+        57,
+        51
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#ffffff",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    },
+    {
+      "name": "enhancement",
+      "type": "bar",
+      "data": [
+        0,
+        8,
+        22,
+        24,
+        63
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#ffffff",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    },
+    {
+      "name": "other",
+      "type": "bar",
+      "data": [
+        0,
+        14,
+        13,
+        4,
+        16
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#6ed020"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#ffffff",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    }
+  ],
+  "legend": {
+    "data": [
+      "bug",
+      "enhancement",
+      "other"
+    ],
+    "top": 0,
+    "textStyle": {
+      "color": "#888888",
+      "fontSize": 11
+    },
+    "itemWidth": 14,
+    "itemHeight": 3,
+    "itemGap": 24
+  },
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_9'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_10'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_10'] = chart;
+      window.chartOptions['chart_10'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    },
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "unit_tests",
+      "vsce",
+      "logging",
+      "release/awaiting-release",
+      "soft-blocker",
+      "triage",
+      "dbt-jinja",
+      "needs-repro",
+      "package",
+      "Conformance",
+      "enhancement",
+      "windows",
+      "slack",
+      "has-repro",
+      "discrepancy"
+    ],
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "fontSize": 11,
+      "margin": 10,
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    },
+    "splitNumber": 2
+  },
+  "series": [
+    {
+      "name": "median_days_to_close",
+      "type": "bar",
+      "data": [
+        162.5,
+        149.9,
+        141.9,
+        129.4,
+        100.5,
+        89.4,
+        47.5,
+        47.5,
+        46.5,
+        40.3,
+        40.3,
+        34.9,
+        32,
+        23.3,
+        22.7
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#6a6a6a",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    },
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "6%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "unit_tests",
+      "vsce",
+      "logging",
+      "release/awaiting-release",
+      "soft-blocker",
+      "triage",
+      "dbt-jinja",
+      "needs-repro",
+      "package",
+      "Conformance",
+      "enhancement",
+      "windows",
+      "slack",
+      "has-repro",
+      "discrepancy"
+    ],
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "fontSize": 11,
+      "margin": 10,
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    },
+    "splitNumber": 2
+  },
+  "series": [
+    {
+      "name": "median_days_to_close",
+      "type": "bar",
+      "data": [
+        162.5,
+        149.9,
+        141.9,
+        129.4,
+        100.5,
+        89.4,
+        47.5,
+        47.5,
+        46.5,
+        40.3,
+        40.3,
+        34.9,
+        32,
+        23.3,
+        22.7
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#ffffff",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    }
+  ],
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_10'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+    (function() {
+      var chart = echarts.init(document.getElementById('chart_11'), null, {renderer: 'svg'});
+      window.chartInstances = window.chartInstances || {};
+      window.chartOptions = window.chartOptions || {};
+      window.chartInstances['chart_11'] = chart;
+      window.chartOptions['chart_11'] = {
+        light: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    },
+    "backgroundColor": "#ffffff",
+    "borderColor": "#d4d4d4",
+    "textStyle": {
+      "color": "#231f20"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "14%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "vgapeyev",
+      "lottaquestions",
+      "mishamsk",
+      "akbog",
+      "HannanNaeem",
+      "xuliangs",
+      "wizardxz",
+      "gshank",
+      "dbeatty10",
+      "felipecrv",
+      "VersusFacit",
+      "ChenyuLInx",
+      "j-clemons",
+      "mach-kernel",
+      "dataders"
+    ],
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#6a6a6a",
+      "fontSize": 11,
+      "margin": 10,
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#d4d4d4",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    },
+    "splitNumber": 3
+  },
+  "series": [
+    {
+      "name": "bugs",
+      "type": "bar",
+      "data": [
+        15,
+        5,
+        1,
+        3,
+        2,
+        3,
+        4,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        2
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#0777b3"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#6a6a6a",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    },
+    {
+      "name": "enhancements",
+      "type": "bar",
+      "data": [
+        1,
+        1,
+        6,
+        3,
+        2,
+        2,
+        1,
+        2,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#bd4e35"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#6a6a6a",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    }
+  ],
+  "legend": {
+    "data": [
+      "bugs",
+      "enhancements"
+    ],
+    "top": 0,
+    "textStyle": {
+      "color": "#6a6a6a",
+      "fontSize": 11
+    },
+    "itemWidth": 14,
+    "itemHeight": 3,
+    "itemGap": 24
+  },
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+},
+        dark: {
+  "backgroundColor": "transparent",
+  "animation": false,
+  "tooltip": {
+    "trigger": "axis",
+    "axisPointer": {
+      "type": "shadow"
+    },
+    "backgroundColor": "#424242",
+    "borderColor": "#3a3a3a",
+    "textStyle": {
+      "color": "#ffffff"
+    }
+  },
+  "grid": {
+    "left": "2%",
+    "right": "2%",
+    "top": "14%",
+    "bottom": "8%",
+    "containLabel": true
+  },
+  "xAxis": {
+    "type": "category",
+    "data": [
+      "vgapeyev",
+      "lottaquestions",
+      "mishamsk",
+      "akbog",
+      "HannanNaeem",
+      "xuliangs",
+      "wizardxz",
+      "gshank",
+      "dbeatty10",
+      "felipecrv",
+      "VersusFacit",
+      "ChenyuLInx",
+      "j-clemons",
+      "mach-kernel",
+      "dataders"
+    ],
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "interval": 0,
+      "rotate": 45,
+      "overflow": "truncate",
+      "ellipsis": "...",
+      "width": 100
+    }
+  },
+  "yAxis": {
+    "type": "value",
+    "axisLine": {
+      "show": false
+    },
+    "axisTick": {
+      "show": false
+    },
+    "axisLabel": {
+      "color": "#888888",
+      "fontSize": 11,
+      "margin": 10,
+      "formatter": function(value) {
+  if (value == null) return '';
+  var abs = Math.abs(value);
+  var neg = value < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = p + lf(s,1) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = p + lf(s,1) + 'm';
+  } else if (abs >= 1e3) {
+    var s = abs / 1e3;
+    r = p + lf(s,1) + 'k';
+  } else {
+    r = abs === Math.floor(abs) ? p + Math.floor(abs) : p + lf(abs,1);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+    },
+    "splitLine": {
+      "lineStyle": {
+        "color": "#3a3a3a",
+        "type": [
+          2,
+          3
+        ],
+        "opacity": 0.6
+      }
+    },
+    "splitNumber": 3
+  },
+  "series": [
+    {
+      "name": "bugs",
+      "type": "bar",
+      "data": [
+        15,
+        5,
+        1,
+        3,
+        2,
+        3,
+        4,
+        3,
+        2,
+        2,
+        2,
+        2,
+        2,
+        3,
+        2
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#3da8e0"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#ffffff",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    },
+    {
+      "name": "enhancements",
+      "type": "bar",
+      "data": [
+        1,
+        1,
+        6,
+        3,
+        2,
+        2,
+        1,
+        2,
+        0,
+        1,
+        1,
+        1,
+        1,
+        0,
+        1
+      ],
+      "barMaxWidth": 32,
+      "itemStyle": {
+        "color": "#e06b4e"
+      },
+      "label": {
+        "show": false,
+        "position": "top",
+        "color": "#ffffff",
+        "fontSize": 10,
+        "offset": [
+          0,
+          -2
+        ],
+        "formatter": function(params) {
+  var v = params.value;
+  if (v == null) return '';
+  if (Array.isArray(v)) v = v[1];
+  var abs = Math.abs(v);
+  var neg = v < 0;
+  var p = false ? "$" : '';
+  var lf = function(v, d) { return v.toFixed(d); };
+  var r;
+  if (abs >= 1e9) {
+    var s = abs / 1e9;
+    r = s >= 100 ? p + lf(s,1) + 'b' : s >= 10 ? p + lf(s,2) + 'b' : p + lf(s,3) + 'b';
+  } else if (abs >= 1e6) {
+    var s = abs / 1e6;
+    r = s >= 100 ? p + lf(s,1) + 'm' : s >= 10 ? p + lf(s,2) + 'm' : p + lf(s,3) + 'm';
+  } else if (abs >= 1e4) {
+    var s = abs / 1e3;
+    r = s >= 100 ? p + lf(s,1) + 'k' : p + lf(s,2) + 'k';
+  } else if (abs >= 1e3) {
+    r = p + abs.toLocaleString("en-US", {maximumFractionDigits: 0});
+  } else {
+    r = abs === Math.floor(abs) ? p + abs : p + lf(abs,2);
+  }
+  return neg ? '(' + r + ')' : r;
+}
+      }
+    }
+  ],
+  "legend": {
+    "data": [
+      "bugs",
+      "enhancements"
+    ],
+    "top": 0,
+    "textStyle": {
+      "color": "#888888",
+      "fontSize": 11
+    },
+    "itemWidth": 14,
+    "itemHeight": 3,
+    "itemGap": 24
+  },
+  "textStyle": {
+    "fontFamily": "'Helvetica Neue', Helvetica, Arial, sans-serif"
+  }
+}
+      };
+      var currentTheme = document.body.classList.contains('theme-dark') ? 'dark' : 'light';
+      chart.setOption(window.chartOptions['chart_11'][currentTheme]);
+      window.addEventListener('resize', function() { chart.resize(); });
+    })();
+
+    // Sparkline tooltip interactivity
+    document.querySelectorAll('.spark-hit').forEach(hit => {
+      hit.addEventListener('mouseenter', function() {
+        const tooltip = this.closest('.spark-tooltip');
+        if (tooltip) {
+          tooltip.setAttribute('data-tooltip', this.dataset.idx + ': ' + this.dataset.val);
+        }
+      });
+      hit.addEventListener('mouseleave', function() {
+        const tooltip = this.closest('.spark-tooltip');
+        if (tooltip && tooltip.dataset.default) {
+          tooltip.setAttribute('data-tooltip', tooltip.dataset.default);
+        }
+      });
+    });
+
+    
+    // --- mviz PNG export ---
+    (function() {
+      var PRESETS = {"square":{"width":1080,"height":1080,"label":"Square (1080 × 1080)"},"portrait":{"width":1080,"height":1350,"label":"Portrait (1080 × 1350)"},"landscape":{"width":1920,"height":1080,"label":"Landscape (1920 × 1080)"}};
+      var CFG = {"LOGICAL_BASE":360,"TITLE_FONT_SIZE":14,"TITLE_PADDING_TOP":12,"TITLE_PADDING_BOTTOM":8,"TITLE_PADDING_LEFT":12,"BG_LIGHT":"#f8f8f8","BG_DARK":"#231f20","TEXT_LIGHT":"#231f20","TEXT_DARK":"#eeeeee"};
+      var menu = null;
+
+      function removeMenu() {
+        if (menu && menu.parentNode) { menu.parentNode.removeChild(menu); menu = null; }
+      }
+
+      function isDarkTheme() {
+        return document.body.classList.contains('theme-dark');
+      }
+
+      function getChartBg() {
+        var bg = getComputedStyle(document.body).backgroundColor;
+        return (bg && bg !== 'rgba(0, 0, 0, 0)') ? bg : (isDarkTheme() ? CFG.BG_DARK : CFG.BG_LIGHT);
+      }
+
+      function getChartTitle(chartEl) {
+        var gridItem = chartEl.closest('.grid-item');
+        if (gridItem) {
+          var h3 = gridItem.querySelector('.chart-title');
+          if (h3) return h3.textContent.trim();
+        }
+        return '';
+      }
+
+      function slugify(text) {
+        return text.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '') || 'chart';
+      }
+
+      function renderChart(chartId, drawW, drawH) {
+        var tmpDiv = document.createElement('div');
+        tmpDiv.style.cssText = 'position:absolute;left:-9999px;top:-9999px;width:' + drawW + 'px;height:' + drawH + 'px;';
+        document.body.appendChild(tmpDiv);
+
+        var tmpChart = echarts.init(tmpDiv, null, {renderer: 'canvas', width: drawW, height: drawH});
+        var currentTheme = isDarkTheme() ? 'dark' : 'light';
+        var opts = window.chartOptions && window.chartOptions[chartId];
+        var instance = window.chartInstances[chartId];
+        tmpChart.setOption(opts ? opts[currentTheme] : instance.getOption());
+
+        return { div: tmpDiv, chart: tmpChart };
+      }
+
+      function getThemeFont() {
+        var fontFamily = getComputedStyle(document.body).fontFamily;
+        return fontFamily || '"Helvetica Neue", Helvetica, Arial, sans-serif';
+      }
+
+      function drawTitle(ctx, title, pixelRatio) {
+        ctx.fillStyle = isDarkTheme() ? CFG.TEXT_DARK : CFG.TEXT_LIGHT;
+        ctx.font = 'bold ' + Math.round(CFG.TITLE_FONT_SIZE * pixelRatio) + 'px ' + getThemeFont();
+        ctx.textAlign = 'left';
+        ctx.textBaseline = 'top';
+        ctx.fillText(
+          title.toUpperCase(),
+          Math.round(CFG.TITLE_PADDING_LEFT * pixelRatio),
+          Math.round(CFG.TITLE_PADDING_TOP * pixelRatio)
+        );
+      }
+
+      function triggerDownload(canvas, filename) {
+        var a = document.createElement('a');
+        a.href = canvas.toDataURL('image/png');
+        a.download = filename;
+        a.click();
+      }
+
+      function exportChart(chartId, presetKey) {
+        if (!window.chartInstances || !window.chartInstances[chartId]) return;
+
+        var preset = PRESETS[presetKey];
+        var targetW = preset.width;
+        var targetH = preset.height;
+        var pixelRatio = targetW / CFG.LOGICAL_BASE;
+        var logicalH = Math.round(targetH / pixelRatio);
+
+        // Reserve space for title
+        var chartEl = document.getElementById(chartId);
+        var title = getChartTitle(chartEl);
+        var titleLogicalH = title ? (CFG.TITLE_PADDING_TOP + CFG.TITLE_FONT_SIZE + CFG.TITLE_PADDING_BOTTOM) : 0;
+
+        // ECharts reflows to fill its container — give it the full space
+        var tmp = renderChart(chartId, CFG.LOGICAL_BASE, logicalH - titleLogicalH);
+
+        // Wait a frame for render, then composite
+        setTimeout(function() {
+          var chartDataUrl = tmp.chart.getDataURL({type: 'png', pixelRatio: pixelRatio, backgroundColor: 'transparent'});
+          var titlePxH = Math.round(titleLogicalH * pixelRatio);
+
+          var canvas = document.createElement('canvas');
+          canvas.width = targetW;
+          canvas.height = targetH;
+          var ctx = canvas.getContext('2d');
+
+          ctx.fillStyle = getChartBg();
+          ctx.fillRect(0, 0, targetW, targetH);
+
+          if (title) { drawTitle(ctx, title, pixelRatio); }
+
+          var img = new Image();
+          img.onload = function() {
+            ctx.drawImage(img, 0, titlePxH, targetW, targetH - titlePxH);
+            triggerDownload(canvas, slugify(title || 'chart') + '-' + presetKey + '.png');
+            tmp.chart.dispose();
+            document.body.removeChild(tmp.div);
+          };
+          img.src = chartDataUrl;
+        }, 100);
+      }
+
+      function showMenu(e, chartId) {
+        e.preventDefault();
+        removeMenu();
+
+        menu = document.createElement('div');
+        menu.className = 'mviz-export-menu';
+
+        var header = document.createElement('div');
+        header.className = 'mviz-export-menu-header';
+        header.textContent = 'Save as PNG';
+        menu.appendChild(header);
+
+        var keys = ['square', 'portrait', 'landscape'];
+        for (var i = 0; i < keys.length; i++) {
+          (function(key) {
+            var item = document.createElement('div');
+            item.className = 'mviz-export-menu-item';
+            item.textContent = PRESETS[key].label;
+            item.addEventListener('click', function() {
+              removeMenu();
+              exportChart(chartId, key);
+            });
+            menu.appendChild(item);
+          })(keys[i]);
+        }
+
+        // Position near cursor, clamped to viewport
+        var x = e.clientX;
+        var y = e.clientY;
+        document.body.appendChild(menu);
+        var mw = menu.offsetWidth;
+        var mh = menu.offsetHeight;
+        if (x + mw > window.innerWidth) x = window.innerWidth - mw - 4;
+        if (y + mh > window.innerHeight) y = window.innerHeight - mh - 4;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+      }
+
+      // Dismiss on click elsewhere
+      document.addEventListener('click', removeMenu);
+      document.addEventListener('contextmenu', function(e) {
+        // Only show for chart containers that have an ECharts instance
+        var target = e.target;
+        var el = target.closest ? target.closest('[id]') : null;
+        while (el) {
+          if (window.chartInstances && window.chartInstances[el.id]) {
+            showMenu(e, el.id);
+            return;
+          }
+          el = el.parentElement ? el.parentElement.closest('[id]') : null;
+        }
+        // Not a chart — let default context menu through
+        removeMenu();
+      });
+    })();
+  </script>
+</body>
+</html>

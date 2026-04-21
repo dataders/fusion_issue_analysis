@@ -148,6 +148,7 @@ dmypy.json
 data/
 extract/.dlt/secrets.toml
 extract/github_issues/
+extract/logs/
 
 # dbt
 transform/target/
@@ -158,7 +159,14 @@ transform/.user.yml
 # uv
 main.py
 
+# Node modules
+node_modules/
+dashboard/evidence/node_modules/
+dashboard/observable/node_modules/
+
 # Dashboard build artifacts (index.html is the bakeoff wrapper, tracked in git)
+dashboard/app.html
+dashboard/app_myspace.html
 dashboard/prefab/app.html
 dashboard/prefab/app_myspace.html
 dashboard/mviz/index.html
@@ -166,12 +174,17 @@ dashboard/mviz/data/
 dashboard/marimo.html
 dashboard/ggsql/index.html
 dashboard/__marimo__/
+dashboard/marimo/__marimo__/
 dashboard/observable/dist/
 dashboard/observable/src/.observablehq/
 dashboard/evidence/build/
 dashboard/evidence/sources/fusion/*.csv
 dashboard/evidence/sources/fusion/connection.yaml
 dashboard/evidence/sources/fusion/initialize.sql
+dashboard/evidence/.evidence/
+
+# Claude Code session state
+.claude/scheduled_tasks.lock
 
 # pytype static type analyzer
 .pytype/

@@ -1,0 +1,304 @@
+version: 2
+
+models:
+  - name: summary_kpis
+    description: Single-row snapshot of issue health KPIs (rolling 28-day windows)
+    columns:
+      - name: open_issues
+        tests:
+          - not_null
+      - name: opened_4w
+        tests:
+          - not_null
+      - name: closed_4w
+        tests:
+          - not_null
+      - name: stale_count
+        tests:
+          - not_null
+
+  - name: cumulative_flow
+    description: Weekly cumulative opened/closed with bug/enhancement breakdown
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: cumulative_opened
+        tests:
+          - not_null
+      - name: cumulative_closed
+        tests:
+          - not_null
+
+  - name: weekly_flow
+    description: Non-cumulative weekly opened vs closed counts
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: opened
+        tests:
+          - not_null
+      - name: closed
+        tests:
+          - not_null
+
+  - name: bug_velocity
+    description: Median days to close bugs by week (weeks with >= 3 closures)
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: median_days
+        tests:
+          - not_null
+
+  - name: enh_velocity
+    description: Median days to close enhancements by week (weeks with >= 2 closures)
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: median_days
+        tests:
+          - not_null
+
+  - name: velocity
+    description: Combined bug and enhancement close velocity — one row per week per category
+    columns:
+      - name: week
+        tests:
+          - not_null
+      - name: issue_category
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['bug', 'enhancement']
+      - name: median_days
+        tests:
+          - not_null
+      - name: n
+        tests:
+          - not_null
+
+  - name: response_pctiles
+    description: Weekly p25/p50/p75 time to first response in hours
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: p25
+        tests:
+          - not_null
+      - name: p50
+        tests:
+          - not_null
+      - name: p75
+        tests:
+          - not_null
+
+  - name: age_distribution
+    description: Open issue counts by age bucket and category
+    columns:
+      - name: issue_category
+        tests:
+          - not_null
+      - name: age_bucket
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
+      - name: issue_count
+        tests:
+          - not_null
+
+  - name: close_by_label
+    description: Median days to close by label (labels with >= 10 closures)
+    columns:
+      - name: label_name
+        tests:
+          - not_null
+          - unique
+      - name: median_days_to_close
+        tests:
+          - not_null
+      - name: closed_count
+        tests:
+          - not_null
+
+  - name: triage_health
+    description: Single-row triage health metrics for open non-EPIC issues
+    columns:
+      - name: total_open
+        tests:
+          - not_null
+      - name: pct_labeled
+        tests:
+          - not_null
+      - name: pct_assigned
+        tests:
+          - not_null
+      - name: pct_milestoned
+        tests:
+          - not_null
+      - name: pct_typed
+        tests:
+          - not_null
+
+  - name: epic_list
+    description: All EPIC issues with metadata
+    columns:
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
+      - name: state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'CLOSED']
+
+  - name: open_issues_table
+    description: Top 50 oldest open non-EPIC issues
+    columns:
+      - name: title
+        tests:
+          - not_null
+      - name: type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['bug', 'enhancement', 'other']
+      - name: age_days
+        tests:
+          - not_null
+
+  - name: assignee_workload
+    description: Open issue counts by assignee (top 15)
+    columns:
+      - name: assignee_login
+        tests:
+          - not_null
+          - unique
+      - name: open_issues
+        tests:
+          - not_null
+      - name: bugs
+        tests:
+          - not_null
+      - name: enhancements
+        tests:
+          - not_null
+
+  - name: community_priorities
+    description: Most-reacted open non-EPIC issues (top 10)
+    columns:
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
+      - name: reactions_total_count
+        tests:
+          - not_null
+
+  - name: leaderboard
+    description: Top issue closers by count (top 15)
+    columns:
+      - name: author_login
+        tests:
+          - not_null
+          - unique
+      - name: issues_closed
+        tests:
+          - not_null
+
+  - name: milestone_burndown_weekly
+    description: Weekly burndown for open milestones
+    columns:
+      - name: date_day
+        tests:
+          - not_null
+      - name: milestone_title
+        tests:
+          - not_null
+      - name: open_at_date
+        tests:
+          - not_null
+
+  - name: issues
+    description: Full issue dump — used by Evidence.dev source connector
+    columns:
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
+      - name: state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'CLOSED']
+      - name: issue_category
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['bug', 'enhancement', 'other', 'epic']
+
+  - name: open_by_category
+    description: Open issue count per category
+    columns:
+      - name: issue_category
+        tests:
+          - not_null
+          - unique
+      - name: count
+        tests:
+          - not_null
+
+  - name: issues_opened_per_week
+    description: Weekly count of newly opened issues (all categories)
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: issues_opened
+        tests:
+          - not_null
+
+  - name: open_vs_closed_by_category
+    description: Issue counts by category and state
+    columns:
+      - name: issue_category
+        tests:
+          - not_null
+      - name: state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'CLOSED']
+      - name: n
+        tests:
+          - not_null
+
+  - name: top_authors
+    description: Top issue authors by count opened (top 15)
+    columns:
+      - name: author_login
+        tests:
+          - not_null
+          - unique
+      - name: issues_opened
+        tests:
+          - not_null

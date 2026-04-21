@@ -25,3 +25,5 @@ models:
       +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"
     metrics:
       +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"
+    dashboard:
+      +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"

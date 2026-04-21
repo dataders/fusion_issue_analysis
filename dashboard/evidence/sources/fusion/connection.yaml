@@ -1,3 +1,4 @@
 name: fusion
+options:
+  filename: md:fusion_issues
 type: duckdb
-options: {}

@@ -1,1 +1,1 @@
-SELECT * FROM fct_issues
+SELECT * FROM issues

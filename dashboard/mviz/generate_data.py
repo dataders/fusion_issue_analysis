@@ -11,7 +11,6 @@ import duckdb
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
-QUERIES_DIR = os.path.join(HERE, "queries")
 
 if os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
@@ -24,11 +23,6 @@ def get_connection():
     if not DB_PATH.startswith("md:"):
         con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
     return con
-
-
-def load_sql(name: str) -> str:
-    with open(os.path.join(QUERIES_DIR, f"{name}.sql")) as f:
-        return f.read()
 
 
 def query(con, sql: str) -> list[dict]:
@@ -47,7 +41,7 @@ def main():
     con = get_connection()
 
     # -- Summary stats --
-    summary = query(con, load_sql("summary"))[0]
+    summary = query(con, "SELECT * FROM summary_kpis")[0]
     net_flow = summary["closed_4w"] - summary["opened_4w"]
     median_close = summary["rolling_median_close_days"]
     sla_pct = summary["pct_responded_48h"]
@@ -66,11 +60,11 @@ def main():
     write_json("kpi_stale.json", {"value": summary["stale_count"], "label": "Stale Issues (30d+)"})
 
     # -- Cumulative flow --
-    write_json("cumulative_flow.json", query(con, load_sql("cumulative_flow")))
+    write_json("cumulative_flow.json", query(con, "SELECT * FROM cumulative_flow"))
 
     # -- Bug + enhancement velocity (merged) --
-    bug_velocity = query(con, load_sql("bug_velocity"))
-    enh_velocity = query(con, load_sql("enh_velocity"))
+    bug_velocity = query(con, "SELECT * FROM bug_velocity")
+    enh_velocity = query(con, "SELECT * FROM enh_velocity")
     velocity_map = {}
     for r in bug_velocity:
         velocity_map[r["week"]] = {"week": r["week"], "bugs": r["median_days"], "enhancements": None}
@@ -82,10 +76,10 @@ def main():
     write_json("velocity.json", sorted(velocity_map.values(), key=lambda x: x["week"]))
 
     # -- Response time percentiles --
-    write_json("response_pctiles.json", query(con, load_sql("response_pctiles")))
+    write_json("response_pctiles.json", query(con, "SELECT * FROM response_pctiles"))
 
     # -- Issue age distribution (pivoted) --
-    age_dist = query(con, load_sql("age_distribution"))
+    age_dist = query(con, "SELECT * FROM age_distribution")
     age_buckets = ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
     age_chart_data = []
     for bucket in age_buckets:
@@ -99,13 +93,13 @@ def main():
     write_json("age_distribution.json", age_chart_data)
 
     # -- Close time by label --
-    write_json("close_by_label.json", query(con, load_sql("close_by_label")))
+    write_json("close_by_label.json", query(con, "SELECT * FROM close_by_label"))
 
     # -- Assignee workload --
-    write_json("assignee_workload.json", query(con, load_sql("assignee_workload")))
+    write_json("assignee_workload.json", query(con, "SELECT * FROM assignee_workload"))
 
     # -- Community priorities --
-    write_json("community_priorities.json", query(con, load_sql("community_priorities")))
+    write_json("community_priorities.json", query(con, "SELECT * FROM community_priorities"))
 
     con.close()
     print("\nDone. All data files written to mviz/data/")

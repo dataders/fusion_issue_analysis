@@ -44,70 +44,18 @@ def query(sql: str) -> list[dict]:
 
 # ── Data queries (same as main dashboard) ──────────────────────────
 
-summary_cards = query("""
-    with recent_window as (
-        select
-            count(case when created_at >= current_date - interval '28 days' then 1 end) as opened_4w,
-            count(case when closed_at >= current_date - interval '28 days' then 1 end) as closed_4w,
-            count(case when state = 'OPEN' then 1 end) as open_issues,
-            count(*) as total_issues
-        from fct_issues
-    ),
-    rolling_close as (
-        select round(median(hours_to_close) / 24, 1) as rolling_median_close_days
-        from fct_issues where closed_at >= current_date - interval '28 days'
-    ),
-    sla as (
-        select round(
-            count(case when hours_to_first_response <= 48 then 1 end)::float
-            / nullif(count(case when hours_to_first_response is not null then 1 end), 0) * 100, 0
-        ) as pct_responded_48h
-        from fct_issues where created_at >= current_date - interval '28 days'
-    ),
-    stale as (
-        select count(*) as stale_count
-        from fct_issues where state = 'OPEN' and updated_at < current_date - interval '30 days'
-    )
-    select * from recent_window cross join rolling_close cross join sla cross join stale
-""")[0]
+summary_cards = query("SELECT * FROM summary_kpis")[0]
 
 net_flow = summary_cards["closed_4w"] - summary_cards["opened_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
 
-cumulative_flow = query("""
-    with weeks as (
-        select date_trunc('week', created_at)::date as week, count(*) as opened from fct_issues group by 1
-    ), closed_weeks as (
-        select date_trunc('week', closed_at)::date as week, count(*) as closed from fct_issues where closed_at is not null group by 1
-    ), combined as (
-        select coalesce(w.week, c.week) as week, coalesce(w.opened, 0) as opened, coalesce(c.closed, 0) as closed
-        from weeks w full outer join closed_weeks c on w.week = c.week
-    )
-    select strftime(week, '%Y-%m-%d') as week,
-        sum(opened) over (order by week) as cumulative_opened,
-        sum(closed) over (order by week) as cumulative_closed
-    from combined order by week
-""")
+cumulative_flow = query("SELECT * FROM cumulative_flow")
 
-response_pctiles = query("""
-    select strftime(date_trunc('week', created_at), '%Y-%m-%d') as week,
-        round(quantile_cont(hours_to_first_response, 0.50), 1) as p50
-    from fct_issues where hours_to_first_response is not null
-    group by date_trunc('week', created_at) having count(*) >= 3 order by week
-""")
+response_pctiles = query("SELECT * FROM response_pctiles")
 
-community_priorities = query("""
-    select issue_number, title, reactions_total_count, comments_total_count,
-        round(datediff('day', created_at, current_date), 0) as age_days
-    from fct_issues where state = 'OPEN' and reactions_total_count > 0
-    order by reactions_total_count desc limit 8
-""")
+community_priorities = query("SELECT * FROM community_priorities")
 
-assignee_workload = query("""
-    select a.assignee_login, count(*) as open_issues
-    from stg_issue_assignees a inner join fct_issues f on a.issue_dlt_id = f.issue_dlt_id
-    where f.state = 'OPEN' group by a.assignee_login order by open_issues desc limit 10
-""")
+assignee_workload = query("SELECT * FROM assignee_workload")
 
 GUESTBOOK = [
     ("xX_d4ta_qu33n_Xx", "2003-07-14", "omg ur dashboard is SO cool!! add me 2 ur top 8 plzzz"),

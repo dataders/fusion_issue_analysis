@@ -1,0 +1,73 @@
+PORT ?= 8081
+
+.DEFAULT_GOAL := help
+.PHONY: serve build dbt extract prefab ggsql mviz marimo observable evidence kill-server clean help
+
+# ── Top-level ────────────────────────────────────────────────────────────────
+
+## serve        Build all static exports and open the bakeoff at localhost:PORT
+serve: build kill-server
+	@echo "Serving bakeoff at http://localhost:$(PORT)"
+	@cd dashboard && uv run python3 -m http.server $(PORT) &
+	@sleep 1 && open http://localhost:$(PORT)
+
+## build        Build every dashboard's static output (no serve)
+build: prefab ggsql mviz marimo observable evidence
+
+## dbt          Run dbt build against local DuckDB (dev target)
+dbt:
+	cd transform && dbtf build --profiles-dir . --target dev --static-analysis off
+
+## extract      Pull latest GitHub issues into local DuckDB
+extract:
+	cd extract && uv run python3 run.py
+
+# ── Per-framework ─────────────────────────────────────────────────────────────
+
+## prefab       Export both Prefab dashboards to static HTML
+prefab:
+	uv run prefab export dashboard/prefab/app.py          -o dashboard/prefab/app.html
+	uv run prefab export dashboard/prefab/app_myspace.py  -o dashboard/prefab/app_myspace.html
+
+## ggsql        Build ggsql + Vega-Lite dashboard
+ggsql:
+	uv run python3 dashboard/ggsql/build.py
+
+## mviz         Generate data files and render mviz dashboard
+mviz:
+	uv run python3 dashboard/mviz/generate_data.py
+	npx --yes mviz dashboard/mviz/dashboard.md -o dashboard/mviz.html
+
+## marimo       Export Marimo notebook to static HTML
+marimo:
+	uv run marimo export html dashboard/marimo/app.py -o dashboard/marimo.html
+
+## observable   Build Observable Framework dashboard (requires npm)
+observable:
+	cd dashboard/observable && npm run build
+
+## evidence     Build Evidence.dev dashboard (requires MOTHERDUCK_TOKEN + npm)
+evidence:
+	cd dashboard/evidence && npm run build
+
+# ── Utilities ─────────────────────────────────────────────────────────────────
+
+## kill-server  Kill whatever is running on PORT (default: 8081)
+kill-server:
+	@lsof -ti:$(PORT) | xargs kill -9 2>/dev/null || true
+
+## clean        Remove all generated dashboard files
+clean:
+	rm -f  dashboard/prefab/app.html dashboard/prefab/app_myspace.html
+	rm -f  dashboard/ggsql/index.html dashboard/mviz.html dashboard/marimo.html
+	rm -rf dashboard/observable/dist dashboard/evidence/build dashboard/mviz/data
+
+## help         Show this help
+help:
+	@echo "Usage: make <target> [PORT=8081]"
+	@echo ""
+	@grep -E '^## ' Makefile | sed 's/## /  /'
+	@echo ""
+	@echo "Notes:"
+	@echo "  evidence requires MOTHERDUCK_TOKEN (uses MotherDuck connection)"
+	@echo "  observable and evidence require npm (node_modules already installed)"
