@@ -30,7 +30,7 @@ uv run prefab export dashboard/app_myspace.py -o dashboard/app_myspace.html
 
 - `extract/` — dlt pipeline (GitHub GraphQL → parquet or MotherDuck)
 - `transform/` — dbt Fusion project (staging → marts → metrics)
-- `dashboard/` — Visualization framework bakeoff: `index.html` = neutral tab wrapper; `app.py` = Prefab health; `app_myspace.py` = Prefab MySpace; `ggsql_spike/` = ggsql + Vega-Lite; `mviz_dashboard.md` = mviz
+- `dashboard/` — Visualization framework bakeoff: `index.html` = neutral tab wrapper; `app.py` = Prefab health; `app_myspace.py` = Prefab MySpace; `ggsql/` = ggsql + Vega-Lite; `mviz_dashboard.md` = mviz
 - `data/` — gitignored, local DuckDB + parquet files
 
 ## Conventions

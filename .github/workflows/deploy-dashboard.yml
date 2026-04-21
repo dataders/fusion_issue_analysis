@@ -47,7 +47,7 @@ jobs:
       - name: Build dbt models (local DuckDB)
         run: |
           cd transform
-          dbt build --profiles-dir . --static-analysis off
+          dbt build --profiles-dir . --static-analysis baseline
 
       - name: Build dbt models (MotherDuck prod)
         # TODO: Remove timeout + || true once dbt-labs/dbt-fusion#1574 is fixed
@@ -58,25 +58,49 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd transform
-          dbt build --profiles-dir . --target prod --static-analysis off
+          dbt build --profiles-dir . --target prod --static-analysis strict
 
       - name: Export Prefab dashboards
         env:
           MOTHERDUCK_TOKEN: ""
         run: |
-          for f in dashboard/app*.py; do
+          for f in dashboard/prefab/app*.py; do
             name=$(basename "$f" .py)
-            uv run prefab export "$f" -o "dashboard/${name}.html" || true
+            uv run prefab export "$f" -o "dashboard/prefab/${name}.html" || true
           done
 
       - name: Build mviz dashboard
         run: |
-          cd dashboard
+          cd dashboard/mviz
           uv run python generate_data.py
-          npx mviz mviz_dashboard.md -o mviz.html
+          npx mviz dashboard.md -o index.html
 
       - name: Build ggsql spike dashboard
-        run: uv run dashboard/ggsql_spike/build.py
+        run: uv run dashboard/ggsql/build.py
+
+      - name: Build Observable Framework dashboard
+        run: |
+          cd dashboard/observable
+          npm ci
+          npm run build
+
+      - name: Configure Evidence.dev
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          EVIDENCE_BASE_PATH: /fusion_issue_analysis/evidence/build
+        run: uv run python3 dashboard/evidence/generate_sources.py
+
+      - name: Build Evidence.dev dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          cd dashboard/evidence
+          npm ci
+          ./node_modules/.bin/evidence sources
+          npm run build
+
+      - name: Export Marimo dashboard
+        run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3

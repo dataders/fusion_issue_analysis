@@ -26,7 +26,7 @@ from prefab_ui.components import (
 )
 from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
 if os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"

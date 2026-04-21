@@ -159,12 +159,19 @@ transform/.user.yml
 main.py
 
 # Dashboard build artifacts (index.html is the bakeoff wrapper, tracked in git)
-dashboard/app.html
-dashboard/app_myspace.html
-dashboard/index-bundled.html
-dashboard/mviz.html
-dashboard/ggsql_spike/index.html
-dashboard/data/
+dashboard/prefab/app.html
+dashboard/prefab/app_myspace.html
+dashboard/mviz/index.html
+dashboard/mviz/data/
+dashboard/marimo.html
+dashboard/ggsql/index.html
+dashboard/__marimo__/
+dashboard/observable/dist/
+dashboard/observable/src/.observablehq/
+dashboard/evidence/build/
+dashboard/evidence/sources/fusion/*.csv
+dashboard/evidence/sources/fusion/connection.yaml
+dashboard/evidence/sources/fusion/initialize.sql
 
 # pytype static type analyzer
 .pytype/

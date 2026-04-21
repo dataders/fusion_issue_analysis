@@ -25,7 +25,15 @@ from prefab_ui.components import (
 )
 from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), ".."))
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
+HERE = os.path.dirname(os.path.abspath(__file__))
+QUERIES_DIR = os.path.join(HERE, "queries")
+
+
+def load_sql(name: str) -> str:
+    with open(os.path.join(QUERIES_DIR, f"{name}.sql")) as f:
+        return f.read()
+
 
 if os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
@@ -41,108 +49,20 @@ def query(sql: str) -> list[dict]:
     return result.to_dict("records")
 
 
-# ── Core filter: exclude EPICs from health metrics ─────────────────
-CORE_FILTER = "issue_category != 'epic'"
-
 # ── Summary cards ──────────────────────────────────────────────────
 
-summary_cards = query(f"""
-    with recent_window as (
-        select
-            count(case when created_at >= current_date - interval '28 days' then 1 end) as opened_4w,
-            count(case when closed_at >= current_date - interval '28 days' then 1 end) as closed_4w,
-            count(case when state = 'OPEN' then 1 end) as open_issues,
-            count(*) as total_issues
-        from fct_issues where {CORE_FILTER}
-    ),
-    rolling_close as (
-        select round(median(hours_to_close) / 24, 1) as rolling_median_close_days
-        from fct_issues
-        where closed_at >= current_date - interval '28 days' and {CORE_FILTER}
-    ),
-    sla as (
-        select
-            round(
-                count(case when hours_to_first_response <= 48 then 1 end)::float
-                / nullif(count(case when hours_to_first_response is not null then 1 end), 0)
-                * 100, 0
-            ) as pct_responded_48h
-        from fct_issues
-        where created_at >= current_date - interval '28 days' and {CORE_FILTER}
-    ),
-    stale as (
-        select count(*) as stale_count
-        from fct_issues
-        where state = 'OPEN' and updated_at < current_date - interval '30 days' and {CORE_FILTER}
-    )
-    select * from recent_window cross join rolling_close cross join sla cross join stale
-""")[0]
+summary_cards = query(load_sql("summary_kpis"))[0]
 
 net_flow = summary_cards["closed_4w"] - summary_cards["opened_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
 
 # ── Cumulative flow: bugs vs enhancements ──────────────────────────
 
-cumulative_flow = query(f"""
-    with weeks as (
-        select
-            date_trunc('week', created_at)::date as week,
-            count(*) as opened,
-            count(case when issue_category = 'bug' then 1 end) as bugs_opened,
-            count(case when issue_category = 'enhancement' then 1 end) as enhancements_opened
-        from fct_issues where {CORE_FILTER}
-        group by 1
-    ),
-    closed_weeks as (
-        select
-            date_trunc('week', closed_at)::date as week,
-            count(*) as closed,
-            count(case when issue_category = 'bug' then 1 end) as bugs_closed,
-            count(case when issue_category = 'enhancement' then 1 end) as enhancements_closed
-        from fct_issues where closed_at is not null and {CORE_FILTER}
-        group by 1
-    ),
-    combined as (
-        select
-            coalesce(w.week, c.week) as week,
-            coalesce(w.opened, 0) as opened,
-            coalesce(c.closed, 0) as closed,
-            coalesce(w.bugs_opened, 0) as bugs_opened,
-            coalesce(c.bugs_closed, 0) as bugs_closed,
-            coalesce(w.enhancements_opened, 0) as enh_opened,
-            coalesce(c.enhancements_closed, 0) as enh_closed
-        from weeks w
-        full outer join closed_weeks c on w.week = c.week
-    )
-    select
-        strftime(week, '%Y-%m-%d') as week,
-        sum(opened) over (order by week) as cumulative_opened,
-        sum(closed) over (order by week) as cumulative_closed,
-        sum(bugs_opened) over (order by week) as cum_bugs_opened,
-        sum(bugs_closed) over (order by week) as cum_bugs_closed,
-        sum(enh_opened) over (order by week) as cum_enh_opened,
-        sum(enh_closed) over (order by week) as cum_enh_closed
-    from combined
-    order by week
-""")
+cumulative_flow = query(load_sql("cumulative_flow"))
 
 # ── Issue age distribution ─────────────────────────────────────────
 
-age_dist = query(f"""
-    select
-        issue_category,
-        case
-            when datediff('day', created_at, current_date) <= 7 then '0-7d'
-            when datediff('day', created_at, current_date) <= 30 then '8-30d'
-            when datediff('day', created_at, current_date) <= 90 then '31-90d'
-            when datediff('day', created_at, current_date) <= 180 then '91-180d'
-            else '180d+'
-        end as age_bucket,
-        count(*) as issue_count
-    from fct_issues
-    where state = 'OPEN' and {CORE_FILTER}
-    group by 1, 2
-""")
+age_dist = query(load_sql("age_distribution"))
 
 # Pivot into chart format
 age_buckets = ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
@@ -155,42 +75,13 @@ for bucket in age_buckets:
 
 # ── Response time percentile bands ─────────────────────────────────
 
-response_pctiles = query(f"""
-    select
-        strftime(date_trunc('week', created_at), '%Y-%m-%d') as week,
-        round(quantile_cont(hours_to_first_response, 0.25), 1) as p25,
-        round(quantile_cont(hours_to_first_response, 0.50), 1) as p50,
-        round(quantile_cont(hours_to_first_response, 0.75), 1) as p75
-    from fct_issues
-    where hours_to_first_response is not null and {CORE_FILTER}
-    group by date_trunc('week', created_at)
-    having count(*) >= 3
-    order by week
-""")
+response_pctiles = query(load_sql("response_pctiles"))
 
 # ── Bug vs Enhancement velocity ───────────────────────────────────
 
-bug_velocity = query("""
-    select
-        strftime(date_trunc('week', closed_at), '%Y-%m-%d') as week,
-        round(median(hours_to_close) / 24, 1) as median_days
-    from fct_issues
-    where issue_category = 'bug' and closed_at is not null
-    group by date_trunc('week', closed_at)
-    having count(*) >= 3
-    order by week
-""")
+bug_velocity = query(load_sql("bug_velocity"))
 
-enh_velocity = query("""
-    select
-        strftime(date_trunc('week', closed_at), '%Y-%m-%d') as week,
-        round(median(hours_to_close) / 24, 1) as median_days
-    from fct_issues
-    where issue_category = 'enhancement' and closed_at is not null
-    group by date_trunc('week', closed_at)
-    having count(*) >= 2
-    order by week
-""")
+enh_velocity = query(load_sql("enh_velocity"))
 
 # Merge bug/enhancement velocity into one dataset
 velocity_map = {}
@@ -205,124 +96,36 @@ velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
 
 # ── Close time by label ────────────────────────────────────────────
 
-close_by_label = query(f"""
-    select
-        l.label_name,
-        round(median(f.hours_to_close) / 24, 1) as median_days_to_close,
-        count(*) as closed_count
-    from fct_issues f
-    inner join fct_issue_labels l on f.issue_dlt_id = l.issue_dlt_id
-    where f.closed_at is not null and f.{CORE_FILTER}
-    group by l.label_name
-    having count(*) >= 10
-    order by median_days_to_close desc
-    limit 15
-""")
+close_by_label = query(load_sql("close_by_label"))
 
 # ── Triage health ─────────────────────────────────────────────────
 
-triage = query(f"""
-    select
-        count(*) as total_open,
-        round(count(case when is_labeled then 1 end)::float / count(*) * 100, 0) as pct_labeled,
-        round(count(case when is_assigned then 1 end)::float / count(*) * 100, 0) as pct_assigned,
-        round(count(case when has_milestone then 1 end)::float / count(*) * 100, 0) as pct_milestoned,
-        round(count(case when issue_category != 'other' then 1 end)::float / count(*) * 100, 0) as pct_typed,
-        count(case when not is_labeled then 1 end) as unlabeled_count,
-        count(case when not is_assigned then 1 end) as unassigned_count
-    from fct_issues
-    where state = 'OPEN' and {CORE_FILTER}
-""")[0]
+triage = query(load_sql("triage_health"))[0]
 
 # ── EPIC burndown ──────────────────────────────────────────────────
 
-epic_list = query("""
-    select
-        f.issue_number,
-        f.title,
-        f.state,
-        f.created_at,
-        f.closed_at,
-        f.reactions_total_count,
-        f.comments_total_count
-    from fct_issues f
-    where f.issue_category = 'epic'
-    order by f.state desc, f.issue_number
-""")
+epic_list = query(load_sql("epic_list"))
 
 # ── Assignee workload ──────────────────────────────────────────────
 
-assignee_workload = query(f"""
-    select
-        a.assignee_login,
-        count(*) as open_issues,
-        count(case when f.issue_category = 'bug' then 1 end) as bugs,
-        count(case when f.issue_category = 'enhancement' then 1 end) as enhancements
-    from stg_issue_assignees a
-    inner join fct_issues f on a.issue_dlt_id = f.issue_dlt_id
-    where f.state = 'OPEN' and f.{CORE_FILTER}
-    group by a.assignee_login
-    order by open_issues desc
-    limit 15
-""")
+assignee_workload = query(load_sql("assignee_workload"))
 
 # ── Community priorities ───────────────────────────────────────────
 
-community_priorities = query(f"""
-    select
-        issue_number, title, issue_category,
-        reactions_total_count, comments_total_count,
-        round(datediff('day', created_at, current_date), 0) as age_days
-    from fct_issues
-    where state = 'OPEN' and reactions_total_count > 0 and {CORE_FILTER}
-    order by reactions_total_count desc
-    limit 10
-""")
+community_priorities = query(load_sql("community_priorities"))
 
 # ── Milestone burndown ─────────────────────────────────────────────
 
-burndown_data = query("""
-    SELECT
-        strftime(date_day, '%Y-%m-%d') as date_day,
-        milestone_title,
-        open_at_date
-    FROM milestone_burndown
-    WHERE date_day::date = date_trunc('week', date_day::date)
-      AND milestone_title IN (
-          SELECT DISTINCT milestone_title
-          FROM dim_milestones WHERE milestone_state = 'OPEN'
-      )
-    ORDER BY milestone_title, date_day
-""")
+burndown_data = query(load_sql("milestone_burndown"))
 open_milestone_titles = sorted({r["milestone_title"] for r in burndown_data})
 
 # ── Open issues table ──────────────────────────────────────────────
 
-open_issues_table = query(f"""
-    select
-        issue_number as "#",
-        title,
-        issue_category as type,
-        round(datediff('day', created_at, current_date), 0) as age_days,
-        reactions_total_count as reactions,
-        comments_total_count as comments,
-        coalesce(milestone_title, '') as milestone
-    from fct_issues
-    where state = 'OPEN' and {CORE_FILTER}
-    order by created_at asc
-    limit 50
-""")
+open_issues_table = query(load_sql("open_issues_table"))
 
 # ── Contributor leaderboard ────────────────────────────────────────
 
-leaderboard = query(f"""
-    select author_login, count(*) as issues_closed
-    from fct_issues
-    where state = 'CLOSED' and {CORE_FILTER}
-    group by author_login
-    order by issues_closed desc
-    limit 15
-""")
+leaderboard = query(load_sql("leaderboard"))
 
 
 # ══════════════════════════════════════════════════════════════════

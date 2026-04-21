@@ -33,34 +33,34 @@ jobs:
       - name: Build dbt models
         run: |
           cd transform
-          dbt build --profiles-dir . --static-analysis off
+          dbt build --profiles-dir . --static-analysis baseline
 
-      - name: Export dashboards
+      - name: Export Prefab dashboards
         env:
           MOTHERDUCK_TOKEN: ""
         run: |
-          mkdir -p preview/ggsql_spike
+          mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
-          for f in dashboard/app*.py; do
+          for f in dashboard/prefab/app*.py; do
             name=$(basename "$f" .py)
-            uv run prefab export "$f" -o "preview/${name}.html" --bundled || true
+            uv run prefab export "$f" -o "preview/prefab/${name}.html" --bundled || true
           done
 
-      - name: Export ggsql spike
+      - name: Build ggsql dashboard
         run: |
-          uv run dashboard/ggsql_spike/build.py || true
-          cp dashboard/ggsql_spike/index.html preview/ggsql_spike/index.html 2>/dev/null || true
+          mkdir -p preview/ggsql
+          uv run dashboard/ggsql/build.py || true
+          cp dashboard/ggsql/index.html preview/ggsql/index.html 2>/dev/null || true
 
       - name: Build mviz dashboard
         run: |
-          cd dashboard
+          cd dashboard/mviz
           uv run python generate_data.py
-          npx mviz mviz_dashboard.md -o ../preview/mviz.html || true
+          npx mviz dashboard.md -o ../../preview/mviz.html || true
 
-      - name: Export ggsql spike
+      - name: Export Marimo dashboard
         run: |
-          uv run dashboard/ggsql_spike/build.py || true
-          cp dashboard/ggsql_spike/index.html preview/ggsql_spike.html 2>/dev/null || true
+          uv run marimo export html --no-include-code dashboard/marimo/app.py -o preview/marimo.html || true
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
@@ -82,11 +82,12 @@ jobs:
               '',
               '| File | Description |',
               '|------|-------------|',
-              '| `index.html` | Bakeoff landing page (tabs to all 4 frameworks) |',
-              '| `app.html` | Prefab health dashboard |',
-              '| `app_myspace.html` | Prefab MySpace edition |',
-              '| `ggsql_spike/index.html` | ggsql + Vega-Lite |',
+              '| `index.html` | Bakeoff tab wrapper |',
+              '| `prefab/app.html` | Prefab health dashboard |',
+              '| `prefab/app_myspace.html` | Prefab MySpace edition |',
+              '| `ggsql/index.html` | ggsql + Vega-Lite |',
               '| `mviz.html` | mviz |',
+              '| `marimo.html` | Marimo |',
               '',
               `_[Workflow run](${runUrl})_`,
             ].join('\n');

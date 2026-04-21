@@ -1,0 +1,9 @@
+deployment:
+  basePath: /evidence/build
+plugins:
+  components:
+    '@evidence-dev/core-components':
+      overrides: []
+  datasources:
+    '@evidence-dev/duckdb':
+      overrides: []

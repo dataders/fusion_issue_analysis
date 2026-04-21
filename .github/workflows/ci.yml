@@ -30,14 +30,14 @@ jobs:
       - name: Build dbt models
         run: |
           cd transform
-          dbt build --profiles-dir . --static-analysis off
+          dbt build --profiles-dir . --static-analysis baseline
 
       - name: Export dashboards
         env:
           MOTHERDUCK_TOKEN: ""
         run: |
-          uv run prefab export dashboard/app.py -o /tmp/index.html
-          for f in dashboard/app_*.py; do
+          uv run prefab export dashboard/prefab/app.py -o /tmp/index.html
+          for f in dashboard/prefab/app_*.py; do
             [ -f "$f" ] && uv run prefab export "$f" -o "/tmp/$(basename "$f" .py).html" || true
           done
           echo "All dashboards exported successfully"

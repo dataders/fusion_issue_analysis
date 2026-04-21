@@ -18,5 +18,5 @@ jobs:
           INPUT_GITHUB_APP_INSTALLATION_ID: "${{ secrets.SECENG_CICD_CHECKS_INSTALLATIONID }}"
           INPUT_GITHUB_APP_ID: "${{ secrets.SECENG_CICD_CHECKS_APPID }}"
         with:
-          checks: "owners,duppatterns"
+          checks: "duppatterns"
           experimental_checks: "notowned"

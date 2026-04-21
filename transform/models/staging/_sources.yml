@@ -5,7 +5,6 @@ sources:
     description: >
       Raw GitHub issue data extracted via dlt from dbt-labs/dbt-fusion.
       Parquet files in data/raw/fusion_issues/. Gitignored — run extract/run.py to populate.
-
 models:
   - name: stg_issues
     description: Cleaned issues from dbt-labs/dbt-fusion

@@ -1,0 +1,13 @@
+{
+  "name": "fusion-observable",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "observable preview",
+    "build": "observable build",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@observablehq/framework": "^1"
+  }
+}
