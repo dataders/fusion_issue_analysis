@@ -35,6 +35,8 @@
     nav {
       display: flex;
       gap: 2px;
+      overflow-x: auto;
+      scrollbar-width: thin;
     }
 
     nav button {
@@ -50,6 +52,8 @@
       transition: color 0.1s;
       position: relative;
       bottom: -1px;
+      flex: 0 0 auto;
+      white-space: nowrap;
     }
 
     nav button:hover {
@@ -76,24 +80,49 @@
   <header>
     <p class="header-title">dbt-fusion Issue Analysis — Visualization Framework Bakeoff</p>
     <nav>
-      <button class="active" data-src="prefab/app.html" onclick="switchTab(this)">Prefab</button>
-      <button data-src="prefab/app_myspace.html" onclick="switchTab(this)">Prefab MySpace</button>
-      <button data-src="ggsql/index.html" onclick="switchTab(this)">ggsql + Vega-Lite</button>
-      <button data-src="mviz/index.html" onclick="switchTab(this)">mviz</button>
-      <button data-src="observable/dist/" onclick="switchTab(this)">Observable</button>
-      <button data-src="evidence/build/" onclick="switchTab(this)">Evidence.dev</button>
-      <button data-src="marimo.html" onclick="switchTab(this)">Marimo</button>
-      <button data-src="quarto/index.html" onclick="switchTab(this)">Quarto</button>
+      <button class="active" data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
+      <button data-src="prefab/app_myspace.html" data-tab="prefab-myspace" onclick="switchTab(this)">Prefab MySpace</button>
+      <button data-src="ggsql/index.html" data-tab="ggsql" onclick="switchTab(this)">ggsql + Vega-Lite</button>
+      <button data-src="mviz/index.html" data-tab="mviz" onclick="switchTab(this)">mviz</button>
+      <button data-src="observable/dist/" data-tab="observable" onclick="switchTab(this)">Observable</button>
+      <button data-src="evidence/build/" data-tab="evidence" onclick="switchTab(this)">Evidence.dev</button>
+      <button data-src="marimo.html" data-tab="marimo" onclick="switchTab(this)">Marimo</button>
+      <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
+      <button data-src="about.html" data-tab="about" onclick="switchTab(this)">About</button>
     </nav>
   </header>
   <iframe id="frame" src="prefab/app.html" title="Dashboard"></iframe>
 
   <script>
+    const tabs = Array.from(document.querySelectorAll('nav button'));
+    const frame = document.getElementById('frame');
+
     function switchTab(btn) {
-      document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+      tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('frame').src = btn.dataset.src;
+      frame.src = btn.dataset.src;
+      frame.title = btn.textContent.trim();
+
+      const url = new URL(window.location);
+      url.searchParams.set("tab", btn.dataset.tab);
+      url.hash = btn.dataset.tab;
+      if (window.location.search !== url.search || window.location.hash !== url.hash) {
+        history.replaceState(null, "", url);
+      }
     }
+
+    function loadTabFromHash() {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") || window.location.hash.replace(/^#/, "");
+      if (!tab) return;
+
+      const match = tabs.find(btn => btn.dataset.tab === tab);
+      if (match) switchTab(match);
+    }
+
+    loadTabFromHash();
+    window.addEventListener("popstate", loadTabFromHash);
+    window.addEventListener("hashchange", loadTabFromHash);
   </script>
 </body>
 </html>

@@ -34,6 +34,9 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Render About page
+        run: uv run python3 dashboard/render_about.py
+
       - name: Export Prefab dashboards
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}

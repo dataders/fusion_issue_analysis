@@ -20,6 +20,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
+      - name: Render About page
+        run: uv run python3 dashboard/render_about.py
+
       # Data comes from MotherDuck — no extract or dbt build needed.
 
       - name: Export Prefab dashboards
@@ -28,6 +31,7 @@ jobs:
         run: |
           mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
+          cp dashboard/about.html preview/about.html
           uv run prefab export dashboard/prefab/app.py -o preview/prefab/app.html
           uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
 
@@ -118,6 +122,7 @@ jobs:
               '| Evidence.dev | `evidence/index.html` |',
               '| Marimo | `marimo.html` |',
               '| Quarto | `quarto/index.html` |',
+              '| About | `about.html` |',
               '',
               `_[Workflow run](${runUrl})_`,
             ].join('\n');

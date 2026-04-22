@@ -8,6 +8,7 @@ dependencies = [
     "dlt[filesystem,parquet]>=1.24.0",
     "duckdb>=1.5.2",
     "marimo>=0.23.2",
+    "markdown>=3.10.2",
     "numpy>=2.4.4",
     "pandas>=3.0.2",
     "plotly>=6.7.0",
