@@ -22,9 +22,9 @@ We encourage you to first read our higher-level document: ["Expectations for Ope
 
 ### External contributors
 
-Fork the repository, clone locally, check out a new branch for your changes, and open a pull request against `dbt-labs/fusion_issue_analysis`.
+Fork the repository, clone locally, check out a new branch for your changes, and open a pull request against `dataders/fusion_issue_analysis`.
 
-### dbt Labs contributors
+### Maintainers
 
 Clone the repository directly, check out a new branch, and push to that branch.
 

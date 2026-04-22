@@ -7,7 +7,7 @@ format:
     scrolling: true
     nav-buttons:
       - icon: github
-        href: https://github.com/dbt-labs/fusion_issue_analysis
+        href: https://github.com/dataders/fusion_issue_analysis
 execute:
   echo: false
 ---

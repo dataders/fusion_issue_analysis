@@ -1,6 +1,6 @@
 # ggsql spike
 
-Tracking issue: [#49](https://github.com/dbt-labs/fusion_issue_analysis/issues/49)
+Tracking issue: [#49](https://github.com/dataders/fusion_issue_analysis/issues/49)
 
 Evaluates [ggsql](https://ggsql.org/) — an experimental SQL extension from
 Posit that adds `VISUALISE … DRAW …` clauses and emits Vega-Lite — as a third

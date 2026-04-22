@@ -4,7 +4,7 @@
 
 Please **do not** open a public GitHub issue for security vulnerabilities.
 
-Report them privately via [GitHub's private vulnerability reporting](https://github.com/dbt-labs/fusion_issue_analysis/security/advisories/new), or email [security@dbtlabs.com](mailto:security@dbtlabs.com) with:
+Report them privately via [GitHub's private vulnerability reporting](https://github.com/dataders/fusion_issue_analysis/security/advisories/new) with:
 
 - Description of the vulnerability
 - Steps to reproduce

@@ -1,4 +1,4 @@
-[![Deploy Dashboard](https://github.com/dbt-labs/fusion_issue_analysis/actions/workflows/deploy-dashboard.yml/badge.svg)](https://github.com/dbt-labs/fusion_issue_analysis/actions/workflows/deploy-dashboard.yml)
+[![Deploy Dashboard](https://github.com/dataders/fusion_issue_analysis/actions/workflows/deploy-dashboard.yml/badge.svg)](https://github.com/dataders/fusion_issue_analysis/actions/workflows/deploy-dashboard.yml)
 
 # Fusion Issue Analytics
 
@@ -281,4 +281,4 @@ specs. Weights applied:
 
 ## Roadmap
 
-See [open issues](https://github.com/dbt-labs/fusion_issue_analysis/issues) for planned improvements including incremental loads, MotherDuck migration, CI/CD, and production deployment.
+See [open issues](https://github.com/dataders/fusion_issue_analysis/issues) for planned improvements including incremental loads, MotherDuck migration, CI/CD, and production deployment.

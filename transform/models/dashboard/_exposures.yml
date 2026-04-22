@@ -4,7 +4,7 @@ exposures:
   - name: prefab_issue_health
     type: dashboard
     maturity: high
-    url: https://dbt-labs.github.io/fusion_issue_analysis/
+    url: https://dataders.github.io/fusion_issue_analysis/
     description: Primary Prefab dashboard — dbt-fusion issue health metrics
     depends_on:
       - ref('summary_kpis')
@@ -22,7 +22,7 @@ exposures:
       - ref('leaderboard')
       - ref('milestone_burndown_weekly')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders
 
   - name: prefab_myspace
     type: dashboard
@@ -35,7 +35,7 @@ exposures:
       - ref('community_priorities')
       - ref('assignee_workload')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders
 
   - name: mviz_dashboard
     type: dashboard
@@ -52,7 +52,7 @@ exposures:
       - ref('assignee_workload')
       - ref('community_priorities')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders
 
   - name: marimo_dashboard
     type: dashboard
@@ -66,7 +66,7 @@ exposures:
       - ref('community_priorities')
       - ref('assignee_workload')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders
 
   - name: observable_dashboard
     type: dashboard
@@ -79,7 +79,7 @@ exposures:
       - ref('triage_health')
       - ref('community_priorities')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders
 
   - name: evidence_dashboard
     type: dashboard
@@ -91,7 +91,7 @@ exposures:
       - ref('triage_health')
       - ref('weekly_flow')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders
 
   - name: ggsql_dashboard
     type: dashboard
@@ -105,4 +105,4 @@ exposures:
       - ref('response_time_trends')
       - ref('bug_fix_velocity')
     owner:
-      email: anders.swanson@dbtlabs.com
+      name: dataders

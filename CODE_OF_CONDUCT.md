@@ -24,7 +24,7 @@ Examples of unacceptable behavior:
 
 ## Enforcement
 
-Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers at [oss@dbtlabs.com](mailto:oss@dbtlabs.com). All complaints will be reviewed and investigated promptly and fairly.
+Instances of abusive, harassing, or otherwise unacceptable behavior may be reported to the project maintainers through GitHub. All complaints will be reviewed and investigated promptly and fairly.
 
 ## Attribution
 
