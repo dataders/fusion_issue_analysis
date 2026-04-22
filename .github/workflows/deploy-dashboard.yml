@@ -95,7 +95,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dashboard/evidence
-          npm ci
+          npm ci --legacy-peer-deps
           ./node_modules/.bin/evidence sources
           npm run build
 

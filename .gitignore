@@ -186,6 +186,9 @@ dashboard/evidence/.evidence/
 # Claude Code session state
 .claude/scheduled_tasks.lock
 
+# Git worktrees
+.worktrees/
+
 # pytype static type analyzer
 .pytype/
 
