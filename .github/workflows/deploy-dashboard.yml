@@ -34,22 +34,12 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Extract GitHub issues
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: cd extract && uv run python run.py
-
       - name: Install dbt Fusion
         run: |
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
-      - name: Build dbt models (local DuckDB)
-        run: |
-          cd transform
-          dbt build --profiles-dir . --static-analysis baseline
-
-      - name: Build dbt models (MotherDuck prod)
+      - name: Refresh dbt models in MotherDuck
         # TODO: Remove timeout + || true once dbt-labs/dbt-fusion#1574 is fixed
         # Fusion hangs or crashes (SIGFPE) on Linux when connecting to MotherDuck
         timeout-minutes: 5
