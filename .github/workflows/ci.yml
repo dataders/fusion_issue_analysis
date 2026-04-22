@@ -67,6 +67,9 @@ jobs:
           ./node_modules/.bin/evidence sources
           npm run build
 
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
       - name: Smoke-test Quarto
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
