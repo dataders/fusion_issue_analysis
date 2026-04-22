@@ -5,6 +5,7 @@ SELECT
     issue_category,
     strftime(created_at, '%Y-%m-%d') as created_date,
     strftime(closed_at, '%Y-%m-%d') as closed_date,
+    strftime(updated_at, '%Y-%m-%d') as updated_date,
     hours_to_close,
     hours_to_first_response,
     reactions_total_count,

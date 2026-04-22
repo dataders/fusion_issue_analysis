@@ -98,6 +98,13 @@ def main():
     # -- Assignee workload --
     write_json("assignee_workload.json", query(con, "SELECT * FROM assignee_workload"))
 
+    # -- Triage health --
+    triage = query(con, load_sql("triage"))[0]
+    write_json("kpi_triage_labeled.json", {"value": triage["pct_labeled"], "label": "% Labeled", "format": "pct0"})
+    write_json("kpi_triage_typed.json", {"value": triage["pct_typed"], "label": "% Typed", "format": "pct0"})
+    write_json("kpi_triage_assigned.json", {"value": triage["pct_assigned"], "label": "% Assigned", "format": "pct0"})
+    write_json("kpi_triage_milestoned.json", {"value": triage["pct_milestoned"], "label": "% Milestoned", "format": "pct0"})
+
     # -- Community priorities --
     write_json("community_priorities.json", query(con, "SELECT * FROM community_priorities"))
 

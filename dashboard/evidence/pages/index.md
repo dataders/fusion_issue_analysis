@@ -2,64 +2,53 @@
 title: dbt-fusion Issue Health
 ---
 
+
 # dbt-fusion Issue Health · Evidence.dev
 
-```sql open_summary
+Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
+
+## Key Metrics
+
+```sql kpis
 select
-    count(case when state = 'OPEN' and issue_category != 'epic' then 1 end)                                                          as open_issues,
-    count(case when closed_at >= current_date - interval '28 days' and issue_category != 'epic' then 1 end)                          as closed_4w,
-    count(case when created_at >= current_date - interval '28 days' and issue_category != 'epic' then 1 end)                         as opened_4w,
-    count(case when state = 'OPEN' and updated_at < current_date - interval '30 days' and issue_category != 'epic' then 1 end)       as stale_count,
-    round(median(case when closed_at >= current_date - interval '28 days' then hours_to_close end) / 24.0, 1)                        as median_close_days
-from issues
+    open_issues,
+    closed_4w,
+    opened_4w,
+    stale_count,
+    pct_responded_48h,
+    rolling_median_close_days as median_close_days
+from summary_kpis
 ```
 
-<BigValue data={open_summary} value="open_issues" title="Open Issues"/>
-<BigValue data={open_summary} value="closed_4w" title="Closed (4 wk)"/>
-<BigValue data={open_summary} value="opened_4w" title="Opened (4 wk)"/>
-<BigValue data={open_summary} value="stale_count" title="Stale (30d+)"/>
-<BigValue data={open_summary} value="median_close_days" title="Median Close Days (4 wk)"/>
+<BigValue data={kpis} value="open_issues" title="Open Issues"/>
+<BigValue data={kpis} value="closed_4w" title="Closed (4 wk)"/>
+<BigValue data={kpis} value="opened_4w" title="Opened (4 wk)"/>
+<BigValue data={kpis} value="median_close_days" title="Median Close (4 wk)"/>
+<BigValue data={kpis} value="pct_responded_48h" title="48h Response SLA" fmt="0"/>
+<BigValue data={kpis} value="stale_count" title="Stale Issues (30d+)"/>
 
-## Weekly Issue Flow
+## Cumulative Issue Flow
 
-```sql weekly_flow
-with opened as (
-    select date_trunc('week', created_at)::date as week, count(*) as opened
-    from issues where issue_category != 'epic'
-    group by 1
-),
-closed as (
-    select date_trunc('week', closed_at)::date as week, count(*) as closed
-    from issues where closed_at is not null and issue_category != 'epic'
-    group by 1
-)
-select
-    strftime(coalesce(o.week, c.week), '%Y-%m-%d') as week,
-    coalesce(o.opened, 0) as opened,
-    coalesce(c.closed, 0) as closed
-from opened o full outer join closed c on o.week = c.week
-order by 1
+```sql cumulative_flow
+select week, opened, closed from weekly_flow order by week
 ```
+
+<!-- Evidence AreaChart with y array shows stacked areas; true cumulative requires window
+     functions which Evidence does not run — use weekly flow as the closest equivalent.
+     Capability gap: cannot show running totals natively. -->
 
 <AreaChart
-  data={weekly_flow}
+  data={cumulative_flow}
   x="week"
   y={["opened", "closed"]}
-  title="Opened vs Closed per Week"
+  title="Weekly Opened vs Closed (non-cumulative)"
+  subtitle="Note: Evidence cannot compute running totals — showing weekly counts"
 />
 
-## Resolution Velocity
+## Velocity & Response
 
 ```sql velocity
-select
-    strftime(date_trunc('week', closed_at), '%Y-%m-%d') as week,
-    issue_category,
-    round(median(hours_to_close) / 24.0, 1) as median_days
-from issues
-where closed_at is not null and issue_category in ('bug', 'enhancement')
-group by 1, 2
-having count(*) >= 2
-order by 1
+select week, issue_category, median_days from velocity order by week
 ```
 
 <LineChart
@@ -67,67 +56,82 @@ order by 1
   x="week"
   y="median_days"
   series="issue_category"
-  title="Median Days to Close: Bug vs Enhancement"
+  title="Median Days to Close: Bugs vs Enhancements"
 />
 
-## Issue Categories (Open)
-
-```sql by_category
-select issue_category, count(*) as count
-from issues
-where state = 'OPEN' and issue_category != 'epic'
-group by 1
-order by 2 desc
+```sql response_pctiles
+select week, p25, p50, p75 from response_pctiles order by week
 ```
 
-<BarChart data={by_category} x="issue_category" y="count" title="Open Issues by Category"/>
+<LineChart
+  data={response_pctiles}
+  x="week"
+  y={["p25", "p50", "p75"]}
+  title="Time to First Response (hours)"
+/>
+
+## Issue Distribution
+
+```sql age_distribution
+select age_bucket, issue_category, issue_count from age_distribution
+```
+
+<BarChart
+  data={age_distribution}
+  x="age_bucket"
+  y="issue_count"
+  series="issue_category"
+  type="stacked"
+  title="Open Issue Age by Type"
+/>
+
+```sql close_by_label
+select label_name, median_days_to_close, closed_count
+from close_by_label
+order by median_days_to_close desc
+```
+
+<BarChart
+  data={close_by_label}
+  x="label_name"
+  y="median_days_to_close"
+  swapXY=true
+  title="Median Days to Close by Label"
+/>
 
 ## Triage Health
 
 ```sql triage
-select
-    round(sum(is_labeled::int) * 100.0 / count(*), 0) as pct_labeled,
-    round(sum(is_assigned::int) * 100.0 / count(*), 0) as pct_assigned,
-    round(sum(has_milestone::int) * 100.0 / count(*), 0) as pct_milestoned
-from issues
-where state = 'OPEN' and issue_category != 'epic'
+select pct_labeled, pct_assigned, pct_milestoned, pct_typed from triage_health
 ```
 
 <BigValue data={triage} value="pct_labeled" title="% Labeled" fmt="0"/>
+<BigValue data={triage} value="pct_typed" title="% Typed" fmt="0"/>
 <BigValue data={triage} value="pct_assigned" title="% Assigned" fmt="0"/>
-<BigValue data={triage} value="pct_milestoned" title="% In Milestone" fmt="0"/>
+<BigValue data={triage} value="pct_milestoned" title="% Milestoned" fmt="0"/>
 
-## Top Community Priorities
+## Workload & Priorities
 
-```sql top_issues
-select
-    issue_number,
-    title,
-    issue_category,
-    reactions_total_count,
-    round(datediff('day', created_at, current_date), 0) as age_days
-from issues
-where state = 'OPEN' and reactions_total_count > 0 and issue_category != 'epic'
+```sql assignee_workload
+select assignee_login, bugs, enhancements
+from assignee_workload
+order by bugs + enhancements desc
+```
+
+<BarChart
+  data={assignee_workload}
+  x="assignee_login"
+  y={["bugs", "enhancements"]}
+  type="stacked"
+  swapXY=true
+  title="Open Issues by Assignee"
+/>
+
+```sql community_priorities
+select issue_number, title, issue_category, reactions_total_count, age_days
+from community_priorities
 order by reactions_total_count desc
 limit 15
 ```
 
-<DataTable data={top_issues} search=true rows=15/>
-
-## Issue Detail
-
-```sql open_issues_detail
-select
-    issue_number,
-    title,
-    issue_category,
-    strftime(created_at, '%Y-%m-%d') as created_date,
-    reactions_total_count,
-    comments_total_count,
-    coalesce(milestone_title, '') as milestone
-from issues
-where state = 'OPEN' and issue_category != 'epic'
-order by reactions_total_count desc, created_at asc
-```
-
-<DataTable data={open_issues_detail} search=true rows=20/>
+<DataTable data={community_priorities} search=true rows=15 title="Community Priorities"/>

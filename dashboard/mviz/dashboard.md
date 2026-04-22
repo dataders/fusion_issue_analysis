@@ -6,6 +6,8 @@ continuous: true
 
 # dbt-fusion Issue Health
 
+Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
+
 ## Key Metrics
 
 ```big_value size=[3,2] file=data/kpi_net_flow.json
@@ -23,13 +25,14 @@ continuous: true
 
 ```area size=[16,6] file=data/cumulative_flow.json
 {
-  "title": "Cumulative Opened vs Closed (excludes EPICs)",
+  "title": "Cumulative Issue Flow",
+  "subtitle": "Gap = issue debt (excludes EPICs)",
   "x": "week",
   "y": ["cumulative_opened", "cumulative_closed"]
 }
 ```
 
-## Velocity & Response Time
+## Velocity & Response
 
 ```line size=[8,6] file=data/velocity.json
 {
@@ -41,6 +44,7 @@ continuous: true
 ```line size=[8,6] file=data/response_pctiles.json
 {
   "title": "Time to First Response (hours)",
+  "subtitle": "p25 / p50 / p75 bands",
   "x": "week",
   "y": ["p25", "p50", "p75"]
 }
@@ -63,7 +67,18 @@ continuous: true
 }
 ```
 
-## Assignee Workload
+## Triage Health
+
+```big_value size=[4,2] file=data/kpi_triage_labeled.json
+```
+```big_value size=[4,2] file=data/kpi_triage_typed.json
+```
+```big_value size=[4,2] file=data/kpi_triage_assigned.json
+```
+```big_value size=[4,2] file=data/kpi_triage_milestoned.json
+```
+
+## Workload & Priorities
 
 ```bar size=[16,6] file=data/assignee_workload.json
 {
@@ -73,11 +88,10 @@ continuous: true
 }
 ```
 
-## Community Priorities
-
 ```table size=[16,6] file=data/community_priorities.json
 {
-  "title": "Top Reacted Open Issues",
+  "title": "Community Priorities",
+  "subtitle": "Most-reacted open issues",
   "columns": [
     {"id": "issue_number", "title": "#", "bold": true},
     {"id": "title", "title": "Title"},

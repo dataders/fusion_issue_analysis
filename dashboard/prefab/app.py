@@ -167,8 +167,8 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     # ── Cumulative Issue Flow ──────────────────────────────────────
     with Card(css_class="mt-6"):
         with CardHeader():
-            CardTitle("Cumulative Issue Flow (All non-EPIC)")
-            Muted("Gap = issue debt")
+            CardTitle("Cumulative Issue Flow")
+            Muted("Gap = issue debt (excludes EPICs)")
         with CardContent():
             AreaChart(
                 data=cumulative_flow,
@@ -253,7 +253,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     with Row(gap=4, css_class="mt-6"):
         with Card(css_class="flex-1"):
             with CardHeader():
-                CardTitle("Open Issue Age (by type)")
+                CardTitle("Open Issue Age by Type")
             with CardContent():
                 BarChart(
                     data=age_chart_data,
@@ -284,7 +284,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     # ── Triage Health ──────────────────────────────────────────────
     with Card(css_class="mt-6"):
         with CardHeader():
-            CardTitle("Triage Health (Open Issues)")
+            CardTitle("Triage Health")
             Muted("How well-organized is the backlog?")
         with CardContent():
             with Row(gap=4):

@@ -189,6 +189,9 @@ dashboard/evidence/.evidence/
 # Git worktrees
 .worktrees/
 
+# Git worktrees
+.worktrees/
+
 # pytype static type analyzer
 .pytype/
 
