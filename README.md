@@ -6,16 +6,19 @@ Personal bakeoff for agentic analytics and static dashboard frameworks, built on
 
 Live site: [dashboard-bakeoff.anders.omg.lol](https://dashboard-bakeoff.anders.omg.lol/)
 
+## Background
+
 I got interested in agentic analytics partly because static-site dashboard frameworks are fun, and partly because I used to spend a lot of time in Power BI. I am not a web developer. This repo is me trying to build intuition for what these frameworks can and cannot do when the goal is a real dashboard, not just a demo chart.
 
 I expected a couple of options. I was surprised by how many there are. Along the way I started to learn what the static dashboard stack actually looks like, where it is strong, where it gets awkward, and how to make it work cleanly with dbt.
 
 **Extract** issues via dlt → **Transform** with dbt Fusion + DuckDB → **Visualize** across several dashboard frameworks and experiments.
 
-## High-Level
+## High-Level Architecture
 
 - Same analytics problem, implemented across multiple static or static-friendly dashboard frameworks
 - Seven dashboard tabs now sit on top of the same dbt `models/dashboard/` layer, so the comparison is closer to apples-to-apples
+- Shared data layer runs on DuckDB locally and MotherDuck in deployed builds
 - Same dbt-shaped warehouse logic, with different choices for authoring, transport, interactivity, and layout
 - Main question: what belongs in dbt, and what belongs in the dashboard layer?
 
@@ -29,18 +32,16 @@ I expected a couple of options. I was surprised by how many there are. Along the
 
 ## Architecture
 
-```
-GitHub API (dbt-labs/dbt-fusion)
-        │
-    dlt (GraphQL)
-        │
-  data/raw/*.parquet          ← gitignored, ~2MB
-        │
-  dbtf + DuckDB (14 models)
-        │
-  data/fusion_issues.duckdb   ← gitignored
-        │
-   static dashboard builds
+```mermaid
+flowchart LR
+    A[GitHub API / dbt-labs dbt-fusion] --> B[dlt extract]
+    B --> C[data/raw parquet]
+    C --> D[dbt Fusion models]
+    D --> E[DuckDB local]
+    D --> F[MotherDuck prod]
+    E --> G[Static dashboard builds]
+    F --> G
+    G --> H[GitHub Pages / custom domain]
 ```
 
 ## Quick Start
@@ -57,7 +58,7 @@ GitHub API (dbt-labs/dbt-fusion)
 uv sync
 ```
 
-### 2. Extract issues from GitHub
+### 2. Extract issues from GitHub with dlt
 
 ```bash
 export GITHUB_TOKEN=ghp_your_token_here
@@ -65,6 +66,12 @@ cd extract && uv run python3 run.py
 ```
 
 This pulls all issues, comments, labels, assignees, and reactions from `dbt-labs/dbt-fusion` into parquet files under `data/raw/`.
+
+Shortcut:
+
+```bash
+make extract
+```
 
 ### 3. Transform with dbt
 
@@ -87,7 +94,13 @@ Run tests to validate source data:
 dbtf test --profiles-dir .
 ```
 
-### 4. Launch dashboard
+Shortcut:
+
+```bash
+make dbt
+```
+
+### 4. Build or launch dashboards
 
 ```bash
 uv run prefab serve dashboard/app.py --reload
@@ -101,6 +114,13 @@ Opens at [http://127.0.0.1:5175](http://127.0.0.1:5175) with:
 - Time to first response trend
 - Milestone burndown for active milestones
 - Top labels by issue count
+
+Shortcuts:
+
+```bash
+make build
+make serve
+```
 
 ### Production (MotherDuck + GitHub Pages)
 
@@ -131,7 +151,7 @@ The public dashboard is published at [dashboard-bakeoff.anders.omg.lol](https://
 
 The core bakeoff in `dashboard/` covers six implementations of the same issue-health
 dashboard (Prefab, ggsql + Vega-Lite, mviz, Observable Framework, Evidence.dev,
-Marimo). The repo also includes side experiments such as Prefab MySpace and Quarto.
+Marimo). The repo also includes two side experiments: Prefab MySpace and Quarto.
 Each implementation renders from the same DuckDB/MotherDuck tables but makes different
 choices about how SQL, charts, layout, and build artifacts compose.
 
@@ -325,3 +345,7 @@ specs. Weights applied:
 ## Roadmap
 
 See [open issues](https://github.com/dataders/fusion_issue_analysis/issues) for planned improvements including incremental loads, MotherDuck migration, CI/CD, and production deployment.
+
+## Contributing
+
+See [CONTRIBUTING.md](./CONTRIBUTING.md) for setup, development flow, and PR expectations.
