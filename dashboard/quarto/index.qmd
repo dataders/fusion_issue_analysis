@@ -1,0 +1,218 @@
+---
+title: "dbt-fusion Issue Health"
+subtitle: "Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)"
+format:
+  dashboard:
+    theme: darkly
+    scrolling: true
+    nav-buttons:
+      - icon: github
+        href: https://github.com/dbt-labs/fusion_issue_analysis
+execute:
+  echo: false
+---
+
+```{python}
+#| include: false
+import os
+import duckdb
+import pandas as pd
+import plotly.express as px
+
+PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname("__file__"), "../.."))
+DB_PATH = (
+    "md:fusion_issues"
+    if os.environ.get("MOTHERDUCK_TOKEN")
+    else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
+)
+
+def query(sql: str) -> pd.DataFrame:
+    con = duckdb.connect(DB_PATH, read_only=True)
+    if not DB_PATH.startswith("md:"):
+        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+    df = con.execute(sql).fetchdf()
+    con.close()
+    return df
+
+summary    = query("SELECT * FROM summary_kpis").iloc[0]
+cum_flow   = query("SELECT * FROM cumulative_flow")
+velocity   = query("SELECT * FROM velocity")
+resp       = query("SELECT * FROM response_pctiles")
+age_dist   = query("SELECT * FROM age_distribution")
+lbl        = query("SELECT * FROM close_by_label ORDER BY median_days_to_close")
+triage     = query("SELECT * FROM triage_health").iloc[0]
+workload   = query("SELECT * FROM assignee_workload")
+priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC LIMIT 15")
+
+net = int(summary["closed_4w"]) - int(summary["opened_4w"])
+```
+
+## Key Metrics
+```{python}
+#| content: valuebox
+#| title: "Open Issues"
+dict(value=int(summary["open_issues"]), icon="journal-text", color="primary")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Net Flow (4 wk)"
+dict(
+    value=f"{'+' if net >= 0 else ''}{net}",
+    icon="arrow-down-up",
+    color="success" if net >= 0 else "danger",
+)
+```
+
+```{python}
+#| content: valuebox
+#| title: "Median Close (4 wk)"
+val = summary["rolling_median_close_days"]
+dict(value=f"{val} days" if val else "N/A", icon="clock", color="secondary")
+```
+
+```{python}
+#| content: valuebox
+#| title: "48h Response SLA"
+sla = summary["pct_responded_48h"]
+dict(value=f"{int(sla)}%" if sla else "N/A", icon="bell", color="info")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Stale Issues (30d+)"
+dict(value=int(summary["stale_count"]), icon="exclamation-triangle", color="warning")
+```
+
+## Cumulative Issue Flow
+```{python}
+fig = px.area(
+    cum_flow.melt(
+        id_vars="week",
+        value_vars=["cumulative_opened", "cumulative_closed"],
+        var_name="series",
+        value_name="count",
+    ),
+    x="week", y="count", color="series",
+    color_discrete_map={"cumulative_opened": "#f38ba8", "cumulative_closed": "#a6e3a1"},
+    labels={"series": "", "count": "Issues", "week": "Week"},
+    title="Cumulative Issue Flow",
+)
+fig.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
+fig.show()
+```
+
+## Velocity & Response
+```{python}
+fig_vel = px.line(
+    velocity, x="week", y="median_days", color="issue_category",
+    color_discrete_map={"bug": "#f38ba8", "enhancement": "#89b4fa"},
+    labels={"issue_category": "Type", "median_days": "Median Days", "week": "Week"},
+    title="Median Days to Close: Bugs vs Enhancements",
+    markers=True,
+)
+fig_vel.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
+fig_vel
+```
+
+```{python}
+fig_resp = px.line(
+    resp.melt(id_vars="week", value_vars=["p25", "p50", "p75"],
+              var_name="percentile", value_name="hours"),
+    x="week", y="hours", color="percentile",
+    color_discrete_map={"p25": "#a6e3a1", "p50": "#89b4fa", "p75": "#f38ba8"},
+    labels={"percentile": "", "hours": "Hours", "week": "Week"},
+    title="Time to First Response (hours)",
+)
+fig_resp.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
+fig_resp
+```
+
+## Issue Distribution
+```{python}
+fig_age = px.bar(
+    age_dist,
+    x="age_bucket", y="issue_count", color="issue_category",
+    color_discrete_map={"bug": "#f38ba8", "enhancement": "#89b4fa", "other": "#a6adc8"},
+    category_orders={"age_bucket": ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]},
+    labels={"issue_category": "Type", "issue_count": "Issues", "age_bucket": "Age"},
+    title="Open Issue Age by Type",
+    barmode="stack",
+)
+fig_age.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
+fig_age
+```
+
+```{python}
+fig_lbl = px.bar(
+    lbl.sort_values("median_days_to_close"),
+    x="median_days_to_close", y="label_name",
+    orientation="h",
+    labels={"median_days_to_close": "Median Days", "label_name": "Label"},
+    title="Median Days to Close by Label",
+)
+fig_lbl.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
+fig_lbl
+```
+
+## Triage Health
+```{python}
+#| content: valuebox
+#| title: "% Labeled"
+dict(value=f"{int(triage['pct_labeled'])}%", icon="tag", color="primary")
+```
+
+```{python}
+#| content: valuebox
+#| title: "% Typed"
+dict(value=f"{int(triage['pct_typed'])}%", icon="card-list", color="primary")
+```
+
+```{python}
+#| content: valuebox
+#| title: "% Assigned"
+dict(value=f"{int(triage['pct_assigned'])}%", icon="person", color="primary")
+```
+
+```{python}
+#| content: valuebox
+#| title: "% Milestoned"
+dict(value=f"{int(triage['pct_milestoned'])}%", icon="flag", color="primary")
+```
+
+## Workload & Priorities
+```{python}
+fig_wl = px.bar(
+    workload.melt(
+        id_vars="assignee_login",
+        value_vars=["bugs", "enhancements"],
+        var_name="type",
+        value_name="count",
+    ),
+    x="count", y="assignee_login", color="type",
+    color_discrete_map={"bugs": "#f38ba8", "enhancements": "#89b4fa"},
+    orientation="h",
+    labels={"type": "Type", "count": "Open Issues", "assignee_login": "Assignee"},
+    title="Open Issues by Assignee",
+    barmode="stack",
+)
+fig_wl.update_layout(
+    template="plotly_dark", height=300,
+    margin=dict(t=40, b=20),
+    yaxis={"categoryorder": "total ascending"},
+)
+fig_wl
+```
+
+```{python}
+#| title: "Community Priorities"
+priorities[["issue_number", "title", "issue_category", "reactions_total_count", "age_days"]].rename(
+    columns={
+        "issue_number": "#",
+        "title": "Title",
+        "issue_category": "Type",
+        "reactions_total_count": "Reactions",
+        "age_days": "Age (days)",
+    }
+)
+```

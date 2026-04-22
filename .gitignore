@@ -182,6 +182,9 @@ dashboard/evidence/sources/fusion/*.csv
 dashboard/evidence/sources/fusion/connection.yaml
 dashboard/evidence/sources/fusion/initialize.sql
 dashboard/evidence/.evidence/
+dashboard/quarto/.quarto/
+dashboard/quarto/index.html
+dashboard/quarto/index_files/
 
 # Claude Code session state
 .claude/scheduled_tasks.lock

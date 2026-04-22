@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build dbt extract prefab ggsql mviz marimo observable evidence kill-server clean help
+.PHONY: serve build dbt extract prefab ggsql mviz marimo observable evidence quarto kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: prefab ggsql mviz marimo observable evidence
+build: prefab ggsql mviz marimo observable evidence quarto
 
 ## dbt          Run dbt build against local DuckDB (dev target)
 dbt:
@@ -50,6 +50,10 @@ observable:
 evidence:
 	cd dashboard/evidence && npm run build
 
+## quarto       Render Quarto dashboard to static HTML (requires MOTHERDUCK_TOKEN)
+quarto:
+	cd dashboard/quarto && QUARTO_PYTHON=$(shell uv run which python3) quarto render index.qmd
+
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 ## kill-server  Kill whatever is running on PORT (default: 8081)
@@ -60,7 +64,7 @@ kill-server:
 clean:
 	rm -f  dashboard/prefab/app.html dashboard/prefab/app_myspace.html
 	rm -f  dashboard/ggsql/index.html dashboard/mviz.html dashboard/marimo.html
-	rm -rf dashboard/observable/dist dashboard/evidence/build dashboard/mviz/data
+	rm -rf dashboard/observable/dist dashboard/evidence/build dashboard/mviz/data dashboard/quarto/index.html dashboard/quarto/index_files
 
 ## help         Show this help
 help:
@@ -69,5 +73,5 @@ help:
 	@grep -E '^## ' Makefile | sed 's/## /  /'
 	@echo ""
 	@echo "Notes:"
-	@echo "  evidence requires MOTHERDUCK_TOKEN (uses MotherDuck connection)"
+	@echo "  evidence and quarto require MOTHERDUCK_TOKEN (use MotherDuck connection)"
 	@echo "  observable and evidence require npm (node_modules already installed)"

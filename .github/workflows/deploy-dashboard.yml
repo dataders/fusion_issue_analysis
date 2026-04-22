@@ -102,6 +102,17 @@ jobs:
       - name: Export Marimo dashboard
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
 
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render Quarto dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          QUARTO_PYTHON: .venv/bin/python3
+        run: |
+          cd dashboard/quarto
+          quarto render index.qmd
+
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v3
         with:
