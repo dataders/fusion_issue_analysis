@@ -59,7 +59,7 @@ jobs:
       - name: Smoke-test Evidence
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          EVIDENCE_BASE_PATH: /fusion_issue_analysis/evidence/build
+          EVIDENCE_BASE_PATH: /evidence/build
         run: |
           uv run python3 dashboard/evidence/generate_sources.py
           cd dashboard/evidence

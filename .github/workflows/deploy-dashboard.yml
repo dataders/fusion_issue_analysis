@@ -68,7 +68,7 @@ jobs:
       - name: Configure Evidence.dev
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          EVIDENCE_BASE_PATH: /fusion_issue_analysis/evidence/build
+          EVIDENCE_BASE_PATH: /evidence/build
         run: uv run python3 dashboard/evidence/generate_sources.py
 
       - name: Build Evidence.dev dashboard
