@@ -70,7 +70,7 @@ jobs:
           retention-days: 7
 
       - name: Comment preview link on PR
-        uses: actions/github-script@v7
+        uses: actions/github-script@v9
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
