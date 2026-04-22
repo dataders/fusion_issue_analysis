@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build dbt extract prefab ggsql mviz marimo observable evidence quarto kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz marimo observable evidence quarto kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,11 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: prefab ggsql mviz marimo observable evidence quarto
+build: about prefab ggsql mviz marimo observable evidence quarto
+
+## about        Render dashboard/about.html from dashboard/about.md
+about:
+	uv run python3 dashboard/render_about.py
 
 ## dbt          Run dbt build against local DuckDB (dev target)
 dbt:

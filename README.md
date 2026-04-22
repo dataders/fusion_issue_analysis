@@ -7,7 +7,7 @@ Static dashboard bakeoff for [dbt-labs/dbt-fusion](https://github.com/dbt-labs/d
 Start here:
 
 - Live dashboard: [dashboard-bakeoff.anders.omg.lol](https://dashboard-bakeoff.anders.omg.lol/)
-- About, context, findings, and decision guide: [dashboard-bakeoff.anders.omg.lol/#about](https://dashboard-bakeoff.anders.omg.lol/#about)
+- About, context, findings, and decision guide: [dashboard-bakeoff.anders.omg.lol/?tab=about](https://dashboard-bakeoff.anders.omg.lol/?tab=about)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Local Development

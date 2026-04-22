@@ -17,6 +17,9 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
+      - name: Render About page
+        run: uv run python3 dashboard/render_about.py
+
       # ── Dashboard smoke-test (all frameworks, no || true) ─────────────────
       # Data comes from MotherDuck — extract.yml keeps it fresh 4x/day.
       # No extract or dbt build here; those run in extract.yml on schedule

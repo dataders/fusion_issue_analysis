@@ -103,14 +103,17 @@
       frame.src = btn.dataset.src;
       frame.title = btn.textContent.trim();
 
-      const tabHash = `#${btn.dataset.tab}`;
-      if (window.location.hash !== tabHash) {
-        history.replaceState(null, "", tabHash);
+      const url = new URL(window.location);
+      url.searchParams.set("tab", btn.dataset.tab);
+      url.hash = btn.dataset.tab;
+      if (window.location.search !== url.search || window.location.hash !== url.hash) {
+        history.replaceState(null, "", url);
       }
     }
 
     function loadTabFromHash() {
-      const tab = window.location.hash.replace(/^#/, "");
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab") || window.location.hash.replace(/^#/, "");
       if (!tab) return;
 
       const match = tabs.find(btn => btn.dataset.tab === tab);
@@ -118,6 +121,7 @@
     }
 
     loadTabFromHash();
+    window.addEventListener("popstate", loadTabFromHash);
     window.addEventListener("hashchange", loadTabFromHash);
   </script>
 </body>
