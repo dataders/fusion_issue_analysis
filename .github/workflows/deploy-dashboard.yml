@@ -62,7 +62,7 @@ jobs:
 
       - name: Export Prefab dashboards
         env:
-          MOTHERDUCK_TOKEN: ""
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           for f in dashboard/prefab/app*.py; do
             name=$(basename "$f" .py)
@@ -70,15 +70,22 @@ jobs:
           done
 
       - name: Build mviz dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dashboard/mviz
           uv run python generate_data.py
           npx mviz dashboard.md -o index.html
 
-      - name: Build ggsql spike dashboard
+      - name: Build ggsql dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
         run: uv run dashboard/ggsql/build.py
 
       - name: Build Observable Framework dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dashboard/observable
           npm ci
@@ -100,6 +107,8 @@ jobs:
           npm run build
 
       - name: Export Marimo dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
 
       - name: Install Quarto
@@ -108,7 +117,7 @@ jobs:
       - name: Render Quarto dashboard
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          QUARTO_PYTHON: .venv/bin/python3
+          QUARTO_PYTHON: ${{ github.workspace }}/.venv/bin/python3
         run: |
           cd dashboard/quarto
           quarto render index.qmd

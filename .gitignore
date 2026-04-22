@@ -144,8 +144,8 @@ dmypy.json
 # Pyre type checker
 .pyre/
 
-# Project data files
-data/
+# Project data files (root-anchored — does not affect dashboard/*/src/data/)
+/data/
 extract/.dlt/secrets.toml
 extract/github_issues/
 extract/logs/

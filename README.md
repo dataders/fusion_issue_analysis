@@ -115,6 +115,25 @@ This section captures what we learned — the stack decomposition, per-framework
 layer picks, capability coverage, and a weighted scoring rubric for choosing one
 over another in future projects.
 
+### Build-time bake vs. render-time query
+
+The most consequential architectural split is *when* data leaves the warehouse
+and enters the browser.
+
+| Mode | What happens | Frameworks |
+|---|---|---|
+| **Build-time bake** | SQL runs in CI against MotherDuck; rows frozen into JSON/Parquet in the static artifact | Prefab, mviz, ggsql, Observable, Marimo |
+| **Render-time query** | SQL executes inside the browser against a data source at view time; enables live filters without a server | Evidence (DuckDB-WASM against MotherDuck-sourced Parquet) |
+
+Evidence occupies an interesting middle position: MotherDuck is queried at
+build time to produce Parquet, which ships to the browser where DuckDB-WASM
+runs the page-level SQL at render time. Raw row extraction is build-time;
+filtering and grouping is live in the browser. True live browser → MotherDuck
+(bypassing the Parquet bake) requires `@motherduck/wasm-client` directly
+(tracked in a separate issue).
+
+All six frameworks connect to MotherDuck in CI prod builds via `MOTHERDUCK_TOKEN`.
+
 ### The static dashboard stack
 
 Every "framework" here is really a set of picks across seven layers. Pick the
