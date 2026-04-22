@@ -41,6 +41,10 @@ def write_json(filename: str, data):
     print(f"  wrote {path} ({len(data) if isinstance(data, list) else 1} records)")
 
 
+def pct0_value(value):
+    return round(value / 100, 2) if value else 0
+
+
 def main():
     os.makedirs(DATA_DIR, exist_ok=True)
     con = get_connection()
@@ -58,7 +62,7 @@ def main():
         "label": "Median Close (4wk, days)",
     })
     write_json("kpi_sla.json", {
-        "value": round(sla_pct / 100, 2) if sla_pct else 0,
+        "value": pct0_value(sla_pct),
         "label": "48h Response SLA",
         "format": "pct0",
     })
@@ -105,10 +109,10 @@ def main():
 
     # -- Triage health --
     triage = query(con, load_sql("triage"))[0]
-    write_json("kpi_triage_labeled.json", {"value": triage["pct_labeled"], "label": "% Labeled", "format": "pct0"})
-    write_json("kpi_triage_typed.json", {"value": triage["pct_typed"], "label": "% Typed", "format": "pct0"})
-    write_json("kpi_triage_assigned.json", {"value": triage["pct_assigned"], "label": "% Assigned", "format": "pct0"})
-    write_json("kpi_triage_milestoned.json", {"value": triage["pct_milestoned"], "label": "% Milestoned", "format": "pct0"})
+    write_json("kpi_triage_labeled.json", {"value": pct0_value(triage["pct_labeled"]), "label": "% Labeled", "format": "pct0"})
+    write_json("kpi_triage_typed.json", {"value": pct0_value(triage["pct_typed"]), "label": "% Typed", "format": "pct0"})
+    write_json("kpi_triage_assigned.json", {"value": pct0_value(triage["pct_assigned"]), "label": "% Assigned", "format": "pct0"})
+    write_json("kpi_triage_milestoned.json", {"value": pct0_value(triage["pct_milestoned"]), "label": "% Milestoned", "format": "pct0"})
 
     # -- Community priorities --
     write_json("community_priorities.json", query(con, "SELECT * FROM community_priorities"))
