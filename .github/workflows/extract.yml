@@ -4,6 +4,12 @@ on:
   schedule:
     # Run every 6 hours (4x per day) at :00 UTC
     - cron: '0 */6 * * *'
+  push:
+    branches: [main]
+    paths:
+      - 'extract/**'
+      - 'transform/**'
+      - '.github/workflows/extract.yml'
   workflow_dispatch:
 
 jobs:

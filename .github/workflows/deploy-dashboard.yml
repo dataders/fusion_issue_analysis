@@ -34,22 +34,6 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
-      - name: Install dbt Fusion
-        run: |
-          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Refresh dbt models in MotherDuck
-        # TODO: Remove timeout + || true once dbt-labs/dbt-fusion#1574 is fixed
-        # Fusion hangs or crashes (SIGFPE) on Linux when connecting to MotherDuck
-        timeout-minutes: 5
-        continue-on-error: true
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd transform
-          dbt build --profiles-dir . --target prod --static-analysis strict
-
       - name: Export Prefab dashboards
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}

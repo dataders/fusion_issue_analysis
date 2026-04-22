@@ -26,8 +26,7 @@ def _(mo):
 
 
 @app.cell
-def _():
-    import os
+def _(os):
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     DB_PATH = "md:fusion_issues" if os.environ.get("MOTHERDUCK_TOKEN") else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
     return (DB_PATH, PROJECT_ROOT)
