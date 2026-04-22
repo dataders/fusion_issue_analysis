@@ -12,55 +12,83 @@ jobs:
   preview:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --dev
 
-      - name: Extract GitHub issues
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: cd extract && uv run python run.py
-
-      - name: Install dbt Fusion
-        run: |
-          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
-
-      - name: Build dbt models
-        run: |
-          cd transform
-          dbt build --profiles-dir . --static-analysis baseline
+      # Data comes from MotherDuck — no extract or dbt build needed.
 
       - name: Export Prefab dashboards
         env:
-          MOTHERDUCK_TOKEN: ""
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
-          for f in dashboard/prefab/app*.py; do
-            name=$(basename "$f" .py)
-            uv run prefab export "$f" -o "preview/prefab/${name}.html" --bundled || true
-          done
-
-      - name: Build ggsql dashboard
-        run: |
-          mkdir -p preview/ggsql
-          uv run dashboard/ggsql/build.py || true
-          cp dashboard/ggsql/index.html preview/ggsql/index.html 2>/dev/null || true
+          uv run prefab export dashboard/prefab/app.py -o preview/prefab/app.html
+          uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
 
       - name: Build mviz dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd dashboard/mviz
           uv run python generate_data.py
-          npx mviz dashboard.md -o ../../preview/mviz.html || true
+          npx --yes mviz dashboard.md -o ../../preview/mviz/index.html
+
+      - name: Build ggsql dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: |
+          mkdir -p preview/ggsql
+          uv run dashboard/ggsql/build.py
+          cp dashboard/ggsql/index.html preview/ggsql/index.html
 
       - name: Export Marimo dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o preview/marimo.html
+
+      - name: Build Observable Framework dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          uv run marimo export html --no-include-code dashboard/marimo/app.py -o preview/marimo.html || true
+          cd dashboard/observable
+          npm ci --silent
+          npm run build
+          mkdir -p ../preview/observable
+          cp -r dist/* ../preview/observable/
+
+      - name: Build Evidence.dev dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          EVIDENCE_BASE_PATH: /evidence/build
+        run: |
+          uv run python3 dashboard/evidence/generate_sources.py
+          cd dashboard/evidence
+          npm ci --legacy-peer-deps --silent
+          ./node_modules/.bin/evidence sources
+          npm run build
+          mkdir -p ../../preview/evidence
+          cp -r build/* ../../preview/evidence/
+
+      - name: Install Quarto
+        uses: quarto-dev/quarto-actions/setup@v2
+
+      - name: Render Quarto dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          QUARTO_PYTHON: ${{ github.workspace }}/.venv/bin/python3
+        run: |
+          mkdir -p preview/quarto
+          cd dashboard/quarto
+          quarto render index.qmd
+          cp index.html ../../preview/quarto/index.html
+          cp -r index_files ../../preview/quarto/ 2>/dev/null || true
 
       - name: Upload preview artifact
         uses: actions/upload-artifact@v4
@@ -74,20 +102,21 @@ jobs:
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
-            const artifactUrl = `${runUrl}#artifacts`;
             const body = [
-              '## 📊 Dashboard Preview',
+              '## Dashboard Preview',
               '',
-              `Download the preview artifact from [this workflow run](${artifactUrl}) and open \`index.html\` in your browser.`,
+              `Download the preview artifact from [this workflow run](${runUrl}#artifacts) and open \`index.html\`.`,
               '',
-              '| File | Description |',
-              '|------|-------------|',
-              '| `index.html` | Bakeoff tab wrapper |',
-              '| `prefab/app.html` | Prefab health dashboard |',
-              '| `prefab/app_myspace.html` | Prefab MySpace edition |',
-              '| `ggsql/index.html` | ggsql + Vega-Lite |',
-              '| `mviz.html` | mviz |',
-              '| `marimo.html` | Marimo |',
+              '| Framework | File |',
+              '|-----------|------|',
+              '| Prefab | `prefab/app.html` |',
+              '| Prefab MySpace | `prefab/app_myspace.html` |',
+              '| ggsql + Vega-Lite | `ggsql/index.html` |',
+              '| mviz | `mviz/index.html` |',
+              '| Observable | `observable/index.html` |',
+              '| Evidence.dev | `evidence/index.html` |',
+              '| Marimo | `marimo.html` |',
+              '| Quarto | `quarto/index.html` |',
               '',
               `_[Workflow run](${runUrl})_`,
             ].join('\n');

@@ -9,35 +9,68 @@ jobs:
   build-and-test:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
 
       - name: Install dependencies
-        run: uv sync
+        run: uv sync --dev
 
-      - name: Extract GitHub issues
+      # ── Dashboard smoke-test (all frameworks, no || true) ─────────────────
+      # Data comes from MotherDuck — extract.yml keeps it fresh 4x/day.
+      # No extract or dbt build here; those run in extract.yml on schedule
+      # and on push to extract/** or transform/**.
+
+      - name: Smoke-test Prefab
         env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: cd extract && uv run python run.py
-
-      - name: Install dbt Fusion
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
-          echo "$HOME/.local/bin" >> $GITHUB_PATH
+          uv run prefab export dashboard/prefab/app.py -o /tmp/prefab_app.html
+          uv run prefab export dashboard/prefab/app_myspace.py -o /tmp/prefab_myspace.html
 
-      - name: Build dbt models
-        run: |
-          cd transform
-          dbt build --profiles-dir . --static-analysis baseline
-
-      - name: Export dashboards
+      - name: Smoke-test mviz
         env:
-          MOTHERDUCK_TOKEN: ""
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          uv run prefab export dashboard/prefab/app.py -o /tmp/index.html
-          for f in dashboard/prefab/app_*.py; do
-            [ -f "$f" ] && uv run prefab export "$f" -o "/tmp/$(basename "$f" .py).html" || true
-          done
-          echo "All dashboards exported successfully"
+          cd dashboard/mviz
+          uv run python generate_data.py
+          npx --yes mviz dashboard.md -o /tmp/mviz.html
+
+      - name: Smoke-test ggsql
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: uv run dashboard/ggsql/build.py
+
+      - name: Smoke-test Marimo
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o /tmp/marimo.html
+
+      - name: Smoke-test Observable
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          cd dashboard/observable
+          npm ci --silent
+          npm run build
+
+      - name: Smoke-test Evidence
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          EVIDENCE_BASE_PATH: /fusion_issue_analysis/evidence/build
+        run: |
+          uv run python3 dashboard/evidence/generate_sources.py
+          cd dashboard/evidence
+          npm ci --legacy-peer-deps --silent
+          ./node_modules/.bin/evidence sources
+          npm run build
+
+      - name: Smoke-test Quarto
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          QUARTO_PYTHON: ${{ github.workspace }}/.venv/bin/python3
+        run: |
+          cd dashboard/quarto
+          quarto render index.qmd
