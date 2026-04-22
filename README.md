@@ -172,6 +172,28 @@ Three observations fall out of this grid:
 3. **Layers ①–③ are the interesting ones.** Layers ④–⑦ mostly follow from the
    grammar choice. When picking a tool, compare query/transport first.
 
+### Framework capabilities beyond charting
+
+Structural concerns that exist independent of chart rendering — the parts that
+survive even after you swap in a different charting library. (Data pipeline is
+held constant: dlt → dbtf → DuckDB/MotherDuck for all six.)
+
+| Dimension | Prefab | Marimo | Observable | Evidence | ggsql | mviz |
+|---|---|---|---|---|---|---|
+| **Layout** | Row/Column component primitives | `mo.hstack` / `vstack` | MD + CSS grid | MD + Grid/Row components | hand-stitched HTML | MD `:::grid` fences |
+| **Reactivity** | ✗ | ✓ full cell graph | partial (Inputs widgets) | ✓ (WASM reruns page SQL) | ✗ | ✗ |
+| **Shared filter state** | ✗ | ✓ Python reactive vars | ✓ Observable cells | ✓ implicit via WASM | ✗ | ✗ |
+| **Multi-page routing** | ✗ | ✗ | ✓ file-based (`pages/`) | ✓ file-based (`.md`) | ✗ | ✗ |
+| **Build / export** | `prefab export` → single `.html` | `marimo export` → single `.html` | `observable build` → multi-file site | `evidence build` → multi-file site | custom `build.py` → `.html` | `build.sh` → `.html` |
+| **Table rendering** | sortable table component | DataFrame display (not sortable in export) | no built-in | DataTable (sort, search, paginate) | ✗ | `table` preset (limited) |
+
+Key reads:
+
+- **Only Observable and Evidence have multi-page routing.** Every other tool is single-page by default. Growing past one screen means hand-rolled tabs or switching tools.
+- **Reactivity is Evidence's strongest structural differentiator.** DuckDB-WASM reruns SQL on filter change, not just re-renders already-fetched rows. Marimo matches it in live mode but loses reactivity in static export.
+- **Layout is where most tools are weakest.** Observable, ggsql, and mviz leave layout entirely to hand-rolled CSS. Prefab and Evidence have the most opinionated layout systems.
+- **Build artifact shape matters for deployment.** Prefab and Marimo produce a self-contained single `.html` file — trivial to drop into GitHub Pages. Observable and Evidence produce multi-file sites that require a static file server to work locally.
+
 ### Capability coverage (what actually rendered)
 
 | Capability                                      | Prefab | Marimo          | Observable            | Evidence                                         | ggsql                                          | mviz                                |
