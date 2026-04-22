@@ -25,6 +25,11 @@ def get_connection():
     return con
 
 
+def load_sql(name: str) -> str:
+    with open(os.path.join(HERE, "queries", f"{name}.sql")) as f:
+        return f.read()
+
+
 def query(con, sql: str) -> list[dict]:
     return json.loads(con.execute(sql).fetchdf().to_json(orient="records"))
 
