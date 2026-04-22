@@ -2,9 +2,30 @@
 
 # Fusion Issue Analytics
 
-End-to-end analytics pipeline for [dbt-labs/dbt-fusion](https://github.com/dbt-labs/dbt-fusion) GitHub issues.
+Personal bakeoff for agentic analytics and static dashboard frameworks, built on top of [dbt-labs/dbt-fusion](https://github.com/dbt-labs/dbt-fusion) GitHub issues.
 
-**Extract** issues via dlt → **Transform** with dbt Fusion + DuckDB → **Visualize** across six frameworks (Prefab, Evidence.dev, Observable, ggsql + Vega-Lite, mviz, Marimo).
+Live site: [dashboard-bakeoff.anders.omg.lol](https://dashboard-bakeoff.anders.omg.lol/)
+
+I got interested in agentic analytics partly because static-site dashboard frameworks are fun, and partly because I used to spend a lot of time in Power BI. I am not a web developer. This repo is me trying to build intuition for what these frameworks can and cannot do when the goal is a real dashboard, not just a demo chart.
+
+I expected a couple of options. I was surprised by how many there are. Along the way I started to learn what the static dashboard stack actually looks like, where it is strong, where it gets awkward, and how to make it work cleanly with dbt.
+
+**Extract** issues via dlt → **Transform** with dbt Fusion + DuckDB → **Visualize** across several dashboard frameworks and experiments.
+
+## High-Level
+
+- Same analytics problem, implemented across multiple static or static-friendly dashboard frameworks
+- Seven dashboard tabs now sit on top of the same dbt `models/dashboard/` layer, so the comparison is closer to apples-to-apples
+- Same dbt-shaped warehouse logic, with different choices for authoring, transport, interactivity, and layout
+- Main question: what belongs in dbt, and what belongs in the dashboard layer?
+
+## Tools Used
+
+- **Extract**: dlt + GitHub GraphQL
+- **Transform**: dbt Fusion, DuckDB, MotherDuck
+- **Core bakeoff frameworks**: Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, Marimo
+- **Additional experiments**: Quarto, Prefab MySpace
+- **Deploy**: GitHub Actions + GitHub Pages behind a custom domain
 
 ## Architecture
 
@@ -19,7 +40,7 @@ GitHub API (dbt-labs/dbt-fusion)
         │
   data/fusion_issues.duckdb   ← gitignored
         │
-   Prefab dashboard
+   static dashboard builds
 ```
 
 ## Quick Start
@@ -40,7 +61,7 @@ uv sync
 
 ```bash
 export GITHUB_TOKEN=ghp_your_token_here
-cd extract && uv run python run.py
+cd extract && uv run python3 run.py
 ```
 
 This pulls all issues, comments, labels, assignees, and reactions from `dbt-labs/dbt-fusion` into parquet files under `data/raw/`.
@@ -95,7 +116,7 @@ uv run prefab export dashboard/app.py -o dashboard/index.html
 
 The GitHub Actions workflow (`.github/workflows/deploy-dashboard.yml`) automates extract → build → export → deploy on push to main or manual trigger.
 
-The public dashboard is published at `https://dataders.github.io/fusion_issue_analysis/`.
+The public dashboard is published at [dashboard-bakeoff.anders.omg.lol](https://dashboard-bakeoff.anders.omg.lol/).
 
 ## Data Details
 
@@ -108,14 +129,23 @@ The public dashboard is published at `https://dataders.github.io/fusion_issue_an
 
 ## Dashboard Framework Bakeoff — Findings
 
-The `dashboard/` directory hosts six implementations of the same issue-health dashboard
-(Prefab, Prefab MySpace, ggsql + Vega-Lite, mviz, Observable Framework, Evidence.dev,
-Marimo). Each one renders from the same DuckDB/MotherDuck tables but makes different
+The core bakeoff in `dashboard/` covers six implementations of the same issue-health
+dashboard (Prefab, ggsql + Vega-Lite, mviz, Observable Framework, Evidence.dev,
+Marimo). The repo also includes side experiments such as Prefab MySpace and Quarto.
+Each implementation renders from the same DuckDB/MotherDuck tables but makes different
 choices about how SQL, charts, layout, and build artifacts compose.
 
 This section captures what we learned — the stack decomposition, per-framework
 layer picks, capability coverage, and a weighted scoring rubric for choosing one
 over another in future projects.
+
+## Main Challenge
+
+The hardest part is not charting. The hardest part is keeping business logic out of the dashboard.
+
+Agents do this. Humans do this too. The dashboard layer always tempts you to tuck a little metric logic, filtering logic, or status logic into the page because it feels faster in the moment. But once that starts, the dashboard becomes the semantic layer by accident.
+
+The discipline here is to keep metric definitions, joins, and business rules in dbt whenever possible, then let the dashboard focus on layout, interaction, and presentation. When that boundary holds, the bakeoff is easier to compare, easier to diff, and easier to swap between tools.
 
 ### Build-time bake vs. render-time query
 
@@ -269,7 +299,17 @@ specs. Weights applied:
 | **mviz**                | JSON spec files = best AI-agent generation target; chart specs are pure data (diff-friendly, no code, no imports)         |
 | **Marimo**              | Reactive Python **compute graph** — cells re-execute automatically on dependency change; exports to static HTML OR runs as live notebook |
 
-### Decision guide for future projects
+## Open Questions
+
+- Where is the right boundary between dbt models and dashboard-specific shaping queries?
+- When is build-time baking enough, and when is browser-side or runtime querying worth the extra complexity?
+- Should Evidence push all the way to true browser → MotherDuck querying, or is baked static data the better constraint?
+- What is the best authoring format for agents: JSON specs, SQL-first tools, Markdown + SQL, or Python?
+- How interactive can a static dashboard get before it becomes an accidental app?
+- What is the right preview/deploy target for this kind of project: GitHub Pages, Netlify-style previews, or something data-tool-native?
+- Which of these tools still feels maintainable once the dashboard grows beyond a single page?
+
+### Decision chart for future projects
 
 | If you need…                                              | Pick                    |
 |-----------------------------------------------------------|-------------------------|
@@ -279,6 +319,7 @@ specs. Weights applied:
 | Investigation > presentation                              | Marimo                  |
 | Analyst-authored BI site with filters and polish          | Evidence.dev            |
 | Rich interactivity + bespoke viz (you accept Node)        | Observable Framework    |
+| Narrative report / document feel                          | Quarto                  |
 | Full reactive Python app (not static)                     | Streamlit / Dash / Shiny |
 
 ## Roadmap
