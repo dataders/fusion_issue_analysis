@@ -95,6 +95,8 @@ uv run prefab export dashboard/app.py -o dashboard/index.html
 
 The GitHub Actions workflow (`.github/workflows/deploy-dashboard.yml`) automates extract → build → export → deploy on push to main or manual trigger.
 
+The public dashboard is published at `https://dataders.github.io/fusion_issue_analysis/`.
+
 ## Data Details
 
 - **Source**: 1,397 issues, 2,616 comments, 3,309 label assignments, 842 assignees
