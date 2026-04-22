@@ -35,6 +35,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
+          mkdir -p preview/mviz
           cd dashboard/mviz
           uv run python generate_data.py
           npx --yes mviz dashboard.md -o ../../preview/mviz/index.html

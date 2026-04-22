@@ -26,7 +26,6 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 ```area size=[16,6] file=data/cumulative_flow.json
 {
   "title": "Cumulative Issue Flow",
-  "subtitle": "Gap = issue debt (excludes EPICs)",
   "x": "week",
   "y": ["cumulative_opened", "cumulative_closed"]
 }
@@ -43,8 +42,7 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 ```
 ```line size=[8,6] file=data/response_pctiles.json
 {
-  "title": "Time to First Response (hours)",
-  "subtitle": "p25 / p50 / p75 bands",
+  "title": "Time to First Response (hours) — p25/p50/p75",
   "x": "week",
   "y": ["p25", "p50", "p75"]
 }
@@ -90,8 +88,7 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 
 ```table size=[16,6] file=data/community_priorities.json
 {
-  "title": "Community Priorities",
-  "subtitle": "Most-reacted open issues",
+  "title": "Community Priorities — Most-Reacted Open Issues",
   "columns": [
     {"id": "issue_number", "title": "#", "bold": true},
     {"id": "title", "title": "Title"},
