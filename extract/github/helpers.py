@@ -10,6 +10,8 @@ from .settings import GRAPHQL_API_BASE_URL, REST_API_BASE_URL
 
 MAX_RETRIES = 5
 RETRY_BASE_DELAY = 30  # seconds
+RETRY_STATUS_CODES = {403, 429, 500, 502, 503, 504}
+REQUEST_TIMEOUT_SECONDS = 60
 
 
 #
@@ -133,28 +135,43 @@ def _run_graphql_query(
 ) -> Tuple[StrAny, StrAny]:
     import requests as raw_requests
 
+    retryable_errors = (
+        raw_requests.exceptions.ChunkedEncodingError,
+        raw_requests.exceptions.ConnectionError,
+        raw_requests.exceptions.Timeout,
+    )
+
+    def _sleep_before_retry(reason: str, retry_number: int) -> None:
+        delay = RETRY_BASE_DELAY * (2 ** (retry_number - 1))
+        print(
+            f"GitHub GraphQL request failed ({reason}), retrying in {delay}s "
+            f"(attempt {retry_number}/{MAX_RETRIES})"
+        )
+        time.sleep(delay)
+
     def _request() -> raw_requests.Response:
-        for attempt in range(MAX_RETRIES):
-            r = raw_requests.post(
-                GRAPHQL_API_BASE_URL,
-                json={"query": query, "variables": variables},
-                headers=_get_auth_header(access_token),
-            )
-            if r.status_code in (403, 429, 502, 503):
-                delay = RETRY_BASE_DELAY * (2 ** attempt)
-                print(f"Rate limited ({r.status_code}), retrying in {delay}s (attempt {attempt + 1}/{MAX_RETRIES})")
-                time.sleep(delay)
+        for attempt in range(MAX_RETRIES + 1):
+            try:
+                r = raw_requests.post(
+                    GRAPHQL_API_BASE_URL,
+                    json={"query": query, "variables": variables},
+                    headers=_get_auth_header(access_token),
+                    timeout=REQUEST_TIMEOUT_SECONDS,
+                )
+            except retryable_errors:
+                if attempt == MAX_RETRIES:
+                    raise
+                _sleep_before_retry("network response ended early", attempt + 1)
                 continue
+
+            if r.status_code in RETRY_STATUS_CODES and attempt < MAX_RETRIES:
+                _sleep_before_retry(f"HTTP {r.status_code}", attempt + 1)
+                continue
+
             r.raise_for_status()
             return r
-        # final attempt
-        r = raw_requests.post(
-            GRAPHQL_API_BASE_URL,
-            json={"query": query, "variables": variables},
-            headers=_get_auth_header(access_token),
-        )
-        r.raise_for_status()
-        return r
+
+        raise RuntimeError("GitHub GraphQL request retry loop exhausted")
 
     data = _request().json()
     if "errors" in data:
