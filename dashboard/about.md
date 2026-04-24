@@ -17,7 +17,7 @@ I expected a couple of options. I was surprised by how many there are. Along the
 ## What this repo is testing
 
 - Same analytics problem, implemented across multiple static or static-friendly dashboard frameworks.
-- Eight dashboard tabs sit on top of the same dbt `models/dashboard/` layer, so comparison is closer to apples-to-apples.
+- Nine dashboard variants sit on top of the same dbt `models/dashboard/` layer, so comparison is closer to apples-to-apples.
 - Shared data layer runs on DuckDB locally and MotherDuck in deployed builds.
 - Each framework makes different choices about authoring, transport, layout, interactivity, and build shape.
 
@@ -30,13 +30,13 @@ I expected a couple of options. I was surprised by how many there are. Along the
 
 ## Tools in the bakeoff
 
-**Core bakeoff frameworks:** Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, Marimo.
+**Core bakeoff frameworks:** Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo.
 
 **Side experiments:** Prefab MySpace and Quarto.
 
 **Data stack:** dlt, dbt Fusion, DuckDB, MotherDuck, GitHub Actions, GitHub Pages.
 
-**Direct links:** [Prefab](./?tab=prefab), [Prefab MySpace](./?tab=prefab-myspace), [ggsql](./?tab=ggsql), [mviz](./?tab=mviz), [Observable](./?tab=observable), [Evidence.dev](./?tab=evidence), [Marimo](./?tab=marimo), [Quarto](./?tab=quarto).
+**Direct links:** [Prefab](./?tab=prefab), [Prefab MySpace](./?tab=prefab-myspace), [ggsql](./?tab=ggsql), [mviz](./?tab=mviz), [MDV](./?tab=mdv), [Observable](./?tab=observable), [Evidence.dev](./?tab=evidence), [Marimo](./?tab=marimo), [Quarto](./?tab=quarto).
 
 ## Main challenge
 
@@ -62,7 +62,7 @@ The interesting choices are usually in the first three. Once query engine and tr
 
 | Mode | What happens | Frameworks |
 |---|---|---|
-| Build-time bake | SQL runs in CI against MotherDuck and rows are baked into static artifacts. | Prefab, Prefab MySpace, mviz, ggsql, Observable, Marimo, Quarto |
+| Build-time bake | SQL runs in CI against MotherDuck and rows are baked into static artifacts. | Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto |
 | Render-time query | Browser reruns page SQL against shipped Parquet through DuckDB-WASM. | Evidence.dev |
 
 ## Decision guide
@@ -70,6 +70,7 @@ The interesting choices are usually in the first three. Once query engine and tr
 | If you need... | Pick |
 |---|---|
 | Agent-authored, spec-diffable, static | [mviz](./?tab=mviz) |
+| Markdown-native report with inline SVG charts | [MDV](./?tab=mdv) |
 | Python-first, design-system feel, KPI + charts | [Prefab](./?tab=prefab) |
 | SQL is the chart | [ggsql](./?tab=ggsql) |
 | Investigation more than presentation | [Marimo](./?tab=marimo) |

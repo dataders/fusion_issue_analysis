@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz marimo observable evidence quarto kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz mdv marimo observable evidence quarto kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: about prefab ggsql mviz marimo observable evidence quarto
+build: about prefab ggsql mviz mdv marimo observable evidence quarto
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:
@@ -42,6 +42,10 @@ mviz:
 	uv run python3 dashboard/mviz/generate_data.py
 	npx --yes mviz dashboard/mviz/dashboard.md -o dashboard/mviz/index.html
 
+## mdv          Generate data files and render MDV dashboard
+mdv:
+	bash dashboard/mdv/build.sh
+
 ## marimo       Export Marimo notebook to static HTML
 marimo:
 	uv run marimo export html dashboard/marimo/app.py -o dashboard/marimo.html
@@ -68,8 +72,8 @@ kill-server:
 ## clean        Remove all generated dashboard files
 clean:
 	rm -f  dashboard/prefab/app.html dashboard/prefab/app_myspace.html
-	rm -f  dashboard/ggsql/index.html dashboard/mviz/index.html dashboard/marimo.html
-	rm -rf dashboard/observable/dist dashboard/evidence/build
+	rm -f  dashboard/ggsql/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
+	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto
 

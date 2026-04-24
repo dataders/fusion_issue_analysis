@@ -54,6 +54,11 @@ jobs:
           uv run python generate_data.py
           npx mviz dashboard.md -o index.html
 
+      - name: Build MDV dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: bash dashboard/mdv/build.sh
+
       - name: Build ggsql dashboard
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
