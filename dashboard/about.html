@@ -108,7 +108,7 @@
 <h2>What this repo is testing</h2>
 <ul>
 <li>Same analytics problem, implemented across multiple static or static-friendly dashboard frameworks.</li>
-<li>Eight dashboard tabs sit on top of the same dbt <code>models/dashboard/</code> layer, so comparison is closer to apples-to-apples.</li>
+<li>Nine dashboard variants sit on top of the same dbt <code>models/dashboard/</code> layer, so comparison is closer to apples-to-apples.</li>
 <li>Shared data layer runs on DuckDB locally and MotherDuck in deployed builds.</li>
 <li>Each framework makes different choices about authoring, transport, layout, interactivity, and build shape.</li>
 </ul>
@@ -120,10 +120,10 @@
 <li><strong>Publish:</strong> the static wrapper ships to GitHub Pages on a custom domain.</li>
 </ol>
 <h2>Tools in the bakeoff</h2>
-<p><strong>Core bakeoff frameworks:</strong> Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, Marimo.</p>
+<p><strong>Core bakeoff frameworks:</strong> Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo.</p>
 <p><strong>Side experiments:</strong> Prefab MySpace and Quarto.</p>
 <p><strong>Data stack:</strong> dlt, dbt Fusion, DuckDB, MotherDuck, GitHub Actions, GitHub Pages.</p>
-<p><strong>Direct links:</strong> <a href="./?tab=prefab">Prefab</a>, <a href="./?tab=prefab-myspace">Prefab MySpace</a>, <a href="./?tab=ggsql">ggsql</a>, <a href="./?tab=mviz">mviz</a>, <a href="./?tab=observable">Observable</a>, <a href="./?tab=evidence">Evidence.dev</a>, <a href="./?tab=marimo">Marimo</a>, <a href="./?tab=quarto">Quarto</a>.</p>
+<p><strong>Direct links:</strong> <a href="./?tab=prefab">Prefab</a>, <a href="./?tab=prefab-myspace">Prefab MySpace</a>, <a href="./?tab=ggsql">ggsql</a>, <a href="./?tab=mviz">mviz</a>, <a href="./?tab=mdv">MDV</a>, <a href="./?tab=observable">Observable</a>, <a href="./?tab=evidence">Evidence.dev</a>, <a href="./?tab=marimo">Marimo</a>, <a href="./?tab=quarto">Quarto</a>.</p>
 <h2>Main challenge</h2>
 <p>Hard part is not charting. Hard part is keeping business logic out of the dashboard. Agents do this. Humans do this too. The dashboard layer always tempts you to tuck a little metric logic, filtering logic, or status logic into the page because it feels faster in the moment. But once that starts, the dashboard becomes the semantic layer by accident.</p>
 <p>The discipline here is to keep metric definitions, joins, and business rules in dbt whenever possible, then let the dashboard focus on layout, interaction, and presentation. When that boundary holds, the bakeoff is easier to compare, easier to diff, and easier to swap between tools.</p>
@@ -152,7 +152,7 @@
 <tr>
 <td>Build-time bake</td>
 <td>SQL runs in CI against MotherDuck and rows are baked into static artifacts.</td>
-<td>Prefab, Prefab MySpace, mviz, ggsql, Observable, Marimo, Quarto</td>
+<td>Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto</td>
 </tr>
 <tr>
 <td>Render-time query</td>
@@ -173,6 +173,10 @@
 <tr>
 <td>Agent-authored, spec-diffable, static</td>
 <td><a href="./?tab=mviz">mviz</a></td>
+</tr>
+<tr>
+<td>Markdown-native report with inline SVG charts</td>
+<td><a href="./?tab=mdv">MDV</a></td>
 </tr>
 <tr>
 <td>Python-first, design-system feel, KPI + charts</td>

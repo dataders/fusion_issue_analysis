@@ -44,6 +44,14 @@ jobs:
           uv run python generate_data.py
           npx --yes mviz dashboard.md -o ../../preview/mviz/index.html
 
+      - name: Build MDV dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          mkdir -p preview/mdv
+          bash dashboard/mdv/build.sh
+          cp dashboard/mdv/index.html preview/mdv/index.html
+
       - name: Build ggsql dashboard
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
@@ -118,6 +126,7 @@ jobs:
               '| Prefab MySpace | `prefab/app_myspace.html` |',
               '| ggsql + Vega-Lite | `ggsql/index.html` |',
               '| mviz | `mviz/index.html` |',
+              '| MDV | `mdv/index.html` |',
               '| Observable | `observable/index.html` |',
               '| Evidence.dev | `evidence/index.html` |',
               '| Marimo | `marimo.html` |',

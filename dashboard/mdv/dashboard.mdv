@@ -1,0 +1,53 @@
+---
+title: dbt-fusion Issue Health
+theme: minimal
+data:
+  stats: ./data/stats.csv
+  velocity: ./data/velocity.csv
+  response: ./data/response.csv
+  open_by_category: ./data/open_by_category.csv
+  close_by_label: ./data/close_by_label.csv
+  community_priorities: ./data/community_priorities.csv
+styles:
+  note:
+    background: "#eef5ff"
+    border: "1px solid #b7d4ff"
+    padding: medium
+    radius: small
+---
+
+# dbt-fusion Issue Health
+
+::: note
+MDV keeps the page as Markdown with named CSV datasets. The rendered artifact is a self-contained HTML file with inline SVG charts.
+:::
+
+## Key metrics
+
+```stat data=stats
+```
+
+## Velocity
+
+```chart type=line data=velocity x=week y=days series=type points title="Median days to close"
+```
+
+## Response time
+
+```chart type=line data=response x=week y=hours series=percentile points title="Hours to first response"
+```
+
+## Open issue mix
+
+```chart type=pie data=open_by_category label=issue_category value=count donut title="Open issues by type"
+```
+
+## Slowest labels
+
+```chart type=bar data=close_by_label x=label_name y=median_days_to_close title="Median days to close by label"
+```
+
+## Community priorities
+
+```table data=community_priorities
+```

@@ -171,6 +171,8 @@ dashboard/prefab/app.html
 dashboard/prefab/app_myspace.html
 dashboard/mviz/index.html
 dashboard/mviz/data/
+dashboard/mdv/index.html
+dashboard/mdv/data/
 dashboard/marimo.html
 dashboard/ggsql/index.html
 dashboard/__marimo__/
