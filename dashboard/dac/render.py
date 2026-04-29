@@ -13,6 +13,11 @@ SOURCE_DASHBOARDS = DAC_DIR / "dashboards"
 CONFIG = DAC_DIR / "bruin.yml"
 PLACEHOLDER = "set file_search_path='transform';"
 DASHBOARD_NAME = "Fusion Issue Analysis"
+ERROR_MARKERS = (
+    "bruin query failed",
+    "parsing bruin query output",
+    "Installing uv ",
+)
 
 
 def render_dashboard_sources(destination: Path, transform_dir: str) -> None:
@@ -20,6 +25,31 @@ def render_dashboard_sources(destination: Path, transform_dir: str) -> None:
     dashboard = destination / "fusion-issues.yml"
     content = dashboard.read_text()
     dashboard.write_text(content.replace(PLACEHOLDER, f"set file_search_path='{transform_dir}';"))
+
+
+def warm_bruin_query_runtime(config: Path, env: dict[str, str], env_name: str) -> None:
+    command = [
+        "bruin",
+        "query",
+        "--config-file",
+        str(config),
+        "--environment",
+        env_name,
+        "--connection",
+        "fusion",
+        "--query",
+        "select 1 as value",
+        "--output",
+        "json",
+    ]
+    subprocess.run(command, check=True, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+
+
+def validate_static_output(path: Path) -> None:
+    content = path.read_text()
+    matches = [marker for marker in ERROR_MARKERS if marker in content]
+    if matches:
+        raise SystemExit(f"DAC static build contains query errors: {', '.join(matches)}")
 
 
 def main() -> None:
@@ -37,6 +67,7 @@ def main() -> None:
         if env_name:
             config = tmp_path / "bruin.yml"
             config.write_text(CONFIG.read_text().replace("default_environment: local", f"default_environment: {env_name}"))
+            warm_bruin_query_runtime(config, env, env_name)
 
         command = ["dac", "--config", str(config)]
         command.extend([
@@ -51,6 +82,7 @@ def main() -> None:
         subprocess.run(command, check=True, env=env)
 
     fix_asset_paths(output / "index.html")
+    validate_static_output(output / "index.html")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 import importlib.util
+import sys
 import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
@@ -58,12 +59,14 @@ class DacDashboardTests(unittest.TestCase):
         self.assertIn("open_issues", dashboard)
         self.assertIn("FUSION_TRANSFORM_DIR", DAC_RENDER.read_text())
         self.assertIn("default_environment: {env_name}", DAC_RENDER.read_text())
+        self.assertIn("warm_bruin_query_runtime(config, env, env_name)", DAC_RENDER.read_text())
 
     def test_dac_asset_rewrite_makes_nested_static_build_portable(self) -> None:
         spec = importlib.util.spec_from_file_location("fix_asset_paths", DAC_ASSET_FIX)
         self.assertIsNotNone(spec)
         module = importlib.util.module_from_spec(spec)
         assert spec.loader is not None
+        sys.path.insert(0, str(DAC_RENDER.parent))
         spec.loader.exec_module(module)
 
         with TemporaryDirectory() as tmpdir:
@@ -75,6 +78,20 @@ class DacDashboardTests(unittest.TestCase):
             self.assertIn('src="assets/app.js"', rewritten)
             self.assertIn('href="assets/app.css"', rewritten)
             self.assertNotIn('"/assets/', rewritten)
+
+    def test_dac_static_output_validation_rejects_baked_query_errors(self) -> None:
+        spec = importlib.util.spec_from_file_location("render", DAC_RENDER)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "index.html"
+            path.write_text("parsing bruin query output: Installing uv v0.10.8")
+
+            with self.assertRaises(SystemExit):
+                module.validate_static_output(path)
 
 
 if __name__ == "__main__":
