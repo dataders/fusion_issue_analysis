@@ -41,6 +41,8 @@ What they do:
 - `make build`: export all dashboard variants
 - `make serve`: build and open local static wrapper
 
+Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, and DAC.
+
 ## Repo Shape
 
 - `extract/`: GitHub extraction with dlt

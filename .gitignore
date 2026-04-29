@@ -187,6 +187,8 @@ dashboard/evidence/.evidence/
 dashboard/quarto/.quarto/
 dashboard/quarto/index.html
 dashboard/quarto/index_files/
+dashboard/dac/build/
+logs/queries
 
 # Claude Code session state
 .claude/scheduled_tasks.lock

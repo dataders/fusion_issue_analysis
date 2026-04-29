@@ -34,6 +34,11 @@ jobs:
       - name: Install dependencies
         run: uv sync
 
+      - name: Install DAC
+        run: |
+          curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
 
@@ -103,6 +108,15 @@ jobs:
         run: |
           cd dashboard/quarto
           quarto render index.qmd
+
+      - name: Build DAC dashboard
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          DAC_ENVIRONMENT: prod
+          DAC_OUTPUT: dashboard/dac/build
+        run: |
+          uv run python3 dashboard/dac/render.py
+          ! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
       - name: Upload Pages artifact
         uses: actions/upload-pages-artifact@v5

@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz mdv marimo observable evidence quarto kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz mdv marimo observable evidence quarto dac kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: about prefab ggsql mviz mdv marimo observable evidence quarto
+build: about prefab ggsql mviz mdv marimo observable evidence quarto dac
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:
@@ -63,6 +63,11 @@ evidence:
 quarto:
 	cd dashboard/quarto && QUARTO_PYTHON=$$(uv run which python3) quarto render index.qmd
 
+## dac          Build DAC dashboard to static HTML
+dac:
+	uv run python3 dashboard/dac/render.py
+	! grep -q 'bruin query failed' dashboard/dac/build/index.html
+
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 ## kill-server  Kill whatever is running on PORT (default: 8081)
@@ -76,6 +81,7 @@ clean:
 	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto
+	rm -rf dashboard/dac/build
 
 ## help         Show this help
 help:
@@ -86,3 +92,4 @@ help:
 	@echo "Notes:"
 	@echo "  Set MOTHERDUCK_TOKEN to build against MotherDuck instead of local DuckDB"
 	@echo "  observable and evidence require node_modules (run npm ci in each dir first)"
+	@echo "  dac requires the dac and bruin CLIs"
