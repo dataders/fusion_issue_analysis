@@ -43,7 +43,7 @@ jobs:
         run: |
           cd dashboard/mviz
           uv run python generate_data.py
-          npx --yes mviz dashboard.md -o /tmp/mviz.html
+          npx --yes mviz@1.6.7 dashboard.md -o /tmp/mviz.html
 
       - name: Smoke-test ggsql
         env:

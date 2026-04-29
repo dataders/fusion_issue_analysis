@@ -57,7 +57,7 @@ jobs:
         run: |
           cd dashboard/mviz
           uv run python generate_data.py
-          npx mviz dashboard.md -o index.html
+          npx --yes mviz@1.6.7 dashboard.md -o index.html
 
       - name: Build MDV dashboard
         env:

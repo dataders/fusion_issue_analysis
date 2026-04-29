@@ -40,7 +40,7 @@ ggsql:
 ## mviz         Generate data files and render mviz dashboard
 mviz:
 	uv run python3 dashboard/mviz/generate_data.py
-	npx --yes mviz dashboard/mviz/dashboard.md -o dashboard/mviz/index.html
+	npx --yes mviz@1.6.7 dashboard/mviz/dashboard.md -o dashboard/mviz/index.html
 
 ## mdv          Generate data files and render MDV dashboard
 mdv:
