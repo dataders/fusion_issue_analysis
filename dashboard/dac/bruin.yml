@@ -1,0 +1,15 @@
+default_environment: local
+
+environments:
+  local:
+    connections:
+      duckdb:
+        - name: fusion
+          path: ${FUSION_DB}
+          read_only: true
+  prod:
+    connections:
+      motherduck:
+        - name: fusion
+          token: ${MOTHERDUCK_TOKEN}
+          database: fusion_issues

@@ -1,0 +1,143 @@
+name: Fusion Issue Analysis
+description: dbt-fusion GitHub issue health from the shared dbt dashboard marts.
+connection: fusion
+
+rows:
+  - widgets:
+      - name: Net Flow
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select closed_4w - opened_4w as value
+          from summary_kpis
+        column: value
+        format: number
+      - name: Open Issues
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select open_issues as value
+          from summary_kpis
+        column: value
+        format: number
+      - name: 48h Response SLA
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select pct_responded_48h / 100.0 as value
+          from summary_kpis
+        column: value
+        format: percentage
+      - name: Stale Issues
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select stale_count as value
+          from summary_kpis
+        column: value
+        format: number
+
+  - widgets:
+      - name: Cumulative Flow
+        type: chart
+        chart: line
+        col: 8
+        sql: |
+          set file_search_path='transform';
+          select
+            week,
+            cumulative_opened,
+            cumulative_closed
+          from cumulative_flow
+          order by week
+        x: week
+        y: [cumulative_opened, cumulative_closed]
+      - name: Open Issues by Category
+        type: chart
+        chart: pie
+        col: 4
+        sql: |
+          set file_search_path='transform';
+          select issue_category, count
+          from open_by_category
+          order by count desc
+        label: issue_category
+        value: count
+
+  - widgets:
+      - name: Response Time Percentiles
+        type: chart
+        chart: line
+        col: 6
+        sql: |
+          set file_search_path='transform';
+          select week, p25, p50, p75
+          from response_pctiles
+          order by week
+        x: week
+        y: [p25, p50, p75]
+      - name: Age Distribution
+        type: chart
+        chart: bar
+        stacked: true
+        col: 6
+        sql: |
+          set file_search_path='transform';
+          select
+            age_bucket,
+            sum(case when issue_category = 'bug' then issue_count else 0 end) as bug,
+            sum(case when issue_category = 'enhancement' then issue_count else 0 end) as enhancement,
+            sum(case when issue_category = 'other' then issue_count else 0 end) as other
+          from age_distribution
+          group by age_bucket
+          order by case age_bucket
+            when '0-7d' then 1
+            when '8-30d' then 2
+            when '31-90d' then 3
+            when '91-180d' then 4
+            else 5
+          end
+        x: age_bucket
+        y: [bug, enhancement, other]
+
+  - widgets:
+      - name: Oldest Open Issues
+        type: table
+        col: 12
+        sql: |
+          set file_search_path='transform';
+          select
+            issue_number,
+            title,
+            issue_category,
+            round(datediff('day', created_at, current_date), 0) as age_days,
+            reactions_total_count,
+            comments_total_count,
+            coalesce(milestone_title, '') as milestone
+          from fct_issues
+          where state = 'OPEN' and issue_category != 'epic'
+          order by created_at asc
+          limit 25
+        columns:
+          - name: issue_number
+            label: Issue
+            format: number
+          - name: title
+            label: Title
+          - name: issue_category
+            label: Type
+          - name: age_days
+            label: Age Days
+            format: number
+          - name: reactions_total_count
+            label: Reactions
+            format: number
+          - name: comments_total_count
+            label: Comments
+            format: number
+          - name: milestone
+            label: Milestone
