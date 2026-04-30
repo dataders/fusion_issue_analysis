@@ -39,21 +39,25 @@
       scrollbar-width: thin;
     }
 
-    nav button {
+    nav button,
+    .subnav button {
       padding: 7px 18px;
       border: 1px solid transparent;
-      border-bottom: none;
       background: transparent;
       color: #888;
-      border-radius: 5px 5px 0 0;
       cursor: pointer;
       font-size: 0.875rem;
       font-family: inherit;
       transition: color 0.1s;
-      position: relative;
-      bottom: -1px;
       flex: 0 0 auto;
       white-space: nowrap;
+    }
+
+    nav button {
+      border-bottom: none;
+      border-radius: 5px 5px 0 0;
+      position: relative;
+      bottom: -1px;
     }
 
     nav button:hover {
@@ -64,6 +68,38 @@
       background: #fff;
       color: #111;
       border-color: #333;
+      font-weight: 600;
+    }
+
+    .subnav {
+      display: flex;
+      gap: 6px;
+      padding: 9px 0 10px;
+      overflow-x: auto;
+      scrollbar-width: thin;
+    }
+
+    .subnav[hidden] {
+      display: none;
+    }
+
+    .subnav button {
+      padding: 5px 12px;
+      border-color: #333;
+      border-radius: 4px;
+      background: #1b1b1b;
+      font-size: 0.8rem;
+    }
+
+    .subnav button:hover {
+      color: #ddd;
+      border-color: #555;
+    }
+
+    .subnav button.active {
+      background: #e8e8e8;
+      color: #111;
+      border-color: #555;
       font-weight: 600;
     }
 
@@ -79,10 +115,8 @@
   <!-- Deploy smoke test: keep dashboard/** path change behaviorless. -->
   <header>
     <p class="header-title">dbt-fusion Issue Analysis — Visualization Framework Bakeoff</p>
-    <nav>
+    <nav class="main-tabs" aria-label="Dashboard framework">
       <button class="active" data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
-      <button data-src="prefab/app_myspace.html" data-tab="prefab-myspace" onclick="switchTab(this)">Prefab MySpace</button>
-      <button data-src="prefab/app_windows_2000.html" data-tab="prefab-windows-2000" onclick="switchTab(this)">Prefab Windows 2000</button>
       <button data-src="ggsql/index.html" data-tab="ggsql" onclick="switchTab(this)">ggsql + Vega-Lite</button>
       <button data-src="mviz/index.html" data-tab="mviz" onclick="switchTab(this)">mviz</button>
       <button data-src="mdv/index.html" data-tab="mdv" onclick="switchTab(this)">MDV</button>
@@ -94,22 +128,66 @@
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
       <button data-src="about.html" data-tab="about" onclick="switchTab(this)">About</button>
     </nav>
+    <div class="subnav" id="prefab-themes" aria-label="Prefab theme">
+      <button class="active" data-src="prefab/app.html" data-theme="vanilla" onclick="switchPrefabTheme(this)">Vanilla</button>
+      <button data-src="prefab/app_myspace.html" data-theme="myspace" onclick="switchPrefabTheme(this)">MySpace</button>
+      <button data-src="prefab/app_windows_2000.html" data-theme="windows-2000" onclick="switchPrefabTheme(this)">Windows 2000</button>
+    </div>
   </header>
   <iframe id="frame" src="prefab/app.html" title="Dashboard"></iframe>
 
   <script>
-    const tabs = Array.from(document.querySelectorAll('nav button'));
+    const tabs = Array.from(document.querySelectorAll('.main-tabs button'));
+    const prefabThemes = Array.from(document.querySelectorAll('#prefab-themes button'));
+    const prefabThemeBar = document.getElementById('prefab-themes');
     const frame = document.getElementById('frame');
+    const legacyPrefabThemeAliases = {
+      "prefab-myspace": "myspace",
+      "prefab-windows-2000": "windows-2000",
+    };
 
-    function switchTab(btn) {
+    function setActive(buttons, active) {
+      buttons.forEach(button => button.classList.toggle('active', button === active));
+    }
+
+    function activePrefabTheme() {
+      return prefabThemes.find(button => button.classList.contains('active')) || prefabThemes[0];
+    }
+
+    function switchTab(btn, options = {}) {
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      frame.src = btn.dataset.src;
-      frame.title = btn.textContent.trim();
+      const isPrefab = btn.dataset.tab === "prefab";
+      prefabThemeBar.hidden = !isPrefab;
 
+      if (isPrefab) {
+        const themeName = options.theme || activePrefabTheme().dataset.theme || "vanilla";
+        const theme = prefabThemes.find(button => button.dataset.theme === themeName) || prefabThemes[0];
+        setActive(prefabThemes, theme);
+        frame.src = theme.dataset.src;
+        frame.title = `Prefab ${theme.textContent.trim()}`;
+        updateUrl("prefab", theme.dataset.theme);
+      } else {
+        frame.src = btn.dataset.src;
+        frame.title = btn.textContent.trim();
+        updateUrl(btn.dataset.tab);
+      }
+    }
+
+    function switchPrefabTheme(btn) {
+      const prefabTab = tabs.find(button => button.dataset.tab === "prefab");
+      switchTab(prefabTab, { theme: btn.dataset.theme });
+    }
+
+    function updateUrl(tab, theme) {
       const url = new URL(window.location);
-      url.searchParams.set("tab", btn.dataset.tab);
-      url.hash = btn.dataset.tab;
+      url.searchParams.set("tab", tab);
+      if (theme && theme !== "vanilla") {
+        url.searchParams.set("theme", theme);
+      } else {
+        url.searchParams.delete("theme");
+      }
+      url.hash = tab;
       if (window.location.search !== url.search || window.location.hash !== url.hash) {
         history.replaceState(null, "", url);
       }
@@ -117,11 +195,20 @@
 
     function loadTabFromHash() {
       const params = new URLSearchParams(window.location.search);
-      const tab = params.get("tab") || window.location.hash.replace(/^#/, "");
+      let tab = params.get("tab") || window.location.hash.replace(/^#/, "");
+      let theme = params.get("theme");
       if (!tab) return;
 
+      if (legacyPrefabThemeAliases[tab]) {
+        theme = legacyPrefabThemeAliases[tab];
+        tab = "prefab";
+      }
+      if (tab === "prefab" && !theme) {
+        theme = "vanilla";
+      }
+
       const match = tabs.find(btn => btn.dataset.tab === tab);
-      if (match) switchTab(match);
+      if (match) switchTab(match, { theme });
     }
 
     loadTabFromHash();

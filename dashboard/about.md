@@ -17,7 +17,7 @@ I expected a couple of options. I was surprised by how many there are. Along the
 ## What this repo is testing
 
 - Same analytics problem, implemented across multiple static, static-friendly, and server-backed dashboard frameworks.
-- Eleven dashboard variants sit on top of the same dbt `models/dashboard/` layer, so comparison is closer to apples-to-apples.
+- The dashboard variants sit on top of the same dbt `models/dashboard/` layer, so comparison is closer to apples-to-apples.
 - Shared data layer runs on DuckDB locally and MotherDuck in deployed builds.
 - Each framework makes different choices about authoring, transport, layout, interactivity, and build shape.
 
@@ -32,11 +32,13 @@ I expected a couple of options. I was surprised by how many there are. Along the
 
 **Core bakeoff frameworks:** Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo, DAC, Shaper.
 
-**Side experiments:** Prefab MySpace and Quarto.
+**Side experiments:** Prefab MySpace, Prefab Windows 2000, and Quarto.
 
 **Data stack:** dlt, dbt Fusion, DuckDB, MotherDuck, GitHub Actions, GitHub Pages.
 
-**Direct links:** [Prefab](./?tab=prefab), [Prefab MySpace](./?tab=prefab-myspace), [ggsql](./?tab=ggsql), [mviz](./?tab=mviz), [MDV](./?tab=mdv), [Observable](./?tab=observable), [Evidence.dev](./?tab=evidence), [Marimo](./?tab=marimo), [Quarto](./?tab=quarto), [DAC](./?tab=dac), [Shaper](./?tab=shaper).
+**Direct links:** [Prefab](./?tab=prefab), [ggsql](./?tab=ggsql), [mviz](./?tab=mviz), [MDV](./?tab=mdv), [Observable](./?tab=observable), [Evidence.dev](./?tab=evidence), [Marimo](./?tab=marimo), [Quarto](./?tab=quarto), [DAC](./?tab=dac), [Shaper](./?tab=shaper).
+
+**Prefab themes:** [Vanilla](./?tab=prefab), [MySpace](./?tab=prefab&theme=myspace), [Windows 2000](./?tab=prefab&theme=windows-2000).
 
 ## Main challenge
 
@@ -62,7 +64,7 @@ The interesting choices are usually in the first three. Once query engine and tr
 
 | Mode | What happens | Frameworks |
 |---|---|---|
-| Build-time bake | SQL runs in CI against MotherDuck and rows are baked into static artifacts. | Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto, DAC |
+| Build-time bake | SQL runs in CI against MotherDuck and rows are baked into static artifacts. | Prefab, Prefab themes, mviz, MDV, ggsql, Observable, Marimo, Quarto, DAC |
 | Render-time query | Browser reruns page SQL against shipped Parquet through DuckDB-WASM. | Evidence.dev |
 | Server-backed runtime | SQL lives in Git, but rendering expects a live app server rather than a GitHub Pages bundle. | Shaper |
 
