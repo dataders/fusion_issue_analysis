@@ -11,4 +11,5 @@ FROM response_pctiles
 ORDER BY week
 VISUALISE week AS x, hours AS y, percentile AS color
 DRAW line
+SCALE x VIA date
 LABEL title => 'Time to First Response (hours)'

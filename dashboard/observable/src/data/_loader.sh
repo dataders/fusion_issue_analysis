@@ -9,7 +9,7 @@ QUERY_NAME="$1"
 FIRST_ROW="${2:-}"
 
 uv --directory "$REPO_ROOT" run python3 - <<PYEOF
-import sys, json, duckdb, os
+import sys, json, duckdb, math, os
 REPO_ROOT = "$REPO_ROOT"
 QUERY_NAME = "$QUERY_NAME"
 FIRST_ROW = "$FIRST_ROW" == "--first-row"
@@ -63,5 +63,14 @@ SQL_BY_NAME = {
 }
 sql = SQL_BY_NAME[QUERY_NAME]
 rows = con.execute(sql).fetchdf().to_dict("records")
-json.dump(rows[0] if FIRST_ROW else rows, sys.stdout)
+
+def clean(value):
+    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+        return None
+    if hasattr(value, "isoformat"):
+        return value.isoformat()
+    return value
+
+rows = [{key: clean(value) for key, value in row.items()} for row in rows]
+json.dump(rows[0] if FIRST_ROW else rows, sys.stdout, allow_nan=False)
 PYEOF

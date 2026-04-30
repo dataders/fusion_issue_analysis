@@ -49,7 +49,7 @@ mdv:
 
 ## marimo       Export Marimo notebook to static HTML
 marimo:
-	uv run marimo export html dashboard/marimo/app.py -o dashboard/marimo.html
+	uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
 
 ## observable   Build Observable Framework dashboard (requires npm)
 observable:

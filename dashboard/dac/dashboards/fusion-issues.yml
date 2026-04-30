@@ -65,12 +65,15 @@ rows:
         col: 6
         sql: |
           set file_search_path='transform';
-          select week, issue_category, median_days
+          select
+            week,
+            max(case when issue_category = 'bug' then median_days end) as bugs,
+            max(case when issue_category = 'enhancement' then median_days end) as enhancements
           from velocity
-          order by week, issue_category
+          group by week
+          order by week
         x: week
-        y: median_days
-        series: issue_category
+        y: [bugs, enhancements]
       - name: Time to First Response
         type: chart
         chart: line
@@ -117,7 +120,7 @@ rows:
           from close_by_label
           order by median_days_to_close desc
         x: label_name
-        y: median_days_to_close
+        y: [median_days_to_close]
 
   - widgets:
       - name: Triage Labeled

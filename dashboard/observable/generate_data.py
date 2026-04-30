@@ -7,6 +7,7 @@ Usage:
 """
 
 import json
+import math
 import os
 
 import duckdb
@@ -32,13 +33,24 @@ def get_connection():
 
 
 def query(con, sql: str) -> list[dict]:
-    return json.loads(con.execute(sql).fetchdf().to_json(orient="records"))
+    data = con.execute(sql).fetchdf().to_dict("records")
+    return [
+        {
+            key: None
+            if isinstance(value, float) and (math.isnan(value) or math.isinf(value))
+            else value.isoformat()
+            if hasattr(value, "isoformat")
+            else value
+            for key, value in row.items()
+        }
+        for row in data
+    ]
 
 
 def write_json(filename: str, data):
     path = os.path.join(DATA_DIR, filename)
     with open(path, "w") as f:
-        json.dump(data, f)
+        json.dump(data, f, allow_nan=False)
     count = len(data) if isinstance(data, list) else 1
     print(f"  wrote {path} ({count} records)")
 

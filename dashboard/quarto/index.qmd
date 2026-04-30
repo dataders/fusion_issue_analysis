@@ -12,9 +12,11 @@ execute:
   echo: false
 ---
 
+<script>window.__quartoRequireDefine = window.define; window.define = undefined;</script>
 <script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
 <script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+<script>window.define = window.__quartoRequireDefine; delete window.__quartoRequireDefine;</script>
 
 ```{python}
 #| include: false
@@ -65,10 +67,14 @@ def chart(spec: dict) -> HTML:
     spec["config"].setdefault("axis", {"labelColor": "#ced4da", "titleColor": "#ced4da", "gridColor": "#343a40"})
     spec["config"].setdefault("legend", {"labelColor": "#ced4da", "titleColor": "#ced4da"})
     spec["config"].setdefault("title", {"color": "#f8f9fa"})
+    spec_json = json.dumps(spec, default=str)
     return HTML(
         f'<div id="{element_id}"></div>'
-        f'<script>vegaEmbed("#{element_id}", {json.dumps(spec, default=str)}, '
-        '{actions: false, theme: "dark"});</script>'
+        f"<script>(function render() {{"
+        f"if (window.vegaEmbed) {{ vegaEmbed('#{element_id}', {spec_json}, "
+        f"{{actions: false, theme: 'dark'}}); return; }}"
+        f"setTimeout(render, 50);"
+        f"}})();</script>"
     )
 
 

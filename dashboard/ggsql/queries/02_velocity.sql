@@ -5,4 +5,5 @@ FROM velocity
 ORDER BY week
 VISUALISE week AS x, median_days AS y, issue_category AS color
 DRAW line
+SCALE x VIA date
 LABEL title => 'Median Days to Close: Bugs vs Enhancements'
