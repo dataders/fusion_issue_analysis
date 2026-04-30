@@ -28,6 +28,9 @@ jobs:
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
 
+      - name: Build Shaper tab
+        run: uv run python3 dashboard/shaper/build.py
+
       # Data comes from MotherDuck — no extract or dbt build needed.
 
       - name: Export Prefab dashboards
@@ -37,6 +40,10 @@ jobs:
           mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
           cp dashboard/about.html preview/about.html
+          mkdir -p preview/shaper
+          cp dashboard/shaper/index.html preview/shaper/index.html
+          cp dashboard/shaper/fusion-issue-health.dashboard.sql preview/shaper/fusion-issue-health.dashboard.sql
+          cp dashboard/shaper/shaper.json preview/shaper/shaper.json
           uv run prefab export dashboard/prefab/app.py -o preview/prefab/app.html
           uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
           uv run prefab export dashboard/prefab/app_windows_2000.py -o preview/prefab/app_windows_2000.html
@@ -148,6 +155,7 @@ jobs:
               '| Marimo | `marimo.html` |',
               '| Quarto | `quarto/index.html` |',
               '| DAC | `dac/index.html` |',
+              '| Shaper | `shaper/index.html` |',
               '| About | `about.html` |',
               '',
               `_[Workflow run](${runUrl})_`,
