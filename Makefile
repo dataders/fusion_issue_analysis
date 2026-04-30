@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz mdv marimo observable evidence quarto dac kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz mdv marimo observable evidence quarto dac shaper kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: about prefab ggsql mviz mdv marimo observable evidence quarto dac
+build: about prefab ggsql mviz mdv marimo observable evidence quarto dac shaper
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:
@@ -67,6 +67,10 @@ quarto:
 dac:
 	uv run python3 dashboard/dac/render.py
 	! grep -q 'bruin query failed' dashboard/dac/build/index.html
+
+## shaper       Build Shaper source-preview tab
+shaper:
+	uv run python3 dashboard/shaper/build.py
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 

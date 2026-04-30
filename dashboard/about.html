@@ -107,8 +107,8 @@
 <p>I expected a couple of options. I was surprised by how many there are. Along the way I started to learn what the static dashboard stack actually looks like, where it is strong, where it gets awkward, and how to make it work cleanly with dbt.</p>
 <h2>What this repo is testing</h2>
 <ul>
-<li>Same analytics problem, implemented across multiple static or static-friendly dashboard frameworks.</li>
-<li>Nine dashboard variants sit on top of the same dbt <code>models/dashboard/</code> layer, so comparison is closer to apples-to-apples.</li>
+<li>Same analytics problem, implemented across multiple static, static-friendly, and server-backed dashboard frameworks.</li>
+<li>Eleven dashboard variants sit on top of the same dbt <code>models/dashboard/</code> layer, so comparison is closer to apples-to-apples.</li>
 <li>Shared data layer runs on DuckDB locally and MotherDuck in deployed builds.</li>
 <li>Each framework makes different choices about authoring, transport, layout, interactivity, and build shape.</li>
 </ul>
@@ -120,10 +120,10 @@
 <li><strong>Publish:</strong> the static wrapper ships to GitHub Pages on a custom domain.</li>
 </ol>
 <h2>Tools in the bakeoff</h2>
-<p><strong>Core bakeoff frameworks:</strong> Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo.</p>
+<p><strong>Core bakeoff frameworks:</strong> Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo, DAC, Shaper.</p>
 <p><strong>Side experiments:</strong> Prefab MySpace and Quarto.</p>
 <p><strong>Data stack:</strong> dlt, dbt Fusion, DuckDB, MotherDuck, GitHub Actions, GitHub Pages.</p>
-<p><strong>Direct links:</strong> <a href="./?tab=prefab">Prefab</a>, <a href="./?tab=prefab-myspace">Prefab MySpace</a>, <a href="./?tab=ggsql">ggsql</a>, <a href="./?tab=mviz">mviz</a>, <a href="./?tab=mdv">MDV</a>, <a href="./?tab=observable">Observable</a>, <a href="./?tab=evidence">Evidence.dev</a>, <a href="./?tab=marimo">Marimo</a>, <a href="./?tab=quarto">Quarto</a>.</p>
+<p><strong>Direct links:</strong> <a href="./?tab=prefab">Prefab</a>, <a href="./?tab=prefab-myspace">Prefab MySpace</a>, <a href="./?tab=ggsql">ggsql</a>, <a href="./?tab=mviz">mviz</a>, <a href="./?tab=mdv">MDV</a>, <a href="./?tab=observable">Observable</a>, <a href="./?tab=evidence">Evidence.dev</a>, <a href="./?tab=marimo">Marimo</a>, <a href="./?tab=quarto">Quarto</a>, <a href="./?tab=dac">DAC</a>, <a href="./?tab=shaper">Shaper</a>.</p>
 <h2>Main challenge</h2>
 <p>Hard part is not charting. Hard part is keeping business logic out of the dashboard. Agents do this. Humans do this too. The dashboard layer always tempts you to tuck a little metric logic, filtering logic, or status logic into the page because it feels faster in the moment. But once that starts, the dashboard becomes the semantic layer by accident.</p>
 <p>The discipline here is to keep metric definitions, joins, and business rules in dbt whenever possible, then let the dashboard focus on layout, interaction, and presentation. When that boundary holds, the bakeoff is easier to compare, easier to diff, and easier to swap between tools.</p>
@@ -152,12 +152,17 @@
 <tr>
 <td>Build-time bake</td>
 <td>SQL runs in CI against MotherDuck and rows are baked into static artifacts.</td>
-<td>Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto</td>
+<td>Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto, DAC</td>
 </tr>
 <tr>
 <td>Render-time query</td>
 <td>Browser reruns page SQL against shipped Parquet through DuckDB-WASM.</td>
 <td>Evidence.dev</td>
+</tr>
+<tr>
+<td>Server-backed runtime</td>
+<td>SQL lives in Git, but rendering expects a live app server rather than a GitHub Pages bundle.</td>
+<td>Shaper</td>
 </tr>
 </tbody>
 </table>
@@ -202,6 +207,10 @@
 <td>Narrative report or document feel</td>
 <td><a href="./?tab=quarto">Quarto</a></td>
 </tr>
+<tr>
+<td>SQL-first product dashboard with sharing, embeds, and reports if a server is acceptable</td>
+<td><a href="./?tab=shaper">Shaper</a></td>
+</tr>
 </tbody>
 </table>
 <h2>Open questions</h2>
@@ -211,6 +220,7 @@
 <li>Should Evidence push all the way to true browser-to-MotherDuck querying, or is baked static data the better constraint?</li>
 <li>What is the best authoring format for agents: JSON specs, SQL-first tools, Markdown + SQL, or Python?</li>
 <li>How interactive can a static dashboard get before it becomes an accidental app?</li>
+<li>Which server-backed tools belong in the comparison even if GitHub Pages can only ship their source preview?</li>
 <li>What is the right preview target for this kind of project: GitHub Pages, Netlify-style previews, or something more data-tool-native?</li>
 </ul>
   </main>

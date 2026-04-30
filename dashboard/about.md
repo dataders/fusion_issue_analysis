@@ -16,8 +16,8 @@ I expected a couple of options. I was surprised by how many there are. Along the
 
 ## What this repo is testing
 
-- Same analytics problem, implemented across multiple static or static-friendly dashboard frameworks.
-- Nine dashboard variants sit on top of the same dbt `models/dashboard/` layer, so comparison is closer to apples-to-apples.
+- Same analytics problem, implemented across multiple static, static-friendly, and server-backed dashboard frameworks.
+- Eleven dashboard variants sit on top of the same dbt `models/dashboard/` layer, so comparison is closer to apples-to-apples.
 - Shared data layer runs on DuckDB locally and MotherDuck in deployed builds.
 - Each framework makes different choices about authoring, transport, layout, interactivity, and build shape.
 
@@ -30,13 +30,13 @@ I expected a couple of options. I was surprised by how many there are. Along the
 
 ## Tools in the bakeoff
 
-**Core bakeoff frameworks:** Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo.
+**Core bakeoff frameworks:** Prefab, Evidence.dev, Observable Framework, ggsql + Vega-Lite, mviz, MDV, Marimo, DAC, Shaper.
 
 **Side experiments:** Prefab MySpace and Quarto.
 
 **Data stack:** dlt, dbt Fusion, DuckDB, MotherDuck, GitHub Actions, GitHub Pages.
 
-**Direct links:** [Prefab](./?tab=prefab), [Prefab MySpace](./?tab=prefab-myspace), [ggsql](./?tab=ggsql), [mviz](./?tab=mviz), [MDV](./?tab=mdv), [Observable](./?tab=observable), [Evidence.dev](./?tab=evidence), [Marimo](./?tab=marimo), [Quarto](./?tab=quarto).
+**Direct links:** [Prefab](./?tab=prefab), [Prefab MySpace](./?tab=prefab-myspace), [ggsql](./?tab=ggsql), [mviz](./?tab=mviz), [MDV](./?tab=mdv), [Observable](./?tab=observable), [Evidence.dev](./?tab=evidence), [Marimo](./?tab=marimo), [Quarto](./?tab=quarto), [DAC](./?tab=dac), [Shaper](./?tab=shaper).
 
 ## Main challenge
 
@@ -62,8 +62,9 @@ The interesting choices are usually in the first three. Once query engine and tr
 
 | Mode | What happens | Frameworks |
 |---|---|---|
-| Build-time bake | SQL runs in CI against MotherDuck and rows are baked into static artifacts. | Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto |
+| Build-time bake | SQL runs in CI against MotherDuck and rows are baked into static artifacts. | Prefab, Prefab MySpace, mviz, MDV, ggsql, Observable, Marimo, Quarto, DAC |
 | Render-time query | Browser reruns page SQL against shipped Parquet through DuckDB-WASM. | Evidence.dev |
+| Server-backed runtime | SQL lives in Git, but rendering expects a live app server rather than a GitHub Pages bundle. | Shaper |
 
 ## Decision guide
 
@@ -77,6 +78,7 @@ The interesting choices are usually in the first three. Once query engine and tr
 | Analyst-authored BI site with filters and polish | [Evidence.dev](./?tab=evidence) |
 | Rich interactivity + bespoke viz if you accept Node | [Observable Framework](./?tab=observable) |
 | Narrative report or document feel | [Quarto](./?tab=quarto) |
+| SQL-first product dashboard with sharing, embeds, and reports if a server is acceptable | [Shaper](./?tab=shaper) |
 
 ## Open questions
 
@@ -85,4 +87,5 @@ The interesting choices are usually in the first three. Once query engine and tr
 - Should Evidence push all the way to true browser-to-MotherDuck querying, or is baked static data the better constraint?
 - What is the best authoring format for agents: JSON specs, SQL-first tools, Markdown + SQL, or Python?
 - How interactive can a static dashboard get before it becomes an accidental app?
+- Which server-backed tools belong in the comparison even if GitHub Pages can only ship their source preview?
 - What is the right preview target for this kind of project: GitHub Pages, Netlify-style previews, or something more data-tool-native?
