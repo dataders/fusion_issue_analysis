@@ -36,7 +36,7 @@ prefab:
 
 ## ggsql        Build ggsql + Vega-Lite dashboard
 ggsql:
-	uv run python3 dashboard/ggsql/build.py
+	uv run dashboard/ggsql/build.py
 
 ## mviz         Generate data files and render mviz dashboard
 mviz:
@@ -52,7 +52,7 @@ mdv:
 
 ## marimo       Export Marimo notebook to static HTML
 marimo:
-	uv run marimo export html dashboard/marimo/app.py -o dashboard/marimo.html
+	uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
 
 ## observable   Build Observable Framework dashboard (requires npm)
 observable:

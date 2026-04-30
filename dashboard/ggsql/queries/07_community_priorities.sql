@@ -5,8 +5,7 @@ SELECT
     title,
     issue_category,
     reactions_total_count
-FROM fct_issues
-WHERE state = 'OPEN' AND reactions_total_count > 0 AND issue_category != 'epic'
+FROM community_priorities
 ORDER BY reactions_total_count DESC
 LIMIT 15
 VISUALISE title AS y, reactions_total_count AS x, issue_category AS fill

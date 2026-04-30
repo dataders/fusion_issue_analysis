@@ -12,37 +12,85 @@ execute:
   echo: false
 ---
 
+<script>window.__quartoRequireDefine = window.define; window.define = undefined;</script>
+<script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+<script>window.define = window.__quartoRequireDefine; delete window.__quartoRequireDefine;</script>
+
 ```{python}
 #| include: false
+import json
 import os
+import uuid
+
 import duckdb
 import pandas as pd
-import plotly.express as px
+from IPython.display import HTML
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname("__file__"), "../.."))
 DB_PATH = (
-    "md:fusion_issues"
+    os.environ["FUSION_DB"]
+    if os.environ.get("FUSION_DB")
+    else "md:fusion_issues"
     if os.environ.get("MOTHERDUCK_TOKEN")
     else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
 )
 
+PALETTE = {
+    "bug": "#f38ba8",
+    "enhancement": "#89b4fa",
+    "other": "#a6adc8",
+    "opened": "#f38ba8",
+    "closed": "#a6e3a1",
+    "p25": "#a6e3a1",
+    "p50": "#89b4fa",
+    "p75": "#f38ba8",
+}
+
+
 def query(sql: str) -> pd.DataFrame:
     con = duckdb.connect(DB_PATH, read_only=True)
     if not DB_PATH.startswith("md:"):
-        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
+        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
     df = con.execute(sql).fetchdf()
     con.close()
     return df
 
-summary    = query("SELECT * FROM summary_kpis").iloc[0]
-cum_flow   = query("SELECT * FROM cumulative_flow")
-velocity   = query("SELECT * FROM velocity")
-resp       = query("SELECT * FROM response_pctiles")
-age_dist   = query("SELECT * FROM age_distribution")
-lbl        = query("SELECT * FROM close_by_label ORDER BY median_days_to_close")
-triage     = query("SELECT * FROM triage_health").iloc[0]
-workload   = query("SELECT * FROM assignee_workload")
-priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC LIMIT 15")
+
+def chart(spec: dict) -> HTML:
+    element_id = f"vl-{uuid.uuid4().hex}"
+    spec.setdefault("height", 280)
+    spec.setdefault("background", "transparent")
+    spec.setdefault("config", {})
+    spec["config"].setdefault("axis", {"labelColor": "#ced4da", "titleColor": "#ced4da", "gridColor": "#343a40"})
+    spec["config"].setdefault("legend", {"labelColor": "#ced4da", "titleColor": "#ced4da"})
+    spec["config"].setdefault("title", {"color": "#f8f9fa"})
+    spec_json = json.dumps(spec, default=str)
+    return HTML(
+        f'<div id="{element_id}"></div>'
+        f"<script>(function render() {{"
+        f"if (window.vegaEmbed) {{ vegaEmbed('#{element_id}', {spec_json}, "
+        f"{{actions: false, theme: 'dark'}}); return; }}"
+        f"setTimeout(render, 50);"
+        f"}})();</script>"
+    )
+
+
+def records(df: pd.DataFrame) -> list[dict]:
+    return json.loads(df.to_json(orient="records", date_format="iso"))
+
+
+summary = query("SELECT * FROM summary_kpis").iloc[0]
+cum_flow = query("SELECT * FROM cumulative_flow")
+velocity = query("SELECT * FROM velocity")
+resp = query("SELECT * FROM response_pctiles")
+age_dist = query("SELECT * FROM age_distribution")
+lbl = query("SELECT * FROM close_by_label ORDER BY median_days_to_close DESC")
+triage = query("SELECT * FROM triage_health").iloc[0]
+workload = query("SELECT * FROM assignee_workload")
+priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC")
 
 net = int(summary["closed_4w"]) - int(summary["opened_4w"])
 ```
@@ -86,73 +134,112 @@ dict(value=int(summary["stale_count"]), icon="exclamation-triangle", color="warn
 
 ## Cumulative Issue Flow
 ```{python}
-fig = px.area(
-    cum_flow.melt(
-        id_vars="week",
-        value_vars=["cumulative_opened", "cumulative_closed"],
-        var_name="series",
-        value_name="count",
-    ),
-    x="week", y="count", color="series",
-    color_discrete_map={"cumulative_opened": "#f38ba8", "cumulative_closed": "#a6e3a1"},
-    labels={"series": "", "count": "Issues", "week": "Week"},
-    title="Cumulative Issue Flow",
+cum_long = cum_flow.melt(
+    id_vars="week",
+    value_vars=["cumulative_opened", "cumulative_closed"],
+    var_name="series",
+    value_name="issues",
 )
-fig.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
-fig.show()
+cum_long["series"] = cum_long["series"].map({"cumulative_opened": "opened", "cumulative_closed": "closed"})
+chart({
+    "data": {"values": records(cum_long)},
+    "mark": {"type": "area", "opacity": 0.45, "line": True},
+    "encoding": {
+        "x": {"field": "week", "type": "temporal", "title": "Week"},
+        "y": {"field": "issues", "type": "quantitative", "title": "Issues"},
+        "color": {
+            "field": "series",
+            "type": "nominal",
+            "scale": {"domain": ["opened", "closed"], "range": [PALETTE["opened"], PALETTE["closed"]]},
+            "title": None,
+        },
+        "tooltip": [{"field": "week"}, {"field": "series"}, {"field": "issues"}],
+    },
+    "title": "Cumulative Issue Flow",
+})
 ```
 
 ## Velocity & Response
 ```{python}
-fig_vel = px.line(
-    velocity, x="week", y="median_days", color="issue_category",
-    color_discrete_map={"bug": "#f38ba8", "enhancement": "#89b4fa"},
-    labels={"issue_category": "Type", "median_days": "Median Days", "week": "Week"},
-    title="Median Days to Close: Bugs vs Enhancements",
-    markers=True,
-)
-fig_vel.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
-fig_vel
+chart({
+    "data": {"values": records(velocity)},
+    "mark": {"type": "line", "point": True},
+    "encoding": {
+        "x": {"field": "week", "type": "temporal", "title": "Week"},
+        "y": {"field": "median_days", "type": "quantitative", "title": "Median Days"},
+        "color": {
+            "field": "issue_category",
+            "type": "nominal",
+            "scale": {"domain": ["bug", "enhancement"], "range": [PALETTE["bug"], PALETTE["enhancement"]]},
+            "title": "Type",
+        },
+        "tooltip": [{"field": "week"}, {"field": "issue_category"}, {"field": "median_days"}],
+    },
+    "title": "Median Days to Close: Bugs vs Enhancements",
+})
 ```
 
 ```{python}
-fig_resp = px.line(
-    resp.melt(id_vars="week", value_vars=["p25", "p50", "p75"],
-              var_name="percentile", value_name="hours"),
-    x="week", y="hours", color="percentile",
-    color_discrete_map={"p25": "#a6e3a1", "p50": "#89b4fa", "p75": "#f38ba8"},
-    labels={"percentile": "", "hours": "Hours", "week": "Week"},
-    title="Time to First Response (hours)",
+resp_long = resp.melt(
+    id_vars="week",
+    value_vars=["p25", "p50", "p75"],
+    var_name="percentile",
+    value_name="hours",
 )
-fig_resp.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
-fig_resp
+chart({
+    "data": {"values": records(resp_long)},
+    "mark": {"type": "line", "point": True},
+    "encoding": {
+        "x": {"field": "week", "type": "temporal", "title": "Week"},
+        "y": {"field": "hours", "type": "quantitative", "title": "Hours"},
+        "color": {
+            "field": "percentile",
+            "type": "nominal",
+            "scale": {"domain": ["p25", "p50", "p75"], "range": [PALETTE["p25"], PALETTE["p50"], PALETTE["p75"]]},
+            "title": None,
+        },
+        "tooltip": [{"field": "week"}, {"field": "percentile"}, {"field": "hours"}],
+    },
+    "title": "Time to First Response (hours)",
+})
 ```
 
 ## Issue Distribution
 ```{python}
-fig_age = px.bar(
-    age_dist,
-    x="age_bucket", y="issue_count", color="issue_category",
-    color_discrete_map={"bug": "#f38ba8", "enhancement": "#89b4fa", "other": "#a6adc8"},
-    category_orders={"age_bucket": ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]},
-    labels={"issue_category": "Type", "issue_count": "Issues", "age_bucket": "Age"},
-    title="Open Issue Age by Type",
-    barmode="stack",
-)
-fig_age.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
-fig_age
+chart({
+    "data": {"values": records(age_dist)},
+    "mark": "bar",
+    "encoding": {
+        "x": {
+            "field": "age_bucket",
+            "type": "ordinal",
+            "title": "Age",
+            "sort": ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"],
+        },
+        "y": {"field": "issue_count", "type": "quantitative", "title": "Issues", "stack": True},
+        "color": {
+            "field": "issue_category",
+            "type": "nominal",
+            "scale": {"domain": ["bug", "enhancement", "other"], "range": [PALETTE["bug"], PALETTE["enhancement"], PALETTE["other"]]},
+            "title": "Type",
+        },
+        "tooltip": [{"field": "age_bucket"}, {"field": "issue_category"}, {"field": "issue_count"}],
+    },
+    "title": "Open Issue Age by Type",
+})
 ```
 
 ```{python}
-fig_lbl = px.bar(
-    lbl.sort_values("median_days_to_close"),
-    x="median_days_to_close", y="label_name",
-    orientation="h",
-    labels={"median_days_to_close": "Median Days", "label_name": "Label"},
-    title="Median Days to Close by Label",
-)
-fig_lbl.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
-fig_lbl
+chart({
+    "data": {"values": records(lbl)},
+    "mark": "bar",
+    "encoding": {
+        "x": {"field": "median_days_to_close", "type": "quantitative", "title": "Median Days"},
+        "y": {"field": "label_name", "type": "nominal", "title": None, "sort": "-x"},
+        "tooltip": [{"field": "label_name"}, {"field": "median_days_to_close"}, {"field": "closed_count"}],
+    },
+    "title": "Median Days to Close by Label",
+})
 ```
 
 ## Triage Health
@@ -182,26 +269,28 @@ dict(value=f"{int(triage['pct_milestoned'])}%", icon="flag", color="primary")
 
 ## Workload & Priorities
 ```{python}
-fig_wl = px.bar(
-    workload.melt(
-        id_vars="assignee_login",
-        value_vars=["bugs", "enhancements"],
-        var_name="type",
-        value_name="count",
-    ),
-    x="count", y="assignee_login", color="type",
-    color_discrete_map={"bugs": "#f38ba8", "enhancements": "#89b4fa"},
-    orientation="h",
-    labels={"type": "Type", "count": "Open Issues", "assignee_login": "Assignee"},
-    title="Open Issues by Assignee",
-    barmode="stack",
+workload_long = workload.melt(
+    id_vars="assignee_login",
+    value_vars=["bugs", "enhancements"],
+    var_name="type",
+    value_name="issue_count",
 )
-fig_wl.update_layout(
-    template="plotly_dark", height=300,
-    margin=dict(t=40, b=20),
-    yaxis={"categoryorder": "total ascending"},
-)
-fig_wl
+chart({
+    "data": {"values": records(workload_long)},
+    "mark": "bar",
+    "encoding": {
+        "x": {"field": "issue_count", "type": "quantitative", "title": "Open Issues", "stack": True},
+        "y": {"field": "assignee_login", "type": "nominal", "title": None, "sort": "-x"},
+        "color": {
+            "field": "type",
+            "type": "nominal",
+            "scale": {"domain": ["bugs", "enhancements"], "range": [PALETTE["bug"], PALETTE["enhancement"]]},
+            "title": "Type",
+        },
+        "tooltip": [{"field": "assignee_login"}, {"field": "type"}, {"field": "issue_count"}],
+    },
+    "title": "Open Issues by Assignee",
+})
 ```
 
 ```{python}

@@ -28,9 +28,9 @@ if MOTHERDUCK_TOKEN:
         os.remove(init_sql_path)
     print("connection.yaml → MotherDuck (md:fusion_issues)")
 else:
-    db_path = os.path.join(_REPO_ROOT, 'data', 'fusion_issues.duckdb')
+    db_path = os.environ.get('FUSION_DB') or os.path.join(_REPO_ROOT, 'data', 'fusion_issues.duckdb')
     connection = {'name': 'fusion', 'type': 'duckdb', 'options': {'filename': db_path}}
-    transform_path = os.path.join(_REPO_ROOT, 'transform')
+    transform_path = os.path.join(os.environ.get('FUSION_PROJECT_ROOT', _REPO_ROOT), 'transform')
     with open(os.path.join(_SOURCES_DIR, 'initialize.sql'), 'w') as f:
         f.write(f"SET file_search_path = '{transform_path}';\n")
     print(f"connection.yaml → local DuckDB | initialize.sql → file_search_path={transform_path}")

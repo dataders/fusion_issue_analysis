@@ -12,8 +12,7 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 ```sql kpis
 select
     open_issues,
-    closed_4w,
-    opened_4w,
+    closed_4w - opened_4w as net_flow,
     stale_count,
     pct_responded_48h,
     rolling_median_close_days as median_close_days
@@ -21,8 +20,7 @@ from summary_kpis
 ```
 
 <BigValue data={kpis} value="open_issues" title="Open Issues"/>
-<BigValue data={kpis} value="closed_4w" title="Closed (4 wk)"/>
-<BigValue data={kpis} value="opened_4w" title="Opened (4 wk)"/>
+<BigValue data={kpis} value="net_flow" title="Net Flow (4 wk)"/>
 <BigValue data={kpis} value="median_close_days" title="Median Close (4 wk)"/>
 <BigValue data={kpis} value="pct_responded_48h" title="48h Response SLA" fmt="0"/>
 <BigValue data={kpis} value="stale_count" title="Stale Issues (30d+)"/>
@@ -30,19 +28,15 @@ from summary_kpis
 ## Cumulative Issue Flow
 
 ```sql cumulative_flow
-select week, opened, closed from weekly_flow order by week
+select week, cumulative_opened, cumulative_closed from cumulative_flow order by week
 ```
-
-<!-- Evidence AreaChart with y array shows stacked areas; true cumulative requires window
-     functions which Evidence does not run — use weekly flow as the closest equivalent.
-     Capability gap: cannot show running totals natively. -->
 
 <AreaChart
   data={cumulative_flow}
   x="week"
-  y={["opened", "closed"]}
-  title="Weekly Opened vs Closed (non-cumulative)"
-  subtitle="Note: Evidence cannot compute running totals — showing weekly counts"
+  y={["cumulative_opened", "cumulative_closed"]}
+  title="Cumulative Issue Flow"
+  subtitle="Running opened vs closed issue totals"
 />
 
 ## Velocity & Response
