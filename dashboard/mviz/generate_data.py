@@ -12,7 +12,9 @@ PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
 
-if os.environ.get("MOTHERDUCK_TOKEN"):
+if os.environ.get("FUSION_DB"):
+    DB_PATH = os.environ["FUSION_DB"]
+elif os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
 else:
     DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
@@ -21,13 +23,9 @@ else:
 def get_connection():
     con = duckdb.connect(DB_PATH, read_only=True)
     if not DB_PATH.startswith("md:"):
-        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
+        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
     return con
-
-
-def load_sql(name: str) -> str:
-    with open(os.path.join(HERE, "queries", f"{name}.sql")) as f:
-        return f.read()
 
 
 def query(con, sql: str) -> list[dict]:
@@ -108,7 +106,7 @@ def main():
     write_json("assignee_workload.json", query(con, "SELECT * FROM assignee_workload"))
 
     # -- Triage health --
-    triage = query(con, load_sql("triage"))[0]
+    triage = query(con, "SELECT * FROM triage_health")[0]
     write_json("kpi_triage_labeled.json", {"value": pct0_value(triage["pct_labeled"]), "label": "% Labeled", "format": "pct0"})
     write_json("kpi_triage_typed.json", {"value": pct0_value(triage["pct_typed"]), "label": "% Typed", "format": "pct0"})
     write_json("kpi_triage_assigned.json", {"value": pct0_value(triage["pct_assigned"]), "label": "% Assigned", "format": "pct0"})

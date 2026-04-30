@@ -27,7 +27,9 @@ from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineCh
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
-if os.environ.get("MOTHERDUCK_TOKEN"):
+if os.environ.get("FUSION_DB"):
+    DB_PATH = os.environ["FUSION_DB"]
+elif os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
 else:
     DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
@@ -35,7 +37,8 @@ else:
 def query(sql: str) -> list[dict]:
     con = duckdb.connect(DB_PATH, read_only=True)
     if not DB_PATH.startswith("md:"):
-        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
+        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
     result = con.execute(sql).fetchdf()
     con.close()
     return result.to_dict("records")
@@ -132,16 +135,16 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     with Row(gap=3, css_class="mt-6"):
         with Card(css_class="flex-1"):
             with CardHeader():
+                CardTitle("Open Issues")
+            with CardContent():
+                H3(str(summary_cards["open_issues"]))
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
                 CardTitle("Net Flow (4 wk)")
             with CardContent():
                 H3(f"{net_flow_sign}{net_flow}")
                 Muted(f"{summary_cards['opened_4w']} opened / {summary_cards['closed_4w']} closed")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Open Issues")
-            with CardContent():
-                H3(str(summary_cards["open_issues"]))
 
         with Card(css_class="flex-1"):
             with CardHeader():

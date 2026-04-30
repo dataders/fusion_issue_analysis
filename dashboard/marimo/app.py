@@ -28,7 +28,7 @@ def _(mo):
 @app.cell
 def _(os):
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    DB_PATH = "md:fusion_issues" if os.environ.get("MOTHERDUCK_TOKEN") else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
+    DB_PATH = os.environ.get("FUSION_DB") or ("md:fusion_issues" if os.environ.get("MOTHERDUCK_TOKEN") else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb"))
     return (DB_PATH, PROJECT_ROOT)
 
 
@@ -37,7 +37,8 @@ def _(DB_PATH, PROJECT_ROOT, duckdb):
     def query(sql):
         con = duckdb.connect(DB_PATH, read_only=True)
         if not DB_PATH.startswith("md:"):
-            con.execute(f"SET file_search_path = '{PROJECT_ROOT}/transform'")
+            file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
+            con.execute(f"SET file_search_path = '{file_search_root}/transform'")
         df = con.execute(sql).fetchdf()
         con.close()
         return df

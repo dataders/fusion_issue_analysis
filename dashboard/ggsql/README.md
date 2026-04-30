@@ -9,8 +9,8 @@ authoring path alongside Prefab and mviz.
 ## Run
 
 ```bash
-uv run dashboard/ggsql_spike/build.py
-open dashboard/ggsql_spike/index.html
+uv run dashboard/ggsql/build.py
+open dashboard/ggsql/index.html
 ```
 
 Uses the local DuckDB file built by `dbtf build`. Set `FUSION_DB` to point at
@@ -19,9 +19,9 @@ deps; no project install is needed.
 
 ## What's in here
 
-- `build.py` — connects to DuckDB, runs five ggsql queries against
-  `fct_issues` / `issue_summary` / `milestone_burndown` / etc., and stitches
-  per-chart Vega-Lite embeds into a single static HTML page.
+- `build.py` — connects to DuckDB, runs the canonical ggsql chart set against
+  the `transform/models/dashboard/` marts, and stitches per-chart Vega-Lite
+  embeds into a single static HTML page.
 - `index.html` — generated artifact. Pure HTML + vega-embed, safe to drop into
   the PR preview deploy alongside the Prefab `app.html`.
 

@@ -36,7 +36,7 @@ prefab:
 
 ## ggsql        Build ggsql + Vega-Lite dashboard
 ggsql:
-	uv run python3 dashboard/ggsql/build.py
+	uv run dashboard/ggsql/build.py
 
 ## mviz         Generate data files and render mviz dashboard
 mviz:

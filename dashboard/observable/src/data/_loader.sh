@@ -14,15 +14,54 @@ REPO_ROOT = "$REPO_ROOT"
 QUERY_NAME = "$QUERY_NAME"
 FIRST_ROW = "$FIRST_ROW" == "--first-row"
 
-if os.environ.get("MOTHERDUCK_TOKEN"):
+if os.environ.get("FUSION_DB"):
+    DB_PATH = os.environ["FUSION_DB"]
+    con = duckdb.connect(DB_PATH, read_only=True)
+elif os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
     con = duckdb.connect(DB_PATH)
 else:
     DB_PATH = f"{REPO_ROOT}/data/fusion_issues.duckdb"
     con = duckdb.connect(DB_PATH, read_only=True)
-    con.execute(f"SET file_search_path = '{REPO_ROOT}/transform'")
+if not DB_PATH.startswith("md:"):
+    file_search_root = os.environ.get("FUSION_PROJECT_ROOT", REPO_ROOT)
+    con.execute(f"SET file_search_path = '{file_search_root}/transform'")
 
-sql = open(f"{REPO_ROOT}/dashboard/observable/queries/{QUERY_NAME}.sql").read()
+SQL_BY_NAME = {
+    "summary": "SELECT * FROM summary_kpis",
+    "triage": "SELECT * FROM triage_health",
+    "cumulative_flow": "SELECT * FROM cumulative_flow ORDER BY week",
+    "response_pctiles": "SELECT * FROM response_pctiles ORDER BY week",
+    "close_by_label": "SELECT * FROM close_by_label ORDER BY median_days_to_close DESC",
+    "assignee_workload": "SELECT * FROM assignee_workload ORDER BY open_issues DESC",
+    "community_priorities": "SELECT * FROM community_priorities ORDER BY reactions_total_count DESC",
+    "velocity": """
+        SELECT
+            week,
+            max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
+            max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
+        FROM velocity
+        GROUP BY week
+        ORDER BY week
+    """,
+    "age_distribution": """
+        SELECT
+            age_bucket,
+            sum(CASE WHEN issue_category = 'bug' THEN issue_count ELSE 0 END) AS bug,
+            sum(CASE WHEN issue_category = 'enhancement' THEN issue_count ELSE 0 END) AS enhancement,
+            sum(CASE WHEN issue_category = 'other' THEN issue_count ELSE 0 END) AS other
+        FROM age_distribution
+        GROUP BY age_bucket
+        ORDER BY CASE age_bucket
+            WHEN '0-7d' THEN 1
+            WHEN '8-30d' THEN 2
+            WHEN '31-90d' THEN 3
+            WHEN '91-180d' THEN 4
+            ELSE 5
+        END
+    """,
+}
+sql = SQL_BY_NAME[QUERY_NAME]
 rows = con.execute(sql).fetchdf().to_dict("records")
 json.dump(rows[0] if FIRST_ROW else rows, sys.stdout)
 PYEOF

@@ -14,9 +14,10 @@ import duckdb
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "src", "data")
-QUERIES_DIR = os.path.join(HERE, "queries")
 
-if os.environ.get("MOTHERDUCK_TOKEN"):
+if os.environ.get("FUSION_DB"):
+    DB_PATH = os.environ["FUSION_DB"]
+elif os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
 else:
     DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
@@ -25,13 +26,9 @@ else:
 def get_connection():
     con = duckdb.connect(DB_PATH, read_only=True)
     if not DB_PATH.startswith("md:"):
-        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
+        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
     return con
-
-
-def load_sql(name: str) -> str:
-    with open(os.path.join(QUERIES_DIR, f"{name}.sql")) as f:
-        return f.read()
 
 
 def query(con, sql: str) -> list[dict]:
@@ -51,15 +48,15 @@ def main():
     con = get_connection()
 
     # -- Summary KPIs --
-    summary = query(con, load_sql("summary"))[0]
+    summary = query(con, "SELECT * FROM summary_kpis")[0]
     write_json("summary.json", summary)
 
     # -- Cumulative flow --
-    write_json("cumulative_flow.json", query(con, load_sql("cumulative_flow")))
+    write_json("cumulative_flow.json", query(con, "SELECT * FROM cumulative_flow"))
 
     # -- Bug + enhancement velocity (merged into wide format) --
-    bug_v = query(con, load_sql("bug_velocity"))
-    enh_v = query(con, load_sql("enh_velocity"))
+    bug_v = query(con, "SELECT * FROM bug_velocity")
+    enh_v = query(con, "SELECT * FROM enh_velocity")
     vel_map = {}
     for r in bug_v:
         vel_map[r["week"]] = {"week": r["week"], "bugs": r["median_days"], "enhancements": None}
@@ -71,10 +68,10 @@ def main():
     write_json("velocity.json", sorted(vel_map.values(), key=lambda x: x["week"]))
 
     # -- Response time percentiles --
-    write_json("response_pctiles.json", query(con, load_sql("response_pctiles")))
+    write_json("response_pctiles.json", query(con, "SELECT * FROM response_pctiles"))
 
     # -- Issue age distribution (pivoted) --
-    age_dist = query(con, load_sql("age_distribution"))
+    age_dist = query(con, "SELECT * FROM age_distribution")
     age_buckets = ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
     age_chart_data = []
     for bucket in age_buckets:
@@ -88,16 +85,16 @@ def main():
     write_json("age_distribution.json", age_chart_data)
 
     # -- Median close by label --
-    write_json("close_by_label.json", query(con, load_sql("close_by_label")))
+    write_json("close_by_label.json", query(con, "SELECT * FROM close_by_label"))
 
     # -- Triage health --
-    write_json("triage.json", query(con, load_sql("triage"))[0])
+    write_json("triage.json", query(con, "SELECT * FROM triage_health")[0])
 
     # -- Assignee workload --
-    write_json("assignee_workload.json", query(con, load_sql("assignee_workload")))
+    write_json("assignee_workload.json", query(con, "SELECT * FROM assignee_workload"))
 
     # -- Community priorities --
-    write_json("community_priorities.json", query(con, load_sql("community_priorities")))
+    write_json("community_priorities.json", query(con, "SELECT * FROM community_priorities"))
 
     con.close()
     print("\nDone. All data files written to observable/src/data/")

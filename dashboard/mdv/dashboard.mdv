@@ -3,10 +3,12 @@ title: dbt-fusion Issue Health
 theme: minimal
 data:
   stats: ./data/stats.csv
+  cumulative_flow: ./data/cumulative_flow.csv
   velocity: ./data/velocity.csv
   response: ./data/response.csv
-  open_by_category: ./data/open_by_category.csv
+  age_distribution: ./data/age_distribution.csv
   close_by_label: ./data/close_by_label.csv
+  assignee_workload: ./data/assignee_workload.csv
   community_priorities: ./data/community_priorities.csv
 styles:
   note:
@@ -22,32 +24,36 @@ styles:
 MDV keeps the page as Markdown with named CSV datasets. The rendered artifact is a self-contained HTML file with inline SVG charts.
 :::
 
-## Key metrics
+## Key Metrics
 
 ```stat data=stats
 ```
 
-## Velocity
+## Cumulative Issue Flow
 
-```chart type=line data=velocity x=week y=days series=type points title="Median days to close"
+```chart type=line data=cumulative_flow x=week y=issues series=series points title="Cumulative Issue Flow"
 ```
 
-## Response time
+## Velocity & Response
 
-```chart type=line data=response x=week y=hours series=percentile points title="Hours to first response"
+```chart type=line data=velocity x=week y=days series=type points title="Median Days to Close: Bugs vs Enhancements"
 ```
 
-## Open issue mix
-
-```chart type=pie data=open_by_category label=issue_category value=count donut title="Open issues by type"
+```chart type=line data=response x=week y=hours series=percentile points title="Time to First Response (hours)"
 ```
 
-## Slowest labels
+## Issue Distribution
 
-```chart type=bar data=close_by_label x=label_name y=median_days_to_close title="Median days to close by label"
+```chart type=bar data=age_distribution x=age_bucket y=issue_count series=issue_category title="Open Issue Age by Type"
 ```
 
-## Community priorities
+```chart type=bar data=close_by_label x=label_name y=median_days_to_close title="Median Days to Close by Label"
+```
+
+## Workload & Priorities
+
+```chart type=bar data=assignee_workload x=assignee_login y=open_issues series=type title="Open Issues by Assignee"
+```
 
 ```table data=community_priorities
 ```
