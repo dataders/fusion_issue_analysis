@@ -165,6 +165,7 @@ dashboard/evidence/node_modules/
 dashboard/observable/node_modules/
 
 # Dashboard build artifacts (index.html is the bakeoff wrapper, tracked in git)
+dashboard/about.html
 dashboard/app.html
 dashboard/app_myspace.html
 dashboard/prefab/app.html
