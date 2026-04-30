@@ -1,7 +1,7 @@
 <p class="links">
-  <a href="./?tab=prefab" target="_top">Dashboard</a> ·
-  <a href="https://github.com/dataders/fusion_issue_analysis" target="_blank" rel="noreferrer">GitHub repo</a> ·
-  <a href="https://github.com/dbt-labs/dbt-fusion" target="_blank" rel="noreferrer">Upstream issues</a>
+  <a href="./?tab=prefab" target="_top">Open dashboards</a> ·
+  <a href="https://github.com/dataders/fusion_issue_analysis" target="_blank" rel="noreferrer">Source repo</a> ·
+  <a href="https://github.com/dataders/fusion_issue_analysis/tree/main/transform/models/dashboard" target="_blank" rel="noreferrer">Shared dbt models</a>
 </p>
 
 # About this dashboard bakeoff
