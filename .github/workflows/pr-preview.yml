@@ -39,6 +39,7 @@ jobs:
           cp dashboard/about.html preview/about.html
           uv run prefab export dashboard/prefab/app.py -o preview/prefab/app.html
           uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
+          uv run prefab export dashboard/prefab/app_windows_2000.py -o preview/prefab/app_windows_2000.html
 
       - name: Build mviz dashboard
         env:
@@ -138,6 +139,7 @@ jobs:
               '|-----------|------|',
               '| Prefab | `prefab/app.html` |',
               '| Prefab MySpace | `prefab/app_myspace.html` |',
+              '| Prefab Windows 2000 | `prefab/app_windows_2000.html` |',
               '| ggsql + Vega-Lite | `ggsql/index.html` |',
               '| mviz | `mviz/index.html` |',
               '| MDV | `mdv/index.html` |',
