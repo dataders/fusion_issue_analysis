@@ -4,6 +4,7 @@
   "scripts": {
     "dev": "evidence dev",
     "build": "evidence build",
+    "sources": "evidence sources",
     "preview": "evidence preview",
     "postinstall": "patch-package"
   },

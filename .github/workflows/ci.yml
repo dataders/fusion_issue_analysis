@@ -13,6 +13,17 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-dashboard-npm-
 
       - name: Install dependencies
         run: uv sync --dev
@@ -41,13 +52,11 @@ jobs:
           uv run prefab export dashboard/prefab/app_myspace.py -o /tmp/prefab_myspace.html
           uv run prefab export dashboard/prefab/app_windows_2000.py -o /tmp/prefab_windows_2000.html
 
-      - name: Smoke-test mviz
+      - name: Smoke-test npm dashboards
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd dashboard/mviz
-          uv run python generate_data.py
-          npx --yes mviz@1.6.7 dashboard.md -o /tmp/mviz.html
+          EVIDENCE_BASE_PATH: /evidence/build
+        run: npm run build:npm-dashboards
 
       - name: Smoke-test ggsql
         env:
@@ -59,25 +68,6 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o /tmp/marimo.html
-
-      - name: Smoke-test Observable
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd dashboard/observable
-          npm ci --silent
-          npm run build
-
-      - name: Smoke-test Evidence
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          EVIDENCE_BASE_PATH: /evidence/build
-        run: |
-          uv run python3 dashboard/evidence/generate_sources.py
-          cd dashboard/evidence
-          npm ci --legacy-peer-deps --silent
-          ./node_modules/.bin/evidence sources
-          npm run build
 
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2

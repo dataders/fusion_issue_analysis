@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz mdv marimo observable evidence quarto dac shaper kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: about prefab ggsql mviz mdv marimo observable evidence quarto dac shaper
+build: about prefab ggsql npm-dashboards mdv marimo quarto dac shaper
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:
@@ -40,8 +40,11 @@ ggsql:
 
 ## mviz         Generate data files and render mviz dashboard
 mviz:
-	uv run python3 dashboard/mviz/generate_data.py
-	npx --yes mviz@1.6.7 dashboard/mviz/dashboard.md -o dashboard/mviz/index.html
+	npm run build:mviz
+
+## npm-dashboards Build mviz, Observable, and Evidence in one npm command
+npm-dashboards:
+	npm run build:npm-dashboards
 
 ## mdv          Generate data files and render MDV dashboard
 mdv:
@@ -53,12 +56,13 @@ marimo:
 
 ## observable   Build Observable Framework dashboard (requires npm)
 observable:
-	cd dashboard/observable && npm run build
+	npm --prefix dashboard/observable ci --silent
+	npm run build:observable
 
 ## evidence     Build Evidence.dev dashboard (requires MOTHERDUCK_TOKEN + npm)
 evidence:
-	uv run python3 dashboard/evidence/generate_sources.py
-	cd dashboard/evidence && npm run build
+	npm --prefix dashboard/evidence ci --legacy-peer-deps --silent
+	npm run build:evidence
 
 ## quarto       Render Quarto dashboard to static HTML
 quarto:
@@ -96,5 +100,5 @@ help:
 	@echo ""
 	@echo "Notes:"
 	@echo "  Set MOTHERDUCK_TOKEN to build against MotherDuck instead of local DuckDB"
-	@echo "  observable and evidence require node_modules (run npm ci in each dir first)"
+	@echo "  npm-dashboards installs nested Node dependencies before building"
 	@echo "  dac requires the dac and bruin CLIs"

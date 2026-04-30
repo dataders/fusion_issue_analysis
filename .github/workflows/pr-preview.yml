@@ -1,5 +1,8 @@
 name: PR Dashboard Preview
 
+env:
+  MDV_SHA: b9d5a8c1bb66b094a8745775cb9bf1389f08403f
+
 on:
   pull_request:
     types: [opened, synchronize, reopened]
@@ -16,6 +19,25 @@ jobs:
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
+        with:
+          enable-cache: true
+          cache-dependency-glob: uv.lock
+
+      - name: Cache npm packages
+        uses: actions/cache@v4
+        with:
+          path: ~/.npm
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-dashboard-npm-
+
+      - name: Cache MDV build
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/fusion-mdv-cache
+          key: ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-${{ hashFiles('dashboard/mdv/build.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-
 
       - name: Install dependencies
         run: uv sync --dev
@@ -48,18 +70,16 @@ jobs:
           uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
           uv run prefab export dashboard/prefab/app_windows_2000.py -o preview/prefab/app_windows_2000.html
 
-      - name: Build mviz dashboard
+      - name: Build npm dashboard previews
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          mkdir -p preview/mviz
-          cd dashboard/mviz
-          uv run python generate_data.py
-          npx --yes mviz@1.6.7 dashboard.md -o ../../preview/mviz/index.html
+          EVIDENCE_BASE_PATH: /evidence/build
+        run: npm run build:npm-dashboards:preview
 
       - name: Build MDV dashboard
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          MDV_CACHE_DIR: ${{ runner.temp }}/fusion-mdv-cache/mdv-${{ env.MDV_SHA }}
         run: |
           mkdir -p preview/mdv
           bash dashboard/mdv/build.sh
@@ -78,29 +98,6 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o preview/marimo.html
-
-      - name: Build Observable Framework dashboard
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd dashboard/observable
-          npm ci --silent
-          npm run build
-          mkdir -p ../preview/observable
-          cp -r dist/* ../preview/observable/
-
-      - name: Build Evidence.dev dashboard
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          EVIDENCE_BASE_PATH: /evidence/build
-        run: |
-          uv run python3 dashboard/evidence/generate_sources.py
-          cd dashboard/evidence
-          npm ci --legacy-peer-deps --silent
-          ./node_modules/.bin/evidence sources
-          npm run build
-          mkdir -p ../../preview/evidence
-          cp -r build/* ../../preview/evidence/
 
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
