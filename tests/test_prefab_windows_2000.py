@@ -14,10 +14,13 @@ LOCAL_DB = REPO_ROOT / "data" / "fusion_issues.duckdb"
 
 
 class PrefabWindows2000Tests(unittest.TestCase):
-    def test_bakeoff_tab_points_to_windows_2000_export(self) -> None:
+    def test_bakeoff_prefab_tab_has_windows_2000_theme(self) -> None:
         content = INDEX_HTML.read_text()
-        self.assertIn("Prefab Windows 2000", content)
+        self.assertIn('id="prefab-themes"', content)
+        self.assertIn('data-tab="prefab"', content)
+        self.assertIn('data-theme="windows-2000"', content)
         self.assertIn('data-src="prefab/app_windows_2000.html"', content)
+        self.assertIn('"prefab-windows-2000": "windows-2000"', content)
 
     def test_makefile_exports_windows_2000_prefab(self) -> None:
         content = MAKEFILE.read_text()
