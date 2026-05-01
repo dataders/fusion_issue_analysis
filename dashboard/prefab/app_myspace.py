@@ -28,7 +28,9 @@ from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineCh
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
 
-if os.environ.get("MOTHERDUCK_TOKEN"):
+if os.environ.get("FUSION_DB"):
+    DB_PATH = os.environ["FUSION_DB"]
+elif os.environ.get("MOTHERDUCK_TOKEN"):
     DB_PATH = "md:fusion_issues"
 else:
     DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
@@ -36,7 +38,8 @@ else:
 def query(sql: str) -> list[dict]:
     con = duckdb.connect(DB_PATH, read_only=True)
     if not DB_PATH.startswith("md:"):
-        con.execute(f"SET file_search_path = '{os.path.join(PROJECT_ROOT, 'transform')}'")
+        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
+        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
     result = con.execute(sql).fetchdf()
     con.close()
     return result.to_dict("records")
@@ -53,9 +56,41 @@ cumulative_flow = query("SELECT * FROM cumulative_flow")
 
 response_pctiles = query("SELECT * FROM response_pctiles")
 
+bug_velocity = query("SELECT * FROM bug_velocity")
+
+enh_velocity = query("SELECT * FROM enh_velocity")
+
+age_dist = query("SELECT * FROM age_distribution")
+
+close_by_label = query("SELECT * FROM close_by_label")
+
+triage = query("SELECT * FROM triage_health")[0]
+
 community_priorities = query("SELECT * FROM community_priorities")
 
 assignee_workload = query("SELECT * FROM assignee_workload")
+
+velocity_map = {}
+for row in bug_velocity:
+    velocity_map[row["week"]] = {"week": row["week"], "bugs": row["median_days"], "enhancements": None}
+for row in enh_velocity:
+    if row["week"] in velocity_map:
+        velocity_map[row["week"]]["enhancements"] = row["median_days"]
+    else:
+        velocity_map[row["week"]] = {"week": row["week"], "bugs": None, "enhancements": row["median_days"]}
+velocity_data = sorted(velocity_map.values(), key=lambda row: row["week"])
+
+age_buckets = ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
+age_chart_data = []
+for bucket in age_buckets:
+    chart_row = {"age_bucket": bucket}
+    for issue_type in ["bug", "enhancement", "other"]:
+        chart_row[issue_type] = sum(
+            row["issue_count"]
+            for row in age_dist
+            if row["age_bucket"] == bucket and row["issue_category"] == issue_type
+        )
+    age_chart_data.append(chart_row)
 
 GUESTBOOK = [
     ("xX_d4ta_qu33n_Xx", "2003-07-14", "omg ur dashboard is SO cool!! add me 2 ur top 8 plzzz"),
@@ -143,16 +178,16 @@ with PrefabApp(
     with Row(gap=3, css_class="mt-4"):
         with Card(css_class="flex-1 neon-card"):
             with CardHeader():
+                CardTitle("Open Issues")
+            with CardContent():
+                H3(str(summary_cards["open_issues"]), css_class="blink", style={"font-size": "2rem"})
+
+        with Card(css_class="flex-1 neon-pink"):
+            with CardHeader():
                 CardTitle("Net Flow (4 wk)")
             with CardContent():
                 H3(f"{net_flow_sign}{net_flow}", css_class="rainbow", style={"font-size": "2rem"})
                 Muted(f"{summary_cards['opened_4w']} opened / {summary_cards['closed_4w']} closed")
-
-        with Card(css_class="flex-1 neon-pink"):
-            with CardHeader():
-                CardTitle("Open Issues")
-            with CardContent():
-                H3(str(summary_cards["open_issues"]), css_class="blink", style={"font-size": "2rem"})
 
         with Card(css_class="flex-1 neon-green"):
             with CardHeader():
@@ -190,17 +225,76 @@ with PrefabApp(
                 x_axis="week", show_legend=True, height=300,
             )
 
-    # ── Response Time ──────────────────────────────────────────────
-    with Card(css_class="mt-6 neon-green"):
-        with CardHeader():
-            CardTitle("Time 2 First Response (hours)")
-            Muted("r we getting faster?? lol")
-        with CardContent():
-            LineChart(
-                data=response_pctiles,
-                series=[ChartSeries(data_key="p50", label="Median", color="#0ff")],
-                x_axis="week", show_legend=True, curve="smooth", height=250,
-            )
+    # ── Velocity & Response ────────────────────────────────────────
+    with Row(gap=4, css_class="mt-6"):
+        with Card(css_class="flex-1 neon-green"):
+            with CardHeader():
+                CardTitle("Median Days 2 Close")
+                Muted("bugs vs enhancements")
+            with CardContent():
+                LineChart(
+                    data=velocity_data,
+                    series=[
+                        ChartSeries(data_key="bugs", label="Bugs", color="#ff1493"),
+                        ChartSeries(data_key="enhancements", label="Enhancements", color="#0ff"),
+                    ],
+                    x_axis="week", show_legend=True, curve="smooth", height=250,
+                )
+
+        with Card(css_class="flex-1 neon-card"):
+            with CardHeader():
+                CardTitle("Time 2 First Response (hours)")
+                Muted("p25 / p50 / p75")
+            with CardContent():
+                LineChart(
+                    data=response_pctiles,
+                    series=[
+                        ChartSeries(data_key="p25", label="p25", color="#39ff14"),
+                        ChartSeries(data_key="p50", label="p50", color="#0ff"),
+                        ChartSeries(data_key="p75", label="p75", color="#ff1493"),
+                    ],
+                    x_axis="week", show_legend=True, curve="smooth", height=250,
+                )
+
+    # ── Issue Distribution ─────────────────────────────────────────
+    with Row(gap=4, css_class="mt-6"):
+        with Card(css_class="flex-1 neon-pink"):
+            with CardHeader():
+                CardTitle("Open Issue Age by Type")
+            with CardContent():
+                BarChart(
+                    data=age_chart_data,
+                    series=[
+                        ChartSeries(data_key="bug", label="Bug", color="#ff1493"),
+                        ChartSeries(data_key="enhancement", label="Enhancement", color="#0ff"),
+                        ChartSeries(data_key="other", label="Other", color="#39ff14"),
+                    ],
+                    x_axis="age_bucket", stacked=True, show_legend=True, height=260,
+                )
+
+        with Card(css_class="flex-1 neon-green"):
+            with CardHeader():
+                CardTitle("Median Days to Close by Label")
+            with CardContent():
+                BarChart(
+                    data=close_by_label,
+                    series=[ChartSeries(data_key="median_days_to_close", label="Days", color="#39ff14")],
+                    x_axis="label_name", horizontal=True, show_legend=False, height=300,
+                )
+
+    # ── Triage Health ──────────────────────────────────────────────
+    H3("Triage Health", css_class="mt-6")
+    with Row(gap=3, css_class="mt-3"):
+        for label, value in [
+            ("% Labeled", triage["pct_labeled"]),
+            ("% Typed", triage["pct_typed"]),
+            ("% Assigned", triage["pct_assigned"]),
+            ("% Milestoned", triage["pct_milestoned"]),
+        ]:
+            with Card(css_class="flex-1 neon-card"):
+                with CardContent():
+                    H3(f"{int(value)}%", style={"font-size": "1.8rem"})
+                    Muted(label)
 
     # ── Top 8 Issues (MySpace Top 8 style!!) ──────────────────────
     H3("💖 ~*~ My Top 8 Issues ~*~ 💖", css_class="mt-6")

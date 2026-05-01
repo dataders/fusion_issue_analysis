@@ -4,22 +4,28 @@ connection: fusion
 
 rows:
   - widgets:
-      - name: Net Flow
-        type: metric
-        col: 3
-        sql: |
-          set file_search_path='transform';
-          select closed_4w - opened_4w as value
-          from summary_kpis
-        column: value
-        format: number
       - name: Open Issues
         type: metric
-        col: 3
+        col: 2
         sql: |
           set file_search_path='transform';
-          select open_issues as value
-          from summary_kpis
+          select open_issues as value from summary_kpis
+        column: value
+        format: number
+      - name: Net Flow
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select closed_4w - opened_4w as value from summary_kpis
+        column: value
+        format: number
+      - name: Median Close
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select rolling_median_close_days as value from summary_kpis
         column: value
         format: number
       - name: 48h Response SLA
@@ -27,8 +33,7 @@ rows:
         col: 3
         sql: |
           set file_search_path='transform';
-          select pct_responded_48h / 100.0 as value
-          from summary_kpis
+          select pct_responded_48h / 100.0 as value from summary_kpis
         column: value
         format: percentage
       - name: Stale Issues
@@ -36,40 +41,40 @@ rows:
         col: 3
         sql: |
           set file_search_path='transform';
-          select stale_count as value
-          from summary_kpis
+          select stale_count as value from summary_kpis
         column: value
         format: number
 
   - widgets:
-      - name: Cumulative Flow
+      - name: Cumulative Issue Flow
         type: chart
         chart: line
-        col: 8
+        col: 12
         sql: |
           set file_search_path='transform';
-          select
-            week,
-            cumulative_opened,
-            cumulative_closed
+          select week, cumulative_opened, cumulative_closed
           from cumulative_flow
           order by week
         x: week
         y: [cumulative_opened, cumulative_closed]
-      - name: Open Issues by Category
-        type: chart
-        chart: pie
-        col: 4
-        sql: |
-          set file_search_path='transform';
-          select issue_category, count
-          from open_by_category
-          order by count desc
-        label: issue_category
-        value: count
 
   - widgets:
-      - name: Response Time Percentiles
+      - name: Median Days to Close
+        type: chart
+        chart: line
+        col: 6
+        sql: |
+          set file_search_path='transform';
+          select
+            week,
+            max(case when issue_category = 'bug' then median_days end) as bugs,
+            max(case when issue_category = 'enhancement' then median_days end) as enhancements
+          from velocity
+          group by week
+          order by week
+        x: week
+        y: [bugs, enhancements]
+      - name: Time to First Response
         type: chart
         chart: line
         col: 6
@@ -80,7 +85,9 @@ rows:
           order by week
         x: week
         y: [p25, p50, p75]
-      - name: Age Distribution
+
+  - widgets:
+      - name: Open Issue Age by Type
         type: chart
         chart: bar
         stacked: true
@@ -103,25 +110,73 @@ rows:
           end
         x: age_bucket
         y: [bug, enhancement, other]
-
-  - widgets:
-      - name: Oldest Open Issues
-        type: table
-        col: 12
+      - name: Median Days to Close by Label
+        type: chart
+        chart: bar
+        col: 6
         sql: |
           set file_search_path='transform';
-          select
-            issue_number,
-            title,
-            issue_category,
-            round(datediff('day', created_at, current_date), 0) as age_days,
-            reactions_total_count,
-            comments_total_count,
-            coalesce(milestone_title, '') as milestone
-          from fct_issues
-          where state = 'OPEN' and issue_category != 'epic'
-          order by created_at asc
-          limit 25
+          select label_name, median_days_to_close
+          from close_by_label
+          order by median_days_to_close desc
+        x: label_name
+        y: [median_days_to_close]
+
+  - widgets:
+      - name: Triage Labeled
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select pct_labeled / 100.0 as value from triage_health
+        column: value
+        format: percentage
+      - name: Triage Typed
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select pct_typed / 100.0 as value from triage_health
+        column: value
+        format: percentage
+      - name: Triage Assigned
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select pct_assigned / 100.0 as value from triage_health
+        column: value
+        format: percentage
+      - name: Triage Milestoned
+        type: metric
+        col: 3
+        sql: |
+          set file_search_path='transform';
+          select pct_milestoned / 100.0 as value from triage_health
+        column: value
+        format: percentage
+
+  - widgets:
+      - name: Open Issues by Assignee
+        type: chart
+        chart: bar
+        stacked: true
+        col: 6
+        sql: |
+          set file_search_path='transform';
+          select assignee_login, bugs, enhancements
+          from assignee_workload
+          order by open_issues desc
+        x: assignee_login
+        y: [bugs, enhancements]
+      - name: Community Priorities
+        type: table
+        col: 6
+        sql: |
+          set file_search_path='transform';
+          select issue_number, title, issue_category, reactions_total_count, age_days
+          from community_priorities
+          order by reactions_total_count desc
         columns:
           - name: issue_number
             label: Issue
@@ -130,13 +185,38 @@ rows:
             label: Title
           - name: issue_category
             label: Type
-          - name: age_days
-            label: Age Days
-            format: number
           - name: reactions_total_count
             label: Reactions
             format: number
-          - name: comments_total_count
+          - name: age_days
+            label: Age Days
+            format: number
+
+  - widgets:
+      - name: Oldest Open Issues
+        type: table
+        col: 12
+        sql: |
+          set file_search_path='transform';
+          select "#", title, type, age_days, reactions, comments, milestone
+          from open_issues_table
+          order by age_days desc
+          limit 25
+        columns:
+          - name: "#"
+            label: Issue
+            format: number
+          - name: title
+            label: Title
+          - name: type
+            label: Type
+          - name: age_days
+            label: Age Days
+            format: number
+          - name: reactions
+            label: Reactions
+            format: number
+          - name: comments
             label: Comments
             format: number
           - name: milestone

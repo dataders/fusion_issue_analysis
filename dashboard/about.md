@@ -1,3 +1,9 @@
+<p class="links">
+  <a href="./?tab=prefab" target="_top">Open dashboards</a> ·
+  <a href="https://github.com/dataders/fusion_issue_analysis" target="_blank" rel="noreferrer">Source repo</a> ·
+  <a href="https://github.com/dataders/fusion_issue_analysis/tree/main/transform/models/dashboard" target="_blank" rel="noreferrer">Shared dbt models</a>
+</p>
+
 # the jagged edge of agentic analytics
 
 I didn't set out to make [this bakeoff of static dashboards](https://dashboard-bakeoff.anders.omg.lol/)! My original goal was to experiment having agents create a toy end-to-end analytics project on a real, "small" dataset.
