@@ -11,7 +11,7 @@ def render() -> str:
     source_text = SOURCE.read_text()
     body = markdown.markdown(
         source_text,
-        extensions=["tables", "sane_lists"],
+        extensions=["tables", "sane_lists", "fenced_code"],
         output_format="html5",
     )
     return f"""<!DOCTYPE html>
@@ -45,7 +45,9 @@ def render() -> str:
     }}
 
     h1,
-    h2 {{
+    h2,
+    h3,
+    h4 {{
       line-height: 1.2;
       margin: 0 0 12px;
       color: #111;
@@ -56,9 +58,22 @@ def render() -> str:
       margin-bottom: 18px;
     }}
 
-    h2 {{
+    h2,
+    h3,
+    h4 {{
       margin-top: 32px;
+    }}
+
+    h2 {{
       font-size: 1.2rem;
+    }}
+
+    h3 {{
+      font-size: 1.05rem;
+    }}
+
+    h4 {{
+      font-size: 1rem;
     }}
 
     .links {{
@@ -81,6 +96,36 @@ def render() -> str:
       border-radius: 4px;
       background: #efefef;
       font-size: 0.94em;
+    }}
+
+    pre {{
+      margin: 0 0 16px;
+      padding: 14px 16px;
+      overflow-x: auto;
+      border-radius: 6px;
+      background: #efefef;
+    }}
+
+    pre code {{
+      padding: 0;
+      background: transparent;
+      font-size: 0.9em;
+    }}
+
+    blockquote {{
+      margin: 0 0 16px;
+      padding: 2px 0 2px 16px;
+      border-left: 3px solid #c7d7d3;
+      color: #333;
+    }}
+
+    .mermaid {{
+      margin: 24px 0 28px;
+      padding: 16px;
+      overflow-x: auto;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fff;
     }}
 
     ul,
@@ -112,6 +157,21 @@ def render() -> str:
     <!-- Generated from dashboard/about.md. Do not edit dashboard/about.html directly. -->
     {body}
   </main>
+  <script type="module">
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+
+    mermaid.initialize({{ startOnLoad: false, securityLevel: "strict" }});
+    const blocks = document.querySelectorAll("pre code.language-mermaid");
+    blocks.forEach((block) => {{
+      const diagram = document.createElement("div");
+      diagram.className = "mermaid";
+      diagram.textContent = block.textContent;
+      block.closest("pre").replaceWith(diagram);
+    }});
+    if (blocks.length > 0) {{
+      await mermaid.run({{ nodes: document.querySelectorAll(".mermaid") }});
+    }}
+  </script>
 </body>
 </html>
 """
