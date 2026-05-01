@@ -117,11 +117,13 @@ The reason agents (and humans) drift the wrong way is that the second kind of co
 
 I don't think any of the nine frameworks I tried gets this fully right. The closest are the ones where the chart spec is genuinely a thin SQL `SELECT` against pre-modeled tables; the worst are the ones that hand the agent a Python notebook and a CSV and say "good luck."
 
-### Layers 4–6: this is mostly where opinions live, and mostly not where the value is
+### Layers 4–6: mostly where opinions live — at least at my scale
 
-I'm going to skip past chart grammar, chart runtime, and layout pretty quickly because the bakeoff convinced me these layers matter less than I expected. Agents handled all nine variants with roughly equal ease. The output looks different, but the *amount of work to get a working dashboard* was surprisingly constant across the lot.
+I'm going to move past chart grammar, chart runtime, and layout pretty quickly because *in my bakeoff* these layers felt like they mattered less than I expected. Agents handled all nine variants with roughly equal ease. The output looks different, but the *amount of work to get a working dashboard* was surprisingly constant across the lot.
 
-That doesn't mean these layers are unimportant — Jacob's `mviz` has clear, opinionated defaults that are gorgeous out of the box, Prefab let me theme an entire dashboard like a Windows 2000 desktop, and Quarto absolutely owns the narrative-report end of the spectrum. But the differentiation here is about taste and authoring vibe, not about whether the dashboard works. If your goal is "ship something that loads and shows the right numbers," all of these will get you there.
+That said — I'd push back on myself here. My project was one person, one dataset, one agent doing simple prompts like "add a new tab for {framework}." That's not production scale, it's not a team workflow, and it's not a complex dashboard with drill-downs and cross-filters and 40 charts. Someone coming from a more rigorous methodology, or building something more ambitious, might find these layers jagged in ways I didn't hit. I have no idea whether "agents handle this with equal ease" holds up when the prompt is harder or the dashboard is more opinionated. So take my "layers 4–6 are mostly taste" conclusion as a hypothesis from a toy project, not a finding.
+
+What I can say is: Jacob's `mviz` has clear, opinionated defaults that are gorgeous out of the box, Prefab let me theme an entire dashboard like a Windows 2000 desktop, and Quarto absolutely owns the narrative-report end of the spectrum. The differentiation here is about taste and authoring vibe. If your goal is "ship something that loads and shows the right numbers," all of these got me there — but your mileage may vary once the requirements get real.
 
 The decision guide on the [bakeoff about page](https://dashboard-bakeoff.anders.omg.lol/?tab=about) lays out which to pick if you have a specific need. I'm not going to repeat it here.
 
