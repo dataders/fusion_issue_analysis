@@ -1,4 +1,4 @@
-# dashboards, agents, and meaning?
+# the jagged edge of agentic analytics
 
 I didn't set out to make [this bakeoff of static dashboards](https://dashboard-bakeoff.anders.omg.lol/)! My original goal was to experiment having agents create a toy end-to-end analytics project on a real, "small" dataset.
 
@@ -147,7 +147,11 @@ I buy it as a UI distribution channel. The argument is basically: if everyone is
 
 The reason it took me a while to come around is that I was conflating layer 7 (where do users see this thing?) with layer 2 (how does this thing get its data?). They're two different questions. "Dashboard lives in an MCP app" doesn't tell you whether the dashboard's data is baked, live-queried, or fetched through an MCP server at load time. You can cross-product the two layers however you want.
 
-That said — Jason has been pushing me on a related angle in our 1:1s: if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution." I'm sympathetic but skeptical — dashboard frameworks already have native warehouse connectors, so adding an MCP server in front of the warehouse for the dashboard's *refresh* feels like middleman architecture. His counter is fair, though: the MCP server gives you a headless, semantic-layer-aware, cross-warehouse abstraction, which is exactly what a dashboard *should* sit on top of. I have an action item to build a toy version and stop arguing about it in the abstract.
+That said — Jason has been pushing me on a related angle in our 1:1s: if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution."
+
+My hesitation isn't the MCP abstraction — it's non-determinism. A dashboard refresh should be a pure function: same inputs, same output, every time. Once an agent is in the loop at refresh time, that guarantee goes away. A GitHub Action that calls a warehouse connector and bakes Parquet is deterministic. A GitHub Action that asks an LLM to refresh the dashboard is not. The data pipeline is the wrong place for non-determinism to live.
+
+What I'm actually fine with is an MCP server for the *semantic layer* — something agents query when authoring or reading dashboards, not something that mediates the actual data fetch at refresh time. That distinction feels important, and I have an action item to build a toy version and stop arguing about it in the abstract.
 
 #### The PDF-in-Slack argument
 
@@ -155,13 +159,20 @@ This one I almost forgot about, until Jacob pointed out that mviz is explicitly 
 
 #### The browser-at-a-URL argument, and the gap that's actually blocking it
 
-Here's the gap that nobody is filling, and that I increasingly think is the actual blocker for the whole stack: **there is no good way to put a static dashboard at a URL behind auth.**
+Before you can answer *where* a dashboard lives, you have to answer *who is accessing it* — and in an agentic world that question gets more interesting, because agents aren't all the same persona.
+
+There are at least two distinct agent use cases:
+
+- **Authoring agents** — they're generating specs, writing SQL, creating dashboards. They need fairly broad access to the semantic layer during the authoring workflow, and they're inherently non-deterministic. That's fine. That's what they're for.
+- **Reading agents** — they're checking a dashboard to take some action downstream. They don't need to author anything; they need read access to a trusted, deterministic artifact.
+
+These two use cases want different permission models, and the permission model is what actually disambiguates the distribution question. Once you know what kind of agent is consuming the dashboard and what it's allowed to do, the "where does it live and how is it authenticated" question mostly answers itself.
+
+For the browser-at-a-URL surface — which I think persists, because not every dashboard reader wants to open Claude Desktop just to check a chart — the permission model question lands as: **there is no good way to put a static dashboard at a URL behind auth.**
 
 If I bake my dashboard into HTML and ship it to GitHub Pages, the entire internet can see it. If I want only my coworkers to see it, my options today are: stand up a real web app, put it behind a corporate VPN, or wedge it into an existing BI tool. None of these are "static dashboard"-shaped solutions.
 
-What I want is something Jason and I have been calling "very dumb Vercel with Okta": a hosting target that takes a directory of static files, asks for an OIDC config, and gates the whole thing behind SSO. No app, no backend, no database, no SaaS BI tool. Just `git push` and "only people in my org can see this." Or, framed for this stack specifically: **a dumber CDN with RBAC, purpose-built for sharing analytics with your colleagues.**
-
-If MCP apps end up being the dominant consumption surface, this gap goes away — auth gets handled by the agent client, and the dashboard inherits it. But if the browser-at-a-URL surface sticks around (and I think it does, because not every dashboard reader wants to open Claude Desktop just to see a chart), the actual gap is deployment and auth. That's what's holding this whole stack back — not the charting.
+That "very dumb Vercel with Okta" thing Jason and I keep sketching — a hosting target that takes a directory of static files, asks for an OIDC config, and gates the whole thing behind SSO — is really just a permission model applied to the browser surface. No app, no backend, no database. Just `git push` and "only people in my org can see this." The Okta story is downstream of figuring out the agent personas. Get the permission model right first, and the auth infrastructure becomes obvious.
 
 ## What about modern BI tools?
 
