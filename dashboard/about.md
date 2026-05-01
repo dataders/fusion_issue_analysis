@@ -2,7 +2,7 @@
 
 I didn't set out to make [this bakeoff of static dashboards](https://dashboard-bakeoff.anders.omg.lol/)! My original goal was to experiment having agents create a toy end-to-end analytics project on a real, "small" dataset.
 
-Caveat upfront: I'm not a web developer. I came to this from years of Power BI and dbt, with a soft spot for static-site generators because they make me feel like I'm building a Xanga page in 2004. So this post is one part architecture sketch, one part field notes, one part open question.
+Caveat upfront: I'm not a web developer. I came to this from years of Power BI and dbt, with a soft spot for static-site generators because they make me feel like I'm building a Xanga page in 2004. This post is part architecture sketch, part field notes — and it ends with more questions than I started with.
 
 The source data, [dbt-labs/dbt-fusion](https://github.com/dbt-labs/dbt-fusion) issues, is near and dear to my heart. I used [`dlt`](https://github.com/dlt-hub/dlt) to extract the raw data from GitHub to MotherDuck, dbt to model the data, then created a dashboard with [Prefab](https://prefab.prefect.io/docs/welcome) because it was new and made by Jeremiah Lowin and others at Prefect who are always doing cool AI things.
 
@@ -65,7 +65,7 @@ flowchart TB
     style presentation fill:#f5f5f5,stroke:#888
 ```
 
-I started this work by thinking pre-dominantly about the chart-grammar-and-layout middle as the whole game, at the expense of layers 1–3 and 7. However it's those afterthought layers I can't stop thinking about now.
+I started this work thinking layers 4–6 (chart grammar, runtime, layout) were the whole game. Turns out the three things I can't stop thinking about are layer 2 (how data gets loaded, and whether it has to be frozen), layer 3 (keeping metric definitions out of chart code — especially when agents are writing it), and layer 7 (auth and where the dashboard actually lives).
 
 ### Layer 1 (data source): MotherDuck is genuinely sick
 
@@ -75,16 +75,16 @@ Moving on.
 
 ### Layer 2 (data transport): this is where I'm stuck
 
-Of the nine variants in the bakeoff, eight do the same basic thing: at build time, run SQL against the warehouse, dump the results into a flat file (JSON, CSV, Parquet), and bake that file into the static site. Only one — Evidence.dev — does it differently, shipping Parquet alongside the HTML and re-running the queries in the browser via DuckDB-WASM at render time.
+Of the nine variants in the bakeoff, eight do the same basic thing: at build time, run SQL against the warehouse, dump the results into a flat file (JSON, CSV, Parquet), and bake that file into the static site. Evidence.dev does something slightly different: SQL still runs at build time, but instead of embedding results directly in the page, it ships them as Parquet files alongside the HTML. Then DuckDB-WASM runs in the browser and lets you filter and aggregate over those Parquet files without touching a server. The data is still frozen at build time — but the browser-side query layer means interactive filtering without a roundtrip.
 
 | Mode | What happens | Frameworks in the bakeoff |
 |---|---|---|
-| Build-time bake | SQL runs in CI; rows get written into the static artifact | Prefab, mviz, MDV, ggsql, Observable, Marimo, Quarto |
-| Render-time query | Browser runs SQL against shipped Parquet via DuckDB-WASM | Evidence.dev |
+| Build-time bake | SQL runs in CI; results get written into the static artifact | Prefab, mviz, MDV, ggsql, Observable, Marimo, Quarto |
+| Build-time bake + browser-side querying | SQL runs at build time; browser queries frozen Parquet via DuckDB-WASM | Evidence.dev |
 
-Both modes have a problem: the data is frozen at build time. Build-time bake freezes it into JSON. Render-time query freezes it into Parquet. Either way, "refresh the dashboard" means "rerun the build and redeploy."
+Both share the same fundamental problem: the data is frozen at build time. "Refresh the dashboard" means "rerun the build and redeploy."
 
-That's fine for a side project. It's bad for anything anyone would actually pay for. The shape I keep sketching in my head, for an unfrozen version, is something like:
+That's fine for a lot of cases — a nightly build-and-deploy isn't that different from a nightly refresh in Tableau. I'm genuinely not sure where the line is between "frozen data is fine" and "you actually need live queries." It probably depends on how stale your data can be and whether users need to filter on dimensions that weren't pre-aggregated. I don't have strong opinions on this yet. The shape I keep sketching in my head, for an unfrozen version, is something like:
 
 ```
 data source + dashboard infra → on dashboard load:
@@ -103,7 +103,7 @@ A hard truth I relearned in this project:
 
 Every framework has some affordance — a code block, a transform step, a chart-config knob — that makes it slightly faster *in the moment* to fix a metric definition or filter or label inside the dashboard than to push it back into the dbt layer where it belongs. And every time you do, you've quietly turned the dashboard into a parallel, undocumented semantic layer.
 
-I have to admit that, as a dbt Labs employee and general dbt zealot, it isn't a cardinal sin to have business logic in a dashboard! I can understand why folks would want to do it. Perhaps it's best to think of it like a pendulum that swings both ways. and that's healthy.
+I have to admit that, as a dbt Labs employee and general dbt zealot, it isn't a cardinal sin to have business logic in a dashboard. I can understand why folks do it.
 
 The reason this layer is so cursed is that there are actually *three* different things going on inside it, and most frameworks blur them into one undifferentiated "write some code that produces a chart" affordance:
 
@@ -113,7 +113,7 @@ The reason this layer is so cursed is that there are actually *three* different 
 
 A healthy Layer 3 says things like *"give me weekly active issues, broken down by repo, for the last 90 days, as a line chart."* It does **not** say *"`SELECT CASE WHEN status IN ('open', 'reopened') THEN 1 ELSE 0 END ...`"* — that's a metric definition leaking into the chart spec, and once you have one of those, you'll have fifty.
 
-The reason agents (and humans) drift the wrong way is that the second kind of code is *easier to write in the moment* than going back and fixing the dbt model. A good authoring layer makes the easy path the right one: the chart spec can name a metric, but it cannot *define* one. Looker famously got bitten by the inverse — a long tail of dashboard-specific edge cases got jammed into LookML because there wasn't a clean place for last-mile shaping, and the semantic layer slowly turned into a junk drawer. The mirror failure is just as bad: dashboards becoming the junk drawer because the semantic layer is too rigid. A good Layer 3 lets last-mile *presentation* tweaks happen in the dashboard (rename a label, sort differently, change a date format) while pushing anything that touches *meaning* back upstream.
+The reason agents (and humans) drift the wrong way is that the second kind of code is *easier to write in the moment* than going back and fixing the dbt model. A good authoring layer makes the easy path the right one: the chart spec can name a metric, but it cannot *define* one. Looker famously got bitten by the inverse — a long tail of dashboard-specific edge cases got jammed into LookML because there wasn't a clean place for last-mile shaping, and the semantic layer slowly turned into a junk drawer. And you get the opposite failure if the semantic layer is too rigid: dashboards become the junk drawer for anything that doesn't fit the model. A good Layer 3 lets last-mile *presentation* tweaks happen in the dashboard (rename a label, sort differently, change a date format) while pushing anything that touches *meaning* back upstream.
 
 I don't think any of the nine frameworks I tried gets this fully right. The closest are the ones where the chart spec is genuinely a thin SQL `SELECT` against pre-modeled tables; the worst are the ones that hand the agent a Python notebook and a CSV and say "good luck."
 
@@ -137,7 +137,7 @@ There are basically three surfaces a static dashboard can live on today, and eac
 | MCP app inside an agent | "Tell Claude to load the marketing WBR dashboard" | The agent client handles auth; the dashboard inherits it |
 | Image or PDF dropped in Slack | A baked snapshot, no interactivity | None needed — it's just a file |
 
-Each is legitimate. Each is the *right* answer for some use case. And right now, no static dashboard framework I tried treats this layer as a first-class concern.
+All three are real, and each one is the right answer for some set of users. None of the nine frameworks I tried treats this layer as a first-class concern though.
 
 #### The MCP-app argument
 
@@ -145,7 +145,7 @@ Jacob has been making the case for a while that the future of dashboard distribu
 
 I buy it as a UI distribution channel. The argument is basically: if everyone is going to be talking to an agent all day anyway, the agent becomes the new operating system, and dashboards are just one more thing the agent can pull up. Browser tabs become legacy.
 
-The reason it took me a while to come around is that I was conflating layer 7 (where do users see this thing?) with layer 2 (how does this thing get its data?). Those are separate questions. "Dashboard lives in an MCP app" doesn't tell you whether the dashboard's data is baked, live-queried, or fetched through an MCP server at load time. You can cross-product the two layers however you want.
+The reason it took me a while to come around is that I was conflating layer 7 (where do users see this thing?) with layer 2 (how does this thing get its data?). They're two different questions. "Dashboard lives in an MCP app" doesn't tell you whether the dashboard's data is baked, live-queried, or fetched through an MCP server at load time. You can cross-product the two layers however you want.
 
 That said — Jason has been pushing me on a related angle in our 1:1s: if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution." I'm sympathetic but skeptical — dashboard frameworks already have native warehouse connectors, so adding an MCP server in front of the warehouse for the dashboard's *refresh* feels like middleman architecture. His counter is fair, though: the MCP server gives you a headless, semantic-layer-aware, cross-warehouse abstraction, which is exactly what a dashboard *should* sit on top of. I have an action item to build a toy version and stop arguing about it in the abstract.
 
@@ -161,7 +161,19 @@ If I bake my dashboard into HTML and ship it to GitHub Pages, the entire interne
 
 What I want is something Jason and I have been calling "very dumb Vercel with Okta": a hosting target that takes a directory of static files, asks for an OIDC config, and gates the whole thing behind SSO. No app, no backend, no database, no SaaS BI tool. Just `git push` and "only people in my org can see this." Or, framed for this stack specifically: **a dumber CDN with RBAC, purpose-built for sharing analytics with your colleagues.**
 
-If MCP apps end up being the dominant consumption surface, this gap goes away — auth gets handled by the agent client, and the dashboard inherits it. But if the browser-at-a-URL surface sticks around (and I think it does, because not every dashboard reader wants to open Claude Desktop just to see a chart), this is where the real work is. It isn't a charting problem. It's not a query engine problem. It's a deployment-and-auth problem, and it's the actual reason this whole stack hasn't eaten more of the world yet.
+If MCP apps end up being the dominant consumption surface, this gap goes away — auth gets handled by the agent client, and the dashboard inherits it. But if the browser-at-a-URL surface sticks around (and I think it does, because not every dashboard reader wants to open Claude Desktop just to see a chart), the actual gap is deployment and auth. That's what's holding this whole stack back — not the charting.
+
+## What about modern BI tools?
+
+Quick aside since this whole post focuses on static or static-friendly tools: there's another generation of BI tools that aren't static at all, and they're worth naming even if they're out of scope here.
+
+The classic generation — Tableau, Looker, Power BI, Qlik — solved SSO, RBAC, scheduling, and PDF export a long time ago. They're the benchmark, not the subject of this bakeoff.
+
+There's also a newer generation that sits closer to the analyst-coded end of the spectrum: **Lightdash** (open-source, dbt-native — it reads your `schema.yml` directly and surfaces dashboards on top of your dbt models), **HEX** (notebook-first, publishes to server-backed apps), **Sigma** and **Omni** (spreadsheet-native SaaS BI), and **Apache Superset** (open-source, self-hostable). All of these are server-backed with no static export path, so they're out of scope for the bakeoff.
+
+Lightdash is worth calling out specifically because it's one of the cleaner existing answers to the Layer 3 problem — if you want "keep business logic in dbt, surface it in a dashboard, ship behind SSO," Lightdash is closer to that than anything in this bakeoff. The tradeoff is you're running a server.
+
+If any of these are your thing and you want to compare notes, find me.
 
 ## A quick interlude: but should we be making dashboards at all?
 
@@ -169,8 +181,8 @@ I should flag the obvious counter-argument here, because Benn made it well in [t
 
 It's a real point. A lot of what gets shoved into dashboards today is, in fact, the wrong shape — it's a question that wants a paragraph, and the dashboard is just the available answer-shape so it gets one. If "ask the model what it thinks" is a viable substitute for "build a chart," then a non-trivial chunk of the BI surface area goes away, and arguments about layers 1–7 of the dashboard stack are arguments about the design of the fax machine.
 
-I think Benn is right about the ceiling but wrong about the floor. The vibes-as-output mode is genuinely better for a lot of qualitative, "what's going on here?" questions. But there's still a category of analytics — the recurring kind, the trust-the-numbers kind, the "we agreed last quarter that this is how we measure churn" kind — where a chart on a page isn't the lazy answer, it's the right answer. The dashboard *spec* is a contract: this is the metric, this is the filter, this is what it looked like last week. You can't get that from a vibes summary, no matter how good the model is.
+I think he's mostly right but undersells what dashboards are still good for. The vibes-as-output mode is genuinely better for a lot of qualitative, "what's going on here?" questions. But there's still a category of analytics — the recurring kind, the trust-the-numbers kind, the "we agreed last quarter that this is how we measure churn" kind — where a chart on a page isn't the lazy answer, it's the right answer. The dashboard *spec* is a contract: this is the metric, this is the filter, this is what it looked like last week. You can't get that from a vibes summary, no matter how good the model is.
 
-There's also a deeper version of the argument, which is that *visuals do work that prose cannot.* Anscombe's Quartet is the canonical proof — four datasets with identical means, variances, and correlation coefficients that look completely different when you plot them. A model can summarize the statistics until the cows come home; it cannot, from the statistics alone, tell you that one of those datasets has an outlier and another is a perfect line. Charts aren't a stylistic preference. They're a different information channel. So I think both modes coexist, and the dashboard stack still needs to exist for the contract-shaped and the visually-load-bearing questions, even if the surface area shrinks.
+There's also a deeper version of the argument, which is that *visuals do work that prose cannot.* Anscombe's Quartet is the canonical proof — four datasets with identical means, variances, and correlation coefficients that look completely different when you plot them. A model can summarize the statistics until the cows come home; it cannot, from the statistics alone, tell you that one of those datasets has an outlier and another is a perfect line. Charts aren't just a stylistic preference — they're a different information channel. So I think both modes coexist, and the dashboard stack still needs to exist for the contract-shaped and the visually-load-bearing questions, even if the surface area shrinks.
 
 OK. That's where I am. If you have answers to any of those questions up top, or if you're working on the "dumb Vercel with Okta" thing, find me on [GitHub](https://github.com/dataders) or wherever. I want to compare notes.
