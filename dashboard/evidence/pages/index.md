@@ -1,9 +1,7 @@
 ---
 title: dbt-fusion Issue Health
+description: Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 ---
-
-
-# dbt-fusion Issue Health · Evidence.dev
 
 Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 
@@ -28,7 +26,7 @@ from summary_kpis
 ## Cumulative Issue Flow
 
 ```sql cumulative_flow
-select week, cumulative_opened, cumulative_closed from cumulative_flow order by week
+select CAST(week AS DATE) as week, cumulative_opened, cumulative_closed from cumulative_flow order by week
 ```
 
 <AreaChart
@@ -42,7 +40,7 @@ select week, cumulative_opened, cumulative_closed from cumulative_flow order by 
 ## Velocity & Response
 
 ```sql velocity
-select week, issue_category, median_days from velocity order by week
+select CAST(week AS DATE) as week, issue_category, median_days from velocity order by week
 ```
 
 <LineChart
@@ -54,7 +52,7 @@ select week, issue_category, median_days from velocity order by week
 />
 
 ```sql response_pctiles
-select week, p25, p50, p75 from response_pctiles order by week
+select CAST(week AS DATE) as week, p25, p50, p75 from response_pctiles order by week
 ```
 
 <LineChart
