@@ -82,6 +82,35 @@ models:
                 to: ref('stg_issues')
                 field: issue_dlt_id
 
+  - name: stg_issue_label_events
+    description: >
+      LABELED_EVENT / UNLABELED_EVENT timeline entries for issues. Sourced from
+      GitHub GraphQL `timelineItems` and used for accurate label-application timestamps.
+    columns:
+      - name: event_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: issue_dlt_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_issues')
+                field: issue_dlt_id
+      - name: event_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['LabeledEvent', 'UnlabeledEvent']
+      - name: event_at
+        tests:
+          - not_null
+      - name: label_name
+        tests:
+          - not_null
+
   - name: stg_pull_requests
     description: Cleaned pull requests from dbt-labs/dbt-fusion
     columns:
