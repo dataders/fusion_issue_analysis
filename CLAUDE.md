@@ -44,11 +44,6 @@ uv run prefab export dashboard/app_myspace.py -o dashboard/app_myspace.html
 
 ## PR Guidelines
 
-- **Always include a dashboard preview link in the PR body.** The PR preview workflow deploys a preview to GitHub Pages on every PR. After the workflow runs, a bot comment will appear with the preview URL. Include this in the PR description:
-  ```
-  ## Dashboard Preview
-  🔗 [Preview link](https://dataders.github.io/fusion_issue_analysis/) (auto-posted by CI)
-  ```
 - Use feature branches, never push directly to main.
 - Commit messages should explain "why" not "what".
 - PRs that change a Prefab dashboard should verify the export works: `uv run prefab export dashboard/app.py -o /tmp/test.html`
