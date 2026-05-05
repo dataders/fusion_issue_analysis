@@ -44,6 +44,12 @@ def query(sql: str) -> list[dict]:
     return result.to_dict("records")
 
 
+# ── Operational triage KPIs ────────────────────────────────────────
+
+triage_health = query("SELECT * FROM issue_triage_health")[0]
+triage_lag = query("SELECT * FROM issue_triage_lag")[0]
+oldest_untriaged = query("SELECT * FROM oldest_untriaged")
+
 # ── Summary cards ──────────────────────────────────────────────────
 
 summary_cards = query("SELECT * FROM summary_kpis")[0]
@@ -130,6 +136,97 @@ leaderboard = query("SELECT * FROM leaderboard")
 with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     H2("dbt-fusion Issue Health")
     Muted("Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)")
+
+    # ── Daily operational KPIs ─────────────────────────────────────
+    H3("Daily triage", css_class="mt-6")
+    Muted("Open the dashboard, scan this row, act on the table below.")
+
+    with Row(gap=3, css_class="mt-3"):
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Slipped through")
+            with CardContent():
+                H3(str(triage_health["slipped_through_count"]))
+                Muted(f"{triage_health['slipped_through_bugs']} bugs · zero triage label")
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Triage queue")
+            with CardContent():
+                H3(str(triage_health["triage_queue_count"]))
+                Muted("Awaiting maintainer decision")
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Hard blockers")
+            with CardContent():
+                H3(str(triage_health["hard_blocker_count"]))
+                Muted(f"{triage_health['hard_blocker_unreleased']} unreleased")
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Stale (90d+)")
+            with CardContent():
+                H3(str(triage_health["stale_count"]))
+                Muted("Cleanup candidates")
+
+    with Row(gap=3, css_class="mt-3"):
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Needs repro")
+            with CardContent():
+                H3(str(triage_health["needs_repro_count"]))
+                Muted("Awaiting reproduction")
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Ready for engineer")
+            with CardContent():
+                H3(str(triage_health["repro_verified_count"]))
+                Muted("has-repro / repro/verified")
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Median triage lag, bugs")
+                Muted("7-day rolling, proxy")
+            with CardContent():
+                lag = triage_lag["median_days_to_first_triage_bugs"]
+                H3(f"{lag} d" if lag else "—")
+                Muted("Created → first maintainer reply")
+
+        with Card(css_class="flex-1"):
+            with CardHeader():
+                CardTitle("Median repro lag")
+                Muted("7-day rolling, proxy")
+            with CardContent():
+                lag = triage_lag["median_days_triage_to_repro_verified"]
+                H3(f"{lag} d" if lag else "—")
+                Muted("Triage → repro/verified")
+
+    # ── Oldest untriaged action queue ──────────────────────────────
+    with Card(css_class="mt-6"):
+        with CardHeader():
+            CardTitle("Oldest untriaged issues")
+            Muted(f"Top {len(oldest_untriaged)} open issues with zero triage signal — work this list")
+        with CardContent():
+            DataTable(
+                data=oldest_untriaged,
+                columns=[
+                    DataTableColumn(key="issue_number", header="#", sortable=True),
+                    DataTableColumn(key="title", header="Title"),
+                    DataTableColumn(key="issue_category", header="Type", sortable=True),
+                    DataTableColumn(key="age_days", header="Age (days)", sortable=True),
+                    DataTableColumn(key="days_since_activity", header="Idle (days)", sortable=True),
+                    DataTableColumn(key="reactions_total_count", header="Reactions", sortable=True),
+                    DataTableColumn(key="comments_total_count", header="Comments", sortable=True),
+                    DataTableColumn(key="author_login", header="Author"),
+                ],
+                search=True,
+                pagination=15,
+            )
+
+    Separator(css_class="my-8")
+    H3("Trends and context")
 
     # ── Summary cards ──────────────────────────────────────────────
     with Row(gap=3, css_class="mt-6"):
