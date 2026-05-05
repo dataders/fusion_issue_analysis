@@ -135,9 +135,9 @@ First, the scale caveat: my project was one person, one dataset, simple prompts.
 
 Second, the ceiling caveat, which is sharper: I was measuring *how much work did the agent do*, not *what's the highest ceiling the agent could reach*. Traditional BI tools typically offer a fixed menu of chart types. One of the actual promises of agentic authoring is generating *anything* — novel forms, bespoke layouts, visualizations no chart picker would ever surface. My toy dataset never needed that. So I haven't tested that ceiling at all, and that ceiling might be exactly where these layers get jagged in ways that matter.
 
-What I can say is: Jacob's `mviz` has clear, opinionated defaults that are gorgeous out of the box, Prefab let me theme an entire dashboard like a Windows 2000 desktop, and Quarto absolutely owns the narrative-report end of the spectrum. The differentiation here is about taste and authoring vibe. If your goal is "ship something that loads and shows the right numbers," all of these got me there — but your mileage may vary once the requirements get real.
+What I can say is: Jacob Matson's `mviz` has clear, opinionated defaults that are gorgeous out of the box, Prefab let me theme an entire dashboard like a Windows 2000 desktop, and Quarto absolutely owns the narrative-report end of the spectrum. The differentiation here is about taste and authoring vibe. If your goal is "ship something that loads and shows the right numbers," all of these got me there — but your mileage may vary once the requirements get real.
 
-The decision guide on the [bakeoff about page](https://dashboard-bakeoff.anders.omg.lol/?tab=about) lays out which to pick if you have a specific need. I'm not going to repeat it here.
+The [decision guide](#decision-guide) further down lays out which to pick if you have a specific need.
 
 ### Layer 7 (publishing & sharing): the layer everyone forgot about
 
@@ -155,13 +155,13 @@ All three are real, and each one is the right answer for some set of users. None
 
 #### The MCP-app argument
 
-Jacob has been making the case for a while that the future of dashboard distribution looks less like "send your coworker a URL" and more like "tell your agent to load this dashboard." His [mviz](https://github.com/matsonj/mviz) has an MCP server in the works that does exactly this, and MotherDuck's Dives are already loadable as MCP apps from inside Gemini and Claude.
+Jacob has been making the case for a while — most directly in his MotherDuck post on [vibe coding coming for BI](https://motherduck.com/blog/vibe-coding-comes-for-bi/) — that the future of dashboard distribution looks less like "send your coworker a URL" and more like "tell your agent to load this dashboard." His [mviz](https://github.com/matsonj/mviz) has an MCP server in the works that does exactly this, and MotherDuck's Dives are already loadable as MCP apps from inside Gemini and Claude.
 
 I buy it as a UI distribution channel. The argument is basically: if everyone is going to be talking to an agent all day anyway, the agent becomes the new operating system, and dashboards are just one more thing the agent can pull up. Browser tabs become legacy.
 
 The reason it took me a while to come around is that I was conflating layer 7 (where do users see this thing?) with layer 2 (how does this thing get its data?). They're two different questions. "Dashboard lives in an MCP app" doesn't tell you whether the dashboard's data is baked, live-queried, or fetched through an MCP server at load time. You can cross-product the two layers however you want.
 
-That said — Jason has been pushing me on a related angle in our 1:1s: if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution."
+That said — Jason Ganz has been pushing me on a related angle in our 1:1s, and sketched a closely related thesis in his recent [AE Roundup on BI's second unbundling](https://roundup.getdbt.com/p/bis-second-unbundling): if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution."
 
 My hesitation isn't the MCP abstraction — it's non-determinism. A dashboard refresh should be a pure function: same inputs, same output, every time. Once an agent is in the loop at refresh time, that guarantee goes away. A GitHub Action that calls a warehouse connector and bakes Parquet is deterministic. A GitHub Action that asks an LLM to refresh the dashboard is not. The data pipeline is the wrong place for non-determinism to live.
 
@@ -186,7 +186,25 @@ For the browser-at-a-URL surface — which I think persists, because not every d
 
 If I bake my dashboard into HTML and ship it to GitHub Pages, the entire internet can see it. If I want only my coworkers to see it, my options today are: stand up a real web app, put it behind a corporate VPN, or wedge it into an existing BI tool. None of these are "static dashboard"-shaped solutions.
 
-That "very dumb Vercel with Okta" thing Jason and I keep sketching — a hosting target that takes a directory of static files, asks for an OIDC config, and gates the whole thing behind SSO — is really just a permission model applied to the browser surface. No app, no backend, no database. Just `git push` and "only people in my org can see this." The Okta story is downstream of figuring out the agent personas. Get the permission model right first, and the auth infrastructure becomes obvious.
+That "static host with SSO baked in" idea Jason and I keep sketching — basically GitHub Pages, but it accepts an OIDC config and gates the whole site behind SSO — is really just a permission model applied to the browser surface. No app, no backend, no database. Just `git push` and "only people in my org can see this." The auth story is downstream of figuring out the agent personas. Get the permission model right first, and the auth infrastructure becomes obvious.
+
+<span id="decision-guide"></span>
+
+## Decision guide
+
+If you only need a TL;DR for which framework fits which job, here's the table I keep coming back to:
+
+| If you need... | Pick |
+|---|---|
+| Agent-authored, spec-diffable, static | [mviz](./?tab=mviz) |
+| Markdown-native report with inline SVG charts | [MDV](./?tab=mdv) |
+| Python-first, design-system feel, KPI + charts | [Prefab](./?tab=prefab) |
+| SQL is the chart | [ggsql](./?tab=ggsql) |
+| Investigation more than presentation | [Marimo](./?tab=marimo) |
+| Analyst-authored BI site with filters and polish | [Evidence.dev](./?tab=evidence) |
+| Rich interactivity + bespoke viz if you accept Node | [Observable Framework](./?tab=observable) |
+| Narrative report or document feel | [Quarto](./?tab=quarto) |
+| SQL-first product dashboard with sharing, embeds, and reports if a server is acceptable | [Shaper](./?tab=shaper) |
 
 ## What about modern BI tools?
 
@@ -210,6 +228,6 @@ I think he's mostly right but undersells what dashboards are still good for. The
 
 There's also a deeper version of the argument, which is that *visuals do work that prose cannot.* Anscombe's Quartet is the canonical proof — four datasets with identical means, variances, and correlation coefficients that look completely different when you plot them. A model can summarize the statistics until the cows come home; it cannot, from the statistics alone, tell you that one of those datasets has an outlier and another is a perfect line. Charts aren't just a stylistic preference — they're a different information channel. So I think both modes coexist, and the dashboard stack still needs to exist for the contract-shaped and the visually-load-bearing questions, even if the surface area shrinks.
 
-OK. That's where I am. If you have answers to any of those questions up top, or if you're working on the "dumb Vercel with Okta" thing, find me on [GitHub](https://github.com/dataders) or wherever. I want to compare notes.
+OK. That's where I am. If you have answers to any of those questions up top, or if you're working on the "static-host-with-SSO" problem, find me on [GitHub](https://github.com/dataders) or wherever. I want to compare notes.
 
 One specific invitation: if you think I'm wrong about layers 4–6 being smooth — or if you've seen agents go off the rails in a specific framework in ways I didn't — I'd love receipts. The [repo is public](https://github.com/dataders/fusion_issue_analysis) and the dashboard code is all there. Point me at a file and say "look there, that's why this framework is insufficient for agents." That kind of concrete evidence would sharpen this whole argument.
