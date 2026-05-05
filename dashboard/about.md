@@ -137,8 +137,6 @@ Second, the ceiling caveat, which is sharper: I was measuring *how much work did
 
 What I can say is: Jacob Matson's `mviz` has clear, opinionated defaults that are gorgeous out of the box, Prefab let me theme an entire dashboard like a Windows 2000 desktop, and Quarto absolutely owns the narrative-report end of the spectrum. The differentiation here is about taste and authoring vibe. If your goal is "ship something that loads and shows the right numbers," all of these got me there — but your mileage may vary once the requirements get real.
 
-The [decision guide](#decision-guide) further down lays out which to pick if you have a specific need.
-
 ### Layer 7 (publishing & sharing): the layer everyone forgot about
 
 This is the layer I was sleeping on for the first half of the bakeoff. I kept treating "publish" as a footnote — `make build && push to GitHub Pages, done`. That's wrong. The surface a dashboard lives on, and the auth model around it, completely change what the dashboard is *for*.
@@ -155,13 +153,15 @@ All three are real, and each one is the right answer for some set of users. None
 
 #### The MCP-app argument
 
-Jacob has been making the case for a while — most directly in his MotherDuck post on [vibe coding coming for BI](https://motherduck.com/blog/vibe-coding-comes-for-bi/) — that the future of dashboard distribution looks less like "send your coworker a URL" and more like "tell your agent to load this dashboard." His [mviz](https://github.com/matsonj/mviz) has an MCP server in the works that does exactly this, and MotherDuck's Dives are already loadable as MCP apps from inside Gemini and Claude.
+Jacob has separately been making a distribution argument in conversation: dashboards may end up less like URLs you send coworkers and more like artifacts an agent client loads inside the working surface you already inhabit. His [mviz](https://github.com/matsonj/mviz) has an MCP server in the works around that shape, and MotherDuck's Dives are already loadable as MCP apps from inside Gemini and Claude.
+
+His MotherDuck post, [Vibe Coding has come for BI](https://motherduck.com/blog/vibe-coding-comes-for-bi/), makes the adjacent point I should cite separately. Agents can now write the SQL and the React, Dives are version-controlled code rather than proprietary BI objects, and the leverage point is the modeled data layer the agent reads before it writes. That does not by itself prove the MCP-app consumption surface, but it explains why BI starts to look like frontend code plus a governed data layer.
 
 I buy it as a UI distribution channel. The argument is basically: if everyone is going to be talking to an agent all day anyway, the agent becomes the new operating system, and dashboards are just one more thing the agent can pull up. Browser tabs become legacy.
 
 The reason it took me a while to come around is that I was conflating layer 7 (where do users see this thing?) with layer 2 (how does this thing get its data?). They're two different questions. "Dashboard lives in an MCP app" doesn't tell you whether the dashboard's data is baked, live-queried, or fetched through an MCP server at load time. You can cross-product the two layers however you want.
 
-That said — Jason Ganz has been pushing me on a related angle in our 1:1s, and sketched a closely related thesis in his recent [AE Roundup on BI's second unbundling](https://roundup.getdbt.com/p/bis-second-unbundling): if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution."
+That said — Jason Ganz has been pushing me on a related angle in our 1:1s: if the consumption surface is an agent anyway, why not make the *data layer* MCP-shaped too? Build the dashboard demo on top of the dbt MCP server, with the messaging being "Claude + dbt MCP + a static dashboard framework = a fully functional BI solution."
 
 My hesitation isn't the MCP abstraction — it's non-determinism. A dashboard refresh should be a pure function: same inputs, same output, every time. Once an agent is in the loop at refresh time, that guarantee goes away. A GitHub Action that calls a warehouse connector and bakes Parquet is deterministic. A GitHub Action that asks an LLM to refresh the dashboard is not. The data pipeline is the wrong place for non-determinism to live.
 
@@ -182,29 +182,11 @@ There are at least two distinct agent use cases:
 
 These two use cases want different permission models, and the permission model is what actually disambiguates the distribution question. Once you know what kind of agent is consuming the dashboard and what it's allowed to do, the "where does it live and how is it authenticated" question mostly answers itself.
 
-For the browser-at-a-URL surface — which I think persists, because not every dashboard reader wants to open Claude Desktop just to check a chart — the permission model question lands as: **there is no good way to put a static dashboard at a URL behind auth.**
+For the browser-at-a-URL surface — which I think persists, because not every dashboard reader wants to open Claude Desktop just to check a chart — the permission model question lands differently than I first framed it. This is not only a BI problem. It is a front-end web problem, and the front-end world already has pieces for it: Vercel- or Cloudflare-style hosting, OIDC-aware auth layers, and plenty of deployment infrastructure around static assets.
 
-If I bake my dashboard into HTML and ship it to GitHub Pages, the entire internet can see it. If I want only my coworkers to see it, my options today are: stand up a real web app, put it behind a corporate VPN, or wedge it into an existing BI tool. None of these are "static dashboard"-shaped solutions.
+Tristan Handy called this out in his recent [AE Roundup on BI's second unbundling](https://roundup.getdbt.com/p/bis-second-unbundling). His read is that BI's presentation layer is being pulled into front-end engineering: React for visualization, pluggable controls, MCP-backed semantic definitions, ADBC or Arrow Flight for database connectivity, and Vercel/Cloudflare for hosting. The hard part that does not collapse cleanly is identity.
 
-That "static host with SSO baked in" idea Jason and I keep sketching — basically GitHub Pages, but it accepts an OIDC config and gates the whole site behind SSO — is really just a permission model applied to the browser surface. No app, no backend, no database. Just `git push` and "only people in my org can see this." The auth story is downstream of figuring out the agent personas. Get the permission model right first, and the auth infrastructure becomes obvious.
-
-<span id="decision-guide"></span>
-
-## Decision guide
-
-If you only need a TL;DR for which framework fits which job, here's the table I keep coming back to:
-
-| If you need... | Pick |
-|---|---|
-| Agent-authored, spec-diffable, static | [mviz](./?tab=mviz) |
-| Markdown-native report with inline SVG charts | [MDV](./?tab=mdv) |
-| Python-first, design-system feel, KPI + charts | [Prefab](./?tab=prefab) |
-| SQL is the chart | [ggsql](./?tab=ggsql) |
-| Investigation more than presentation | [Marimo](./?tab=marimo) |
-| Analyst-authored BI site with filters and polish | [Evidence.dev](./?tab=evidence) |
-| Rich interactivity + bespoke viz if you accept Node | [Observable Framework](./?tab=observable) |
-| Narrative report or document feel | [Quarto](./?tab=quarto) |
-| SQL-first product dashboard with sharing, embeds, and reports if a server is acceptable | [Shaper](./?tab=shaper) |
+That leaves me with a weirder question than "how do I put GitHub Pages behind SSO?" Maybe coding agents have unbundled BI and front-end development irrevocably. Here I am in 2026, amazed at how easily agents can ship dashboards to a browser, but that might become irrelevant if people end up viewing information inside bespoke agent interfaces instead of browser tabs.
 
 ## What about modern BI tools?
 
@@ -228,6 +210,6 @@ I think he's mostly right but undersells what dashboards are still good for. The
 
 There's also a deeper version of the argument, which is that *visuals do work that prose cannot.* Anscombe's Quartet is the canonical proof — four datasets with identical means, variances, and correlation coefficients that look completely different when you plot them. A model can summarize the statistics until the cows come home; it cannot, from the statistics alone, tell you that one of those datasets has an outlier and another is a perfect line. Charts aren't just a stylistic preference — they're a different information channel. So I think both modes coexist, and the dashboard stack still needs to exist for the contract-shaped and the visually-load-bearing questions, even if the surface area shrinks.
 
-OK. That's where I am. If you have answers to any of those questions up top, or if you're working on the "static-host-with-SSO" problem, find me on [GitHub](https://github.com/dataders) or wherever. I want to compare notes.
+OK. That's where I am. If you have answers to any of those questions up top, or if you're working in this problem space, please reach out. Find me on [GitHub](https://github.com/dataders) or wherever. I want to compare notes.
 
 One specific invitation: if you think I'm wrong about layers 4–6 being smooth — or if you've seen agents go off the rails in a specific framework in ways I didn't — I'd love receipts. The [repo is public](https://github.com/dataders/fusion_issue_analysis) and the dashboard code is all there. Point me at a file and say "look there, that's why this framework is insufficient for agents." That kind of concrete evidence would sharpen this whole argument.
