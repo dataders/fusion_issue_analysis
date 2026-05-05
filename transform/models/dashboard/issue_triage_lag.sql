@@ -1,78 +1,49 @@
-{# Triage-lag metrics derived from real LABELED_EVENT timestamps.
-   Replaces earlier comment-proxy approximations that used
-   first non-author comment / updated_at as stand-ins. #}
+{#
+  Rolling 7-day medians for triage SLAs.
 
-with issues as (
+  The raw GraphQL extract captures only the current label set, not label
+  timeline events, so we approximate transition timestamps:
+    - "first triage" ≈ first non-author comment (hours_to_first_response).
+      A maintainer's first reply is the de-facto triage moment.
+    - "triage → repro_verified" is approximated for bugs that currently carry
+      the has-repro / repro/verified label, using updated_at - first_response_at
+      as the elapsed verification time. This is a lower bound: updated_at
+      shifts on any subsequent activity.
+#}
+
+with bugs as (
     select
-        issue_dlt_id,
-        issue_number,
-        issue_url,
-        title,
-        state,
-        author_login,
-        created_at as issue_created_at,
-        closed_at
-    from {{ ref('stg_issues') }}
+        i.issue_dlt_id,
+        i.created_at,
+        i.first_response_at,
+        i.updated_at,
+        i.hours_to_first_response,
+        max(case when l.label_name in ('has-repro', 'repro/verified') then 1 else 0 end) as has_repro_verified
+    from {{ ref('fct_issues') }} i
+    left join {{ ref('stg_issue_labels') }} l using (issue_dlt_id)
+    where i.issue_category = 'bug'
+    group by 1, 2, 3, 4, 5
 ),
 
-label_events as (
-    select
-        issue_dlt_id,
-        label_name,
-        event_at
-    from {{ ref('stg_issue_label_events') }}
-    where event_type = 'LabeledEvent'
+triage_lag as (
+    select median(hours_to_first_response) as median_hours_to_first_triage_bugs
+    from bugs
+    where created_at >= current_date - interval '7 days'
+      and hours_to_first_response is not null
 ),
 
-first_triage_event as (
-    -- Earliest application of any label that signals an issue has entered
-    -- the triage queue or been categorised as a bug.
+repro_lag as (
     select
-        issue_dlt_id,
-        min(event_at) as first_triage_at
-    from label_events
-    where label_name in ('triage', 'needs-repro', 'bug')
-    group by issue_dlt_id
-),
-
-first_repro_event as (
-    -- Earliest application of any label that signals the bug has been
-    -- reproduced/verified by a maintainer.
-    select
-        issue_dlt_id,
-        min(event_at) as first_repro_at
-    from label_events
-    where label_name in ('repro/verified', 'has-repro', 'has_repro')
-    group by issue_dlt_id
+        median(date_diff('hour', first_response_at, updated_at)) as median_hours_triage_to_repro_verified
+    from bugs
+    where has_repro_verified = 1
+      and first_response_at is not null
+      and updated_at >= current_date - interval '7 days'
 )
 
 select
-    i.issue_dlt_id,
-    i.issue_number,
-    i.issue_url,
-    i.title,
-    i.state,
-    i.author_login,
-    i.issue_created_at,
-    i.closed_at,
-    ft.first_triage_at,
-    fr.first_repro_at,
-
-    case
-        when ft.first_triage_at is not null
-            then date_diff('hour', i.issue_created_at, ft.first_triage_at)
-    end as hours_to_first_triage,
-
-    case
-        when ft.first_triage_at is not null and fr.first_repro_at is not null
-            then date_diff('hour', ft.first_triage_at, fr.first_repro_at)
-    end as hours_triage_to_repro,
-
-    case
-        when fr.first_repro_at is not null
-            then date_diff('hour', i.issue_created_at, fr.first_repro_at)
-    end as hours_to_first_repro
-
-from issues i
-left join first_triage_event ft on i.issue_dlt_id = ft.issue_dlt_id
-left join first_repro_event fr on i.issue_dlt_id = fr.issue_dlt_id
+    round(coalesce(triage_lag.median_hours_to_first_triage_bugs, 0) / 24.0, 1) as median_days_to_first_triage_bugs,
+    round(coalesce(repro_lag.median_hours_triage_to_repro_verified, 0) / 24.0, 1) as median_days_triage_to_repro_verified,
+    triage_lag.median_hours_to_first_triage_bugs as median_hours_to_first_triage_bugs,
+    repro_lag.median_hours_triage_to_repro_verified as median_hours_triage_to_repro_verified
+from triage_lag cross join repro_lag

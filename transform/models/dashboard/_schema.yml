@@ -303,6 +303,34 @@ models:
         tests:
           - not_null
 
+  - name: issue_triage_health
+    description: Single-row counts of open non-EPIC issues across the triage taxonomy (slipped, queue, needs-repro, repro-verified, awaiting-release, hard-blocker, stale)
+    columns:
+      - name: total_open
+        tests:
+          - not_null
+      - name: slipped_through_count
+        tests:
+          - not_null
+      - name: triage_queue_count
+        tests:
+          - not_null
+      - name: needs_repro_count
+        tests:
+          - not_null
+      - name: repro_verified_count
+        tests:
+          - not_null
+      - name: awaiting_release_count
+        tests:
+          - not_null
+      - name: hard_blocker_count
+        tests:
+          - not_null
+      - name: stale_count
+        tests:
+          - not_null
+
   - name: issue_triage_lag
     description: >
       Per-issue triage-lag metrics built from real LABELED_EVENT timestamps:
@@ -316,4 +344,15 @@ models:
       - name: issue_number
         tests:
           - unique
+          - not_null
+
+  - name: oldest_untriaged
+    description: Top 25 oldest open non-EPIC issues with zero triage signal — the daily action queue
+    columns:
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
+      - name: age_days
+        tests:
           - not_null
