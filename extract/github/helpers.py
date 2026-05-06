@@ -82,6 +82,7 @@ def get_reactions_data(
         "issues_per_page": items_per_page,
         "first_reactions": 100,
         "first_comments": 100,
+        "first_timeline_items": 50,
         "node_type": node_type,
     }
     for page_items in _get_graphql_pages(
@@ -127,6 +128,11 @@ def _extract_nested_nodes(item: DictStrAny) -> DictStrAny:
             comment["reactions_totalCount"] = comment["reactions"].get("totalCount", 0)
             comment["reactions"] = comment["reactions"]["nodes"]
     item["comments"] = comments["nodes"]
+    if "timelineItems" in item:
+        timeline = item["timelineItems"]
+        item["timeline_items_totalCount"] = timeline.get("totalCount", 0)
+        item["timeline_items"] = timeline["nodes"]
+        item.pop("timelineItems", None)
     return item
 
 

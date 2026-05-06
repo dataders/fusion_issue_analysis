@@ -302,3 +302,18 @@ models:
       - name: issues_opened
         tests:
           - not_null
+
+  - name: issue_triage_lag
+    description: >
+      Per-issue triage-lag metrics built from real LABELED_EVENT timestamps:
+      hours from issue creation to first triage label, and hours from first triage
+      label to repro/verified. Replaces the earlier comment-proxy approximations.
+    columns:
+      - name: issue_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: issue_number
+        tests:
+          - unique
+          - not_null
