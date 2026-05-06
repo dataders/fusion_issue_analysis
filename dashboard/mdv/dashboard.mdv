@@ -3,6 +3,8 @@ title: dbt-fusion Issue Health
 theme: minimal
 data:
   stats: ./data/stats.csv
+  triage_health: ./data/triage_health.csv
+  oldest_untriaged: ./data/oldest_untriaged.csv
   cumulative_flow: ./data/cumulative_flow.csv
   velocity: ./data/velocity.csv
   response: ./data/response.csv
@@ -23,6 +25,14 @@ styles:
 ::: note
 MDV keeps the page as Markdown with named CSV datasets. The rendered artifact is a self-contained HTML file with inline SVG charts.
 :::
+
+## Daily Triage Snapshot
+
+```stat data=triage_health
+```
+
+```table data=oldest_untriaged
+```
 
 ## Key Metrics
 

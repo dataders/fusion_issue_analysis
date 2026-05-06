@@ -105,6 +105,17 @@ def main():
     # -- Assignee workload --
     write_json("assignee_workload.json", query(con, "SELECT * FROM assignee_workload"))
 
+    # -- Operational triage (daily) --
+    op_triage = query(con, "SELECT * FROM issue_triage_health")[0]
+    write_json("kpi_slipped_through.json", {"value": op_triage["slipped_through_count"], "label": "Slipped Through (no signal)"})
+    write_json("kpi_triage_queue.json", {"value": op_triage["triage_queue_count"], "label": "Triage Queue"})
+    write_json("kpi_hard_blocker.json", {"value": op_triage["hard_blocker_count"], "label": "Hard Blockers"})
+    write_json("kpi_op_stale.json", {"value": op_triage["stale_count"], "label": "Stale (90d+)"})
+    write_json("kpi_needs_repro.json", {"value": op_triage["needs_repro_count"], "label": "Needs Repro"})
+    write_json("kpi_repro_verified.json", {"value": op_triage["repro_verified_count"], "label": "Repro Verified"})
+
+    write_json("oldest_untriaged.json", query(con, "SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged"))
+
     # -- Triage health --
     triage = query(con, "SELECT * FROM triage_health")[0]
     write_json("kpi_triage_labeled.json", {"value": pct0_value(triage["pct_labeled"]), "label": "% Labeled", "format": "pct0"})

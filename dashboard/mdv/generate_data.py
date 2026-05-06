@@ -74,11 +74,41 @@ def write_csv(filename: str, rows: list[dict[str, Any]], fieldnames: list[str] |
     print(f"  wrote {path} ({len(rows)} records)")
 
 
+def build_triage_stats(triage: dict[str, Any]) -> list[dict[str, str]]:
+    return [
+        {"label": "Slipped through (no signal)", "value": fmt_int(triage["slipped_through_count"]), "delta": ""},
+        {"label": "In triage queue", "value": fmt_int(triage["triage_queue_count"]), "delta": ""},
+        {"label": "Hard blockers", "value": fmt_int(triage["hard_blocker_count"]), "delta": ""},
+        {"label": "Needs repro", "value": fmt_int(triage["needs_repro_count"]), "delta": ""},
+        {"label": "Repro verified", "value": fmt_int(triage["repro_verified_count"]), "delta": ""},
+        {"label": "Stale", "value": fmt_int(triage["stale_count"]), "delta": ""},
+    ]
+
+
 def main() -> None:
     con = get_connection()
 
     summary = query(con, "SELECT * FROM summary_kpis")[0]
     write_csv("stats.csv", build_stats(summary), ["label", "value", "delta"])
+
+    triage = query(con, "SELECT * FROM issue_triage_health")[0]
+    write_csv("triage_health.csv", build_triage_stats(triage), ["label", "value", "delta"])
+
+    write_csv(
+        "oldest_untriaged.csv",
+        query(
+            con,
+            """
+            select
+                issue_number,
+                title,
+                age_days,
+                issue_url
+            from oldest_untriaged
+            order by age_days desc
+            """,
+        ),
+    )
 
     write_csv(
         "cumulative_flow.csv",
