@@ -13,7 +13,7 @@ def _():
     import pandas as pd
     import os
 
-    return duckdb, go, mo, os, pd, px
+    return duckdb, mo, os, px
 
 
 @app.cell
@@ -29,11 +29,11 @@ def _(mo):
 def _(os):
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
     DB_PATH = os.environ.get("FUSION_DB") or ("md:fusion_issues" if os.environ.get("MOTHERDUCK_TOKEN") else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb"))
-    return (DB_PATH, PROJECT_ROOT)
+    return DB_PATH, PROJECT_ROOT
 
 
 @app.cell
-def _(DB_PATH, PROJECT_ROOT, duckdb):
+def _(DB_PATH, PROJECT_ROOT, duckdb, os):
     def query(sql):
         con = duckdb.connect(DB_PATH, read_only=True)
         if not DB_PATH.startswith("md:"):
@@ -46,7 +46,44 @@ def _(DB_PATH, PROJECT_ROOT, duckdb):
     return query, summary
 
 
-# ── Key Metrics ────────────────────────────────────────────────────
+@app.cell
+def _(mo):
+    mo.md("""
+    ## Operational Triage
+    Daily action queue: bugs that slipped past triage, hard blockers, and the oldest zero-signal issues.
+    """)
+    return
+
+
+@app.cell
+def _(mo, query):
+    ops = query("SELECT * FROM issue_triage_health").iloc[0]
+    mo.hstack([
+        mo.stat(label="Slipped Through", value=str(int(ops['slipped_through_count'])), caption=f"{int(ops['slipped_through_bugs'])} bugs", bordered=True),
+        mo.stat(label="Triage Queue", value=str(int(ops['triage_queue_count'])), bordered=True),
+        mo.stat(label="Hard Blockers", value=str(int(ops['hard_blocker_count'])), caption=f"{int(ops['hard_blocker_unreleased'])} unreleased", bordered=True),
+        mo.stat(label="Needs Repro", value=str(int(ops['needs_repro_count'])), bordered=True),
+        mo.stat(label="Repro Verified", value=str(int(ops['repro_verified_count'])), bordered=True),
+        mo.stat(label="Stale (90d+)", value=str(int(ops['stale_count'])), bordered=True),
+        mo.stat(label="Total Open", value=str(int(ops['total_open'])), bordered=True),
+    ])
+    return
+
+
+@app.cell
+def _(mo):
+    mo.md("""
+    ### Oldest Untriaged Issues
+    Top 25 open non-EPIC issues with zero triage signal, ordered by age.
+    """)
+    return
+
+
+@app.cell
+def _(mo, query):
+    untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged")
+    mo.ui.table(untriaged, selection=None, page_size=25)
+    return
 
 
 @app.cell
@@ -63,12 +100,11 @@ def _(mo, summary):
     return
 
 
-# ── Cumulative Issue Flow ──────────────────────────────────────────
-
-
 @app.cell
 def _(mo):
-    mo.md("## Cumulative Issue Flow")
+    mo.md("""
+    ## Cumulative Issue Flow
+    """)
     return
 
 
@@ -88,12 +124,11 @@ def _(px, query):
     return
 
 
-# ── Velocity & Response ────────────────────────────────────────────
-
-
 @app.cell
 def _(mo):
-    mo.md("## Velocity & Response")
+    mo.md("""
+    ## Velocity & Response
+    """)
     return
 
 
@@ -128,12 +163,11 @@ def _(px, query):
     return
 
 
-# ── Issue Distribution ─────────────────────────────────────────────
-
-
 @app.cell
 def _(mo):
-    mo.md("## Issue Distribution")
+    mo.md("""
+    ## Issue Distribution
+    """)
     return
 
 
@@ -169,12 +203,11 @@ def _(px, query):
     return
 
 
-# ── Triage Health ──────────────────────────────────────────────────
-
-
 @app.cell
 def _(mo):
-    mo.md("## Triage Health")
+    mo.md("""
+    ## Triage Health
+    """)
     return
 
 
@@ -190,12 +223,11 @@ def _(mo, query):
     return
 
 
-# ── Workload & Priorities ──────────────────────────────────────────
-
-
 @app.cell
 def _(mo):
-    mo.md("## Workload & Priorities")
+    mo.md("""
+    ## Workload & Priorities
+    """)
     return
 
 
