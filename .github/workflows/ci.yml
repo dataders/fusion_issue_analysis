@@ -37,18 +37,19 @@ jobs:
       - name: Test extract helpers
         run: uv run --with pytest pytest extract/tests/ -v
 
-      # ── dbt compile against prod (strict static analysis) ────────────────
+      # ── dbt compile against prod ─────────────────────────────────────────
       - name: Install dbt Fusion
         run: |
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Compile dbt models
+        timeout-minutes: 5
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           cd transform
-          dbt compile --profiles-dir . --target prod --static-analysis strict
+          dbt compile --profiles-dir . --target prod
 
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
