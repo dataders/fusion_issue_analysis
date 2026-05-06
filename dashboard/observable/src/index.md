@@ -16,7 +16,64 @@ const closeByLabel = await FileAttachment("data/close_by_label.json").json();
 const triage = await FileAttachment("data/triage.json").json();
 const assigneeWorkload = await FileAttachment("data/assignee_workload.json").json();
 const communityPriorities = await FileAttachment("data/community_priorities.json").json();
+const triageHealth = await FileAttachment("data/triage_health.json").json();
+const oldestUntriaged = await FileAttachment("data/oldest_untriaged.json").json();
 ```
+
+## Daily triage
+
+<div style="display:grid;grid-template-columns:repeat(6,1fr);gap:12px;margin:20px 0">
+
+<div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
+  <div style="font-size:28px;font-weight:bold;color:#f38ba8">${triageHealth.slipped_through_count}</div>
+  <div style="color:#a6adc8;font-size:13px">Slipped through</div>
+</div>
+
+<div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
+  <div style="font-size:28px;font-weight:bold;color:#fab387">${triageHealth.triage_queue_count}</div>
+  <div style="color:#a6adc8;font-size:13px">Triage queue</div>
+</div>
+
+<div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
+  <div style="font-size:28px;font-weight:bold;color:#eba0ac">${triageHealth.hard_blocker_count}</div>
+  <div style="color:#a6adc8;font-size:13px">Hard blockers</div>
+</div>
+
+<div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
+  <div style="font-size:28px;font-weight:bold;color:#cba6f7">${triageHealth.stale_count}</div>
+  <div style="color:#a6adc8;font-size:13px">Stale</div>
+</div>
+
+<div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
+  <div style="font-size:28px;font-weight:bold;color:#89dceb">${triageHealth.needs_repro_count}</div>
+  <div style="color:#a6adc8;font-size:13px">Needs repro</div>
+</div>
+
+<div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
+  <div style="font-size:28px;font-weight:bold;color:#a6e3a1">${triageHealth.repro_verified_count}</div>
+  <div style="color:#a6adc8;font-size:13px">Repro verified</div>
+</div>
+
+</div>
+
+### Oldest untriaged issues
+
+<table style="width:100%;border-collapse:collapse;margin:12px 0">
+  <thead>
+    <tr style="border-bottom:1px solid #313244;color:#a6adc8;text-align:left">
+      <th style="padding:8px">Issue</th>
+      <th style="padding:8px">Title</th>
+      <th style="padding:8px;text-align:right">Age (days)</th>
+    </tr>
+  </thead>
+  <tbody>
+    ${oldestUntriaged.map(d => html`<tr style="border-bottom:1px solid #313244">
+      <td style="padding:8px"><a href="${d.issue_url}" style="color:#89b4fa">#${d.issue_number}</a></td>
+      <td style="padding:8px">${d.title}</td>
+      <td style="padding:8px;text-align:right;color:#f38ba8;font-weight:bold">${d.age_days}</td>
+    </tr>`)}
+  </tbody>
+</table>
 
 ## Key Metrics
 
