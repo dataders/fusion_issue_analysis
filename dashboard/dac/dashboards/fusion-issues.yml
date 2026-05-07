@@ -183,7 +183,7 @@ rows:
         format: number
 
   - widgets:
-      - name: Oldest Untriaged Issues
+      - name: Oldest Untriaged Bugs
         type: table
         col: 12
         sql: |

@@ -140,9 +140,9 @@ dict(value=int(ops["stale_count"]), icon="clock-history", color="secondary")
 dict(value=int(ops["total_open"]), icon="journal-text", color="primary")
 ```
 
-## Oldest Untriaged Issues
+## Oldest Untriaged Bugs
 ```{python}
-#| title: "Top 25 open non-EPIC issues with zero triage signal, ordered by age"
+#| title: "Top 25 open bugs with zero triage signal, ordered by age"
 untriaged
 ```
 

@@ -209,8 +209,8 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     # ── Oldest untriaged action queue ──────────────────────────────
     with Card(css_class="mt-6"):
         with CardHeader():
-            CardTitle("Oldest untriaged issues")
-            Muted(f"Top {len(oldest_untriaged)} open issues with zero triage signal — work this list")
+            CardTitle("Oldest untriaged bugs")
+            Muted(f"Top {len(oldest_untriaged)} open bugs with zero triage signal — work this list")
         with CardContent():
             DataTable(
                 rows=oldest_untriaged,

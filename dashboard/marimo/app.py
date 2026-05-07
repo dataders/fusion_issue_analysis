@@ -73,8 +73,8 @@ def _(mo, query):
 @app.cell
 def _(mo):
     mo.md("""
-    ### Oldest Untriaged Issues
-    Top 25 open non-EPIC issues with zero triage signal, ordered by age.
+    ### Oldest Untriaged Bugs
+    Top 25 open bugs with zero triage signal, ordered by age.
     """)
     return
 
