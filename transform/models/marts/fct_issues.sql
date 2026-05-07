@@ -50,6 +50,7 @@ select
     i.closed,
     i.author_login,
     i.author_association,
+    i.issue_type,
     i.milestone_number,
     i.milestone_title,
     i.reactions_total_count,
@@ -79,9 +80,9 @@ select
 
     -- classification
     case
-        when il.has_epic = 1 then 'epic'
-        when il.has_bug = 1 then 'bug'
-        when il.has_enhancement = 1 then 'enhancement'
+        when il.has_epic = 1 or i.issue_type = 'Epic' then 'epic'
+        when il.has_bug = 1 or i.issue_type = 'Bug' then 'bug'
+        when il.has_enhancement = 1 or i.issue_type in ('Feature', 'Enhancement') then 'enhancement'
         else 'other'
     end as issue_category,
 

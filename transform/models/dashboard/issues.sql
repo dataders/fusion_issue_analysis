@@ -3,6 +3,7 @@ select
     title,
     state,
     issue_category,
+    issue_type,
     created_at,
     closed_at,
     hours_to_close,
