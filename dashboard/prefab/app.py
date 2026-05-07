@@ -147,10 +147,10 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
     with Row(gap=3, css_class="mt-3"):
         with Card(css_class="flex-1"):
             with CardHeader():
-                CardTitle("Slipped through")
+                CardTitle("Slipped through (bugs)")
             with CardContent():
                 H3(str(triage_health["slipped_through_count"]))
-                Muted(f"{triage_health['slipped_through_bugs']} bugs · zero triage label")
+                Muted("Zero triage signal")
 
         with Card(css_class="flex-1"):
             with CardHeader():

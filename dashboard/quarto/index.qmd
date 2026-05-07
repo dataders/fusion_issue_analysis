@@ -100,8 +100,8 @@ net = int(summary["closed_4w"]) - int(summary["opened_4w"])
 ## Operational Triage
 ```{python}
 #| content: valuebox
-#| title: "Slipped Through"
-dict(value=int(ops["slipped_through_count"]), caption=f"{int(ops['slipped_through_bugs'])} bugs", icon="exclamation-circle", color="danger")
+#| title: "Slipped through (bugs)"
+dict(value=int(ops["slipped_through_count"]), caption="zero triage signal", icon="exclamation-circle", color="danger")
 ```
 
 ```{python}

@@ -304,7 +304,7 @@ models:
           - not_null
 
   - name: issue_triage_health
-    description: Single-row counts of open non-EPIC issues across the triage taxonomy (slipped, queue, needs-repro, repro-verified, awaiting-release, hard-blocker, stale)
+    description: Single-row counts of open non-EPIC issues across the triage taxonomy (slipped-through bugs, queue, needs-repro, repro-verified, awaiting-release, hard-blocker, stale). `slipped_through_count` is scoped to `issue_category = 'bug'` since bugs are the only category that legitimately go through the triage queue.
     columns:
       - name: total_open
         tests:

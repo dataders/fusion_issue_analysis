@@ -107,7 +107,7 @@ def main():
 
     # -- Operational triage (daily) --
     op_triage = query(con, "SELECT * FROM issue_triage_health")[0]
-    write_json("kpi_slipped_through.json", {"value": op_triage["slipped_through_count"], "label": "Slipped Through (no signal)"})
+    write_json("kpi_slipped_through.json", {"value": op_triage["slipped_through_count"], "label": "Slipped through (bugs)"})
     write_json("kpi_triage_queue.json", {"value": op_triage["triage_queue_count"], "label": "Triage Queue"})
     write_json("kpi_hard_blocker.json", {"value": op_triage["hard_blocker_count"], "label": "Hard Blockers"})
     write_json("kpi_op_stale.json", {"value": op_triage["stale_count"], "label": "Stale (90d+)"})

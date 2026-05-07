@@ -26,7 +26,7 @@ const oldestUntriaged = await FileAttachment("data/oldest_untriaged.json").json(
 
 <div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
   <div style="font-size:28px;font-weight:bold;color:#f38ba8">${triageHealth.slipped_through_count}</div>
-  <div style="color:#a6adc8;font-size:13px">Slipped through</div>
+  <div style="color:#a6adc8;font-size:13px">Slipped through (bugs)</div>
 </div>
 
 <div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">

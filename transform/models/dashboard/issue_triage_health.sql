@@ -38,13 +38,12 @@ classified as (
 
 select
     count(*) as total_open,
-    count(case when triage_state = 'no_signal' then 1 end) as slipped_through_count,
+    count(case when triage_state = 'no_signal' and issue_category = 'bug' then 1 end) as slipped_through_count,
     count(case when triage_state = 'triage_queue' then 1 end) as triage_queue_count,
     count(case when triage_state = 'needs_repro' then 1 end) as needs_repro_count,
     count(case when triage_state = 'repro_verified' then 1 end) as repro_verified_count,
     count(case when triage_state = 'awaiting_release' then 1 end) as awaiting_release_count,
     count(case when has_hard_blocker = 1 then 1 end) as hard_blocker_count,
     count(case when is_stale = 1 then 1 end) as stale_count,
-    count(case when triage_state = 'no_signal' and issue_category = 'bug' then 1 end) as slipped_through_bugs,
     count(case when has_hard_blocker = 1 and has_awaiting_release = 0 then 1 end) as hard_blocker_unreleased
 from classified
