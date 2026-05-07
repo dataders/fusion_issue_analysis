@@ -1,13 +1,13 @@
 -- title: Cumulative Issue Flow
 -- blurb: Running total of opened vs closed issues over time (excludes EPICs). Gap = issue debt.
 SELECT
-    week,
+    week::DATE AS week,
     'opened' AS series,
     cumulative_opened::DOUBLE AS issues
 FROM cumulative_flow
 UNION ALL
 SELECT
-    week,
+    week::DATE AS week,
     'closed' AS series,
     cumulative_closed::DOUBLE AS issues
 FROM cumulative_flow
