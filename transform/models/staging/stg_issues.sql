@@ -14,6 +14,7 @@ renamed as (
         author__login as author_login,
         author__avatar_url as author_avatar_url,
         author_association,
+        issue_type__name as issue_type,
         milestone__number as milestone_number,
         milestone__title as milestone_title,
         milestone__description as milestone_description,

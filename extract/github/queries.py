@@ -29,6 +29,7 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
         createdAt
         state
         updatedAt
+        __ISSUE_TYPE_FRAGMENT__
         labels(first: 25) {
           nodes {
             name

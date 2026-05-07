@@ -26,6 +26,10 @@ models:
           - accepted_values:
               arguments:
                 values: ['OPEN', 'CLOSED']
+      - name: issue_type
+        description: >
+          Native GitHub Issue Type name (e.g., 'Bug', 'Feature', 'Task', 'Epic').
+          NULL when no Issue Type is set on the issue.
       - name: created_at
         tests:
           - not_null
