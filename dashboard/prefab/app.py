@@ -47,7 +47,10 @@ def query(sql: str) -> list[dict]:
 # ── Operational triage KPIs ────────────────────────────────────────
 
 triage_health = query("SELECT * FROM issue_triage_health")[0]
-triage_lag = query("SELECT * FROM issue_triage_lag")[0]
+try:
+    triage_lag = query("SELECT * FROM issue_triage_lag")[0]
+except Exception:
+    triage_lag = {"median_days_to_first_triage_bugs": None, "median_days_triage_to_repro_verified": None}
 oldest_untriaged = query("SELECT * FROM oldest_untriaged")
 
 # ── Summary cards ──────────────────────────────────────────────────

@@ -123,6 +123,86 @@ rows:
         y: [median_days_to_close]
 
   - widgets:
+      - name: Slipped Through
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select slipped_through_count as value from issue_triage_health
+        column: value
+        format: number
+      - name: Triage Queue
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select triage_queue_count as value from issue_triage_health
+        column: value
+        format: number
+      - name: Hard Blockers
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select hard_blocker_count as value from issue_triage_health
+        column: value
+        format: number
+      - name: Needs Repro
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select needs_repro_count as value from issue_triage_health
+        column: value
+        format: number
+      - name: Repro Verified
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select repro_verified_count as value from issue_triage_health
+        column: value
+        format: number
+      - name: Stale (90d+)
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select stale_count as value from issue_triage_health
+        column: value
+        format: number
+      - name: Total Open
+        type: metric
+        col: 2
+        sql: |
+          set file_search_path='transform';
+          select total_open as value from issue_triage_health
+        column: value
+        format: number
+
+  - widgets:
+      - name: Oldest Untriaged Issues
+        type: table
+        col: 12
+        sql: |
+          set file_search_path='transform';
+          select issue_number, title, age_days, issue_url
+          from oldest_untriaged
+          order by age_days desc
+          limit 25
+        columns:
+          - name: issue_number
+            label: Issue
+            format: number
+          - name: title
+            label: Title
+          - name: age_days
+            label: Age Days
+            format: number
+          - name: issue_url
+            label: URL
+
+  - widgets:
       - name: Triage Labeled
         type: metric
         col: 3
@@ -192,32 +272,3 @@ rows:
             label: Age Days
             format: number
 
-  - widgets:
-      - name: Oldest Open Issues
-        type: table
-        col: 12
-        sql: |
-          set file_search_path='transform';
-          select "#", title, type, age_days, reactions, comments, milestone
-          from open_issues_table
-          order by age_days desc
-          limit 25
-        columns:
-          - name: "#"
-            label: Issue
-            format: number
-          - name: title
-            label: Title
-          - name: type
-            label: Type
-          - name: age_days
-            label: Age Days
-            format: number
-          - name: reactions
-            label: Reactions
-            format: number
-          - name: comments
-            label: Comments
-            format: number
-          - name: milestone
-            label: Milestone

@@ -56,6 +56,7 @@ jobs:
       # Data comes from MotherDuck — no extract or dbt build needed.
 
       - name: Export Prefab dashboards
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
@@ -71,12 +72,14 @@ jobs:
           uv run prefab export dashboard/prefab/app_windows_2000.py -o preview/prefab/app_windows_2000.html
 
       - name: Build npm dashboard previews
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           EVIDENCE_BASE_PATH: /evidence/build
         run: npm run build:npm-dashboards:preview
 
       - name: Build MDV dashboard
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           MDV_CACHE_DIR: ${{ runner.temp }}/fusion-mdv-cache/mdv-${{ env.MDV_SHA }}
@@ -86,6 +89,7 @@ jobs:
           cp dashboard/mdv/index.html preview/mdv/index.html
 
       - name: Build ggsql dashboard
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           FUSION_DB: md:fusion_issues
@@ -95,6 +99,7 @@ jobs:
           cp dashboard/ggsql/index.html preview/ggsql/index.html
 
       - name: Export Marimo dashboard
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o preview/marimo.html
@@ -103,6 +108,7 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Render Quarto dashboard
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           QUARTO_PYTHON: ${{ github.workspace }}/.venv/bin/python3
@@ -114,6 +120,7 @@ jobs:
           cp -r index_files ../../preview/quarto/ 2>/dev/null || true
 
       - name: Build DAC dashboard
+        if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           DAC_ENVIRONMENT: prod
@@ -123,6 +130,7 @@ jobs:
           ! grep -q 'bruin query failed' preview/dac/index.html
 
       - name: Upload preview artifact
+        if: github.actor != 'dependabot[bot]'
         uses: actions/upload-artifact@v4
         with:
           name: dashboard-preview
@@ -130,6 +138,7 @@ jobs:
           retention-days: 7
 
       - name: Comment preview link on PR
+        if: github.actor != 'dependabot[bot]'
         uses: actions/github-script@v9
         with:
           script: |

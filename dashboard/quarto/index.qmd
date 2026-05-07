@@ -89,10 +89,63 @@ resp = query("SELECT * FROM response_pctiles")
 age_dist = query("SELECT * FROM age_distribution")
 lbl = query("SELECT * FROM close_by_label ORDER BY median_days_to_close DESC")
 triage = query("SELECT * FROM triage_health").iloc[0]
+ops = query("SELECT * FROM issue_triage_health").iloc[0]
+untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged")
 workload = query("SELECT * FROM assignee_workload")
 priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC")
 
 net = int(summary["closed_4w"]) - int(summary["opened_4w"])
+```
+
+## Operational Triage
+```{python}
+#| content: valuebox
+#| title: "Slipped Through"
+dict(value=int(ops["slipped_through_count"]), caption=f"{int(ops['slipped_through_bugs'])} bugs", icon="exclamation-circle", color="danger")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Triage Queue"
+dict(value=int(ops["triage_queue_count"]), icon="inbox", color="warning")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Hard Blockers"
+dict(value=int(ops["hard_blocker_count"]), caption=f"{int(ops['hard_blocker_unreleased'])} unreleased", icon="shield-exclamation", color="danger")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Needs Repro"
+dict(value=int(ops["needs_repro_count"]), icon="bug", color="warning")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Repro Verified"
+dict(value=int(ops["repro_verified_count"]), icon="check-circle", color="success")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Stale (90d+)"
+dict(value=int(ops["stale_count"]), icon="clock-history", color="secondary")
+```
+
+```{python}
+#| content: valuebox
+#| title: "Total Open"
+dict(value=int(ops["total_open"]), icon="journal-text", color="primary")
+```
+
+### Oldest Untriaged Issues
+Top 25 open non-EPIC issues with zero triage signal, ordered by age.
+
+```{python}
+#| title: "Oldest Untriaged"
+untriaged
 ```
 
 ## Key Metrics

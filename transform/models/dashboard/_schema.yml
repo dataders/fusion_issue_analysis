@@ -333,17 +333,26 @@ models:
 
   - name: issue_triage_lag
     description: >
-      Per-issue triage-lag metrics built from real LABELED_EVENT timestamps:
-      hours from issue creation to first triage label, and hours from first triage
-      label to repro/verified. Replaces the earlier comment-proxy approximations.
+      Rolling 7-day median triage SLA metrics (1-row aggregate).
+      Approximates first-triage as first non-author comment and
+      triage-to-repro-verified as updated_at minus first_response_at.
     columns:
-      - name: issue_dlt_id
+      - name: median_days_to_first_triage_bugs
         tests:
-          - unique
           - not_null
+      - name: median_days_triage_to_repro_verified
+        tests:
+          - not_null
+
+  - name: oldest_untriaged
+    description: Top 25 oldest open non-EPIC issues with zero triage signal — the daily action queue
+    columns:
       - name: issue_number
         tests:
+          - not_null
           - unique
+      - name: age_days
+        tests:
           - not_null
 
   - name: oldest_untriaged
