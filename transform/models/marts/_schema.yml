@@ -1,0 +1,40 @@
+version: 2
+
+models:
+  - name: fct_issues
+    description: >
+      One row per GitHub issue with derived metrics (time-to-close, time-to-first-response),
+      label-derived flags, and a coarse `issue_category` classification.
+    columns:
+      - name: issue_dlt_id
+        tests:
+          - not_null
+          - unique
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
+      - name: state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'CLOSED']
+      - name: issue_type
+        description: >
+          Raw value of GitHub's native Issue Type field. Common values:
+          'Bug', 'Feature', 'Task', 'Epic'. NULL when the issue has no type set,
+          or for repos that don't use Issue Types.
+      - name: issue_category
+        description: >
+          Coarse bucket — 'bug', 'enhancement', 'epic', or 'other'.
+          Resolved by combining label-derived flags (`bug` / `enhancement` / `EPIC`)
+          with GitHub's native Issue Type ('Bug' / 'Feature' / 'Epic').
+          'Feature' and 'Enhancement' Issue Types both map to 'enhancement'.
+          Issues with Issue Type 'Task' (or any unrecognized type) without a
+          matching label fall into 'other'.
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['bug', 'enhancement', 'epic', 'other']
