@@ -125,7 +125,7 @@ rows:
   - widgets:
       - name: Slipped Through
         type: metric
-        col: 2
+        col: 3
         sql: |
           set file_search_path='transform';
           select slipped_through_count as value from issue_triage_health
@@ -133,7 +133,7 @@ rows:
         format: number
       - name: Triage Queue
         type: metric
-        col: 2
+        col: 3
         sql: |
           set file_search_path='transform';
           select triage_queue_count as value from issue_triage_health
@@ -141,7 +141,7 @@ rows:
         format: number
       - name: Hard Blockers
         type: metric
-        col: 2
+        col: 3
         sql: |
           set file_search_path='transform';
           select hard_blocker_count as value from issue_triage_health
@@ -149,15 +149,17 @@ rows:
         format: number
       - name: Needs Repro
         type: metric
-        col: 2
+        col: 3
         sql: |
           set file_search_path='transform';
           select needs_repro_count as value from issue_triage_health
         column: value
         format: number
+
+  - widgets:
       - name: Repro Verified
         type: metric
-        col: 2
+        col: 4
         sql: |
           set file_search_path='transform';
           select repro_verified_count as value from issue_triage_health
@@ -165,7 +167,7 @@ rows:
         format: number
       - name: Stale (90d+)
         type: metric
-        col: 2
+        col: 4
         sql: |
           set file_search_path='transform';
           select stale_count as value from issue_triage_health
@@ -173,7 +175,7 @@ rows:
         format: number
       - name: Total Open
         type: metric
-        col: 2
+        col: 4
         sql: |
           set file_search_path='transform';
           select total_open as value from issue_triage_health
