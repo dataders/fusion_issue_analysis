@@ -76,7 +76,7 @@ def write_csv(filename: str, rows: list[dict[str, Any]], fieldnames: list[str] |
 
 def build_triage_stats(triage: dict[str, Any]) -> list[dict[str, str]]:
     return [
-        {"label": "Slipped through (no signal)", "value": fmt_int(triage["slipped_through_count"]), "delta": ""},
+        {"label": "Slipped through (bugs)", "value": fmt_int(triage["slipped_through_count"]), "delta": ""},
         {"label": "In triage queue", "value": fmt_int(triage["triage_queue_count"]), "delta": ""},
         {"label": "Hard blockers", "value": fmt_int(triage["hard_blocker_count"]), "delta": ""},
         {"label": "Needs repro", "value": fmt_int(triage["needs_repro_count"]), "delta": ""},

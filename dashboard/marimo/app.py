@@ -59,7 +59,7 @@ def _(mo):
 def _(mo, query):
     ops = query("SELECT * FROM issue_triage_health").iloc[0]
     mo.hstack([
-        mo.stat(label="Slipped Through", value=str(int(ops['slipped_through_count'])), caption=f"{int(ops['slipped_through_bugs'])} bugs", bordered=True),
+        mo.stat(label="Slipped through (bugs)", value=str(int(ops['slipped_through_count'])), caption="zero triage signal", bordered=True),
         mo.stat(label="Triage Queue", value=str(int(ops['triage_queue_count'])), bordered=True),
         mo.stat(label="Hard Blockers", value=str(int(ops['hard_blocker_count'])), caption=f"{int(ops['hard_blocker_unreleased'])} unreleased", bordered=True),
         mo.stat(label="Needs Repro", value=str(int(ops['needs_repro_count'])), bordered=True),

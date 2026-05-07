@@ -18,7 +18,7 @@ select
 from issue_triage_health
 ```
 
-<BigValue data={operational_triage} value="slipped_through_count" title="Slipped Through"/>
+<BigValue data={operational_triage} value="slipped_through_count" title="Slipped through (bugs)"/>
 <BigValue data={operational_triage} value="triage_queue_count" title="In Triage Queue"/>
 <BigValue data={operational_triage} value="hard_blocker_count" title="Hard Blockers"/>
 <BigValue data={operational_triage} value="needs_repro_count" title="Needs Repro"/>
