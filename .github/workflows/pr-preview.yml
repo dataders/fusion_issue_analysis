@@ -232,5 +232,8 @@ jobs:
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
             '${{ steps.dac.outcome }}'; do
-            [ "$outcome" = "failure" ] && { echo "One or more framework builds failed — see table above." >&2; exit 1; }
+            if [ "$outcome" = "failure" ]; then
+              echo "One or more framework builds failed — see table above." >&2
+              exit 1
+            fi
           done
