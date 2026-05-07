@@ -69,33 +69,43 @@ jobs:
         run: uv run python3 dashboard/shaper/build.py
 
       - name: Export Prefab dashboards
+        id: prefab
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           for f in dashboard/prefab/app*.py; do
             name=$(basename "$f" .py)
-            uv run prefab export "$f" -o "dashboard/prefab/${name}.html" || true
+            uv run prefab export "$f" -o "dashboard/prefab/${name}.html"
           done
 
       - name: Build npm dashboards
+        id: npm
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           EVIDENCE_BASE_PATH: /evidence/build
         run: npm run build:npm-dashboards
 
       - name: Build MDV dashboard
+        id: mdv
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           MDV_CACHE_DIR: ${{ runner.temp }}/fusion-mdv-cache/mdv-${{ env.MDV_SHA }}
         run: bash dashboard/mdv/build.sh
 
       - name: Build ggsql dashboard
+        id: ggsql
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           FUSION_DB: md:fusion_issues
         run: uv run dashboard/ggsql/build.py
 
       - name: Export Marimo dashboard
+        id: marimo
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
@@ -104,6 +114,8 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Render Quarto dashboard
+        id: quarto
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           QUARTO_PYTHON: ${{ github.workspace }}/.venv/bin/python3
@@ -112,6 +124,8 @@ jobs:
           quarto render index.qmd
 
       - name: Build DAC dashboard
+        id: dac
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           DAC_ENVIRONMENT: prod
@@ -120,13 +134,50 @@ jobs:
           uv run python3 dashboard/dac/render.py
           ! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
+      # Upload whatever built successfully; deploy job runs regardless of framework failures.
       - name: Upload Pages artifact
+        if: always()
         uses: actions/upload-pages-artifact@v5
         with:
           path: dashboard/
 
+      # Write a plain-English summary and fail the job if any framework broke,
+      # so GitHub's notification email links directly to the explanation.
+      - name: Framework build summary
+        if: always()
+        run: |
+          {
+            echo "## Framework build results"
+            echo ""
+            echo "| Framework | Result |"
+            echo "|-----------|--------|"
+            icon() { case $1 in success) echo "✅";; failure) echo "❌ **failed**";; *) echo "⚠️ $1";; esac; }
+            echo "| Prefab | $(icon '${{ steps.prefab.outcome }}') |"
+            echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
+            echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
+            echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
+            echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
+            echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          # Fail the job so GitHub sends a notification email, but only after
+          # the artifact has already been uploaded above.
+          for outcome in \
+            '${{ steps.prefab.outcome }}' \
+            '${{ steps.npm.outcome }}' \
+            '${{ steps.mdv.outcome }}' \
+            '${{ steps.ggsql.outcome }}' \
+            '${{ steps.marimo.outcome }}' \
+            '${{ steps.quarto.outcome }}' \
+            '${{ steps.dac.outcome }}'; do
+            [ "$outcome" = "failure" ] && { echo "One or more framework builds failed — see table above." >&2; exit 1; }
+          done
+
+  # Runs even when the build job ends red (framework failure), as long as the
+  # artifact was uploaded. Skipped only if the build job was cancelled entirely.
   deploy:
     needs: build
+    if: always() && needs.build.result != 'cancelled'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
