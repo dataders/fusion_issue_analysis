@@ -85,8 +85,14 @@ def get_reactions_data(
         "first_timeline_items": 50,
         "node_type": node_type,
     }
+    issue_type_fragment = (
+        "issueType { name }" if node_type == "issues" else ""
+    )
+    query = (ISSUES_QUERY % node_type).replace(
+        "__ISSUE_TYPE_FRAGMENT__", issue_type_fragment
+    )
     for page_items in _get_graphql_pages(
-        access_token, ISSUES_QUERY % node_type, variables, node_type, max_items
+        access_token, query, variables, node_type, max_items
     ):
         # use reactionGroups to query for reactions to comments that have any reactions. reduces cost by 10-50x
         reacted_comment_ids = {}
