@@ -213,7 +213,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
             Muted(f"Top {len(oldest_untriaged)} open issues with zero triage signal — work this list")
         with CardContent():
             DataTable(
-                data=oldest_untriaged,
+                rows=oldest_untriaged,
                 columns=[
                     DataTableColumn(key="issue_number", header="#", sortable=True),
                     DataTableColumn(key="title", header="Title"),
@@ -225,7 +225,8 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                     DataTableColumn(key="author_login", header="Author"),
                 ],
                 search=True,
-                pagination=15,
+                paginated=True,
+                page_size=15,
             )
 
     Separator(css_class="my-8")
@@ -491,7 +492,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
             Muted("Top 50 by age")
         with CardContent():
             DataTable(
-                data=open_issues_table,
+                rows=open_issues_table,
                 columns=[
                     DataTableColumn(key="#", header="#", sortable=True),
                     DataTableColumn(key="title", header="Title"),
@@ -502,7 +503,8 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                     DataTableColumn(key="milestone", header="Milestone"),
                 ],
                 search=True,
-                pagination=15,
+                paginated=True,
+                page_size=15,
             )
 
     # ── Contributor Leaderboard ────────────────────────────────────
