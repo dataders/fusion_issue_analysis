@@ -345,7 +345,7 @@ models:
           - not_null
 
   - name: oldest_untriaged
-    description: Top 25 oldest open non-EPIC issues with zero triage signal — the daily action queue
+    description: Top 25 oldest open bugs with zero triage signal — the daily action queue
     columns:
       - name: issue_number
         tests:

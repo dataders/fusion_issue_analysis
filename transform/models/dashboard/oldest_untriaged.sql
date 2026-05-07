@@ -1,4 +1,5 @@
-{# Oldest open non-EPIC issues with zero triage signal — the daily action queue. #}
+{# Oldest open bugs with zero triage signal — the daily action queue.
+   Mirrors the bugs-only scope of `slipped_through_count` (issue #47). #}
 
 with issue_labels_agg as (
     select
@@ -24,7 +25,7 @@ select
 from {{ ref('fct_issues') }} i
 left join issue_labels_agg l using (issue_dlt_id)
 where i.state = 'OPEN'
-  and i.issue_category != 'epic'
+  and i.issue_category = 'bug'
   and coalesce(l.has_triage_signal, 0) = 0
 order by i.created_at asc
 limit 25

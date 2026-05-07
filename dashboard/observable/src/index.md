@@ -56,7 +56,7 @@ const oldestUntriaged = await FileAttachment("data/oldest_untriaged.json").json(
 
 </div>
 
-### Oldest untriaged issues
+### Oldest untriaged bugs
 
 <table style="width:100%;border-collapse:collapse;margin:12px 0">
   <thead>

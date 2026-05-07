@@ -35,7 +35,7 @@ from oldest_untriaged
 order by age_days desc
 ```
 
-<DataTable data={oldest_untriaged} rows=25 title="Oldest Untriaged Issues">
+<DataTable data={oldest_untriaged} rows=25 title="Oldest Untriaged Bugs">
   <Column id="issue_number" title="#"/>
   <Column id="title" title="Title"/>
   <Column id="age_days" title="Age (days)"/>
