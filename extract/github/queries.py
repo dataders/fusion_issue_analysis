@@ -7,6 +7,15 @@ RATE_LIMIT = """
   }
 """
 
+ISSUE_ONLY_FIELDS = """
+        issueType { name }
+        parent {
+          number
+          title
+          issueType { name }
+        }
+"""
+
 ISSUES_QUERY = """
 query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions: Int!, $first_comments: Int!, $first_timeline_items: Int!, $page_after: String) {
   repository(owner: $owner, name: $name) {
@@ -29,7 +38,7 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
         createdAt
         state
         updatedAt
-        __ISSUE_TYPE_FRAGMENT__
+        %s
         labels(first: 25) {
           nodes {
             name

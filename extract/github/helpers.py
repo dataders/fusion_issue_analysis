@@ -5,7 +5,13 @@ from dlt.common.typing import DictStrAny, StrAny
 from dlt.common.utils import chunks
 from dlt.sources.helpers import requests
 
-from .queries import COMMENT_REACTIONS_QUERY, ISSUES_QUERY, STARGAZERS_QUERY, RATE_LIMIT
+from .queries import (
+    COMMENT_REACTIONS_QUERY,
+    ISSUE_ONLY_FIELDS,
+    ISSUES_QUERY,
+    STARGAZERS_QUERY,
+    RATE_LIMIT,
+)
 from .settings import GRAPHQL_API_BASE_URL, REST_API_BASE_URL
 
 MAX_RETRIES = 5
@@ -85,19 +91,10 @@ def get_reactions_data(
         "first_timeline_items": 50,
         "node_type": node_type,
     }
-    issue_type_fragment = (
-        """issueType { name }
-        parent {
-          number
-          title
-          issueType { name }
-        }"""
-        if node_type == "issues"
-        else ""
-    )
-    query = (ISSUES_QUERY % node_type).replace(
-        "__ISSUE_TYPE_FRAGMENT__", issue_type_fragment
-    )
+    # `issueType` and `parent` are only valid on the Issue type; they would
+    # cause a GraphQL validation error if included in the pullRequests body.
+    issue_only_fields = ISSUE_ONLY_FIELDS if node_type == "issues" else ""
+    query = ISSUES_QUERY % (node_type, issue_only_fields)
     for page_items in _get_graphql_pages(
         access_token, query, variables, node_type, max_items
     ):
