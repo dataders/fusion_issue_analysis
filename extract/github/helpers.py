@@ -86,7 +86,14 @@ def get_reactions_data(
         "node_type": node_type,
     }
     issue_type_fragment = (
-        "issueType { name }" if node_type == "issues" else ""
+        """issueType { name }
+        parent {
+          number
+          title
+          issueType { name }
+        }"""
+        if node_type == "issues"
+        else ""
     )
     query = (ISSUES_QUERY % node_type).replace(
         "__ISSUE_TYPE_FRAGMENT__", issue_type_fragment
