@@ -177,7 +177,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['bug', 'enhancement', 'other']
+                values: ['bug', 'enhancement', 'other', 'task']
       - name: age_days
         tests:
           - not_null
@@ -252,7 +252,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['bug', 'enhancement', 'other', 'epic']
+                values: ['bug', 'enhancement', 'other', 'epic', 'task']
 
   - name: open_by_category
     description: Open issue count per category

@@ -5,6 +5,18 @@ sources:
     description: >
       Raw GitHub issue data extracted via dlt from dbt-labs/dbt-fusion.
       Parquet files in data/raw/fusion_issues/. Gitignored — run extract/run.py to populate.
+    tables:
+      - name: issues
+        description: Raw issues from dlt GraphQL extract (flattened nested fields use double-underscore separators).
+        columns:
+          - name: issue_type__name
+            description: GitHub native Issue Type (Bug | Feature | Task | Epic | null)
+          - name: parent__number
+            description: Parent issue number via GitHub sub-issues
+          - name: parent__title
+            description: Parent issue title
+          - name: parent__issue_type__name
+            description: Parent issue's native Issue Type
 models:
   - name: stg_issues
     description: Cleaned issues from dbt-labs/dbt-fusion

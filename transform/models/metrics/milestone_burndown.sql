@@ -46,6 +46,13 @@ burndown as (
     group by d.date_day, ms.milestone_title, ms.milestone_due_on
 )
 
-select * from burndown
-where cumulative_opened > 0
-order by milestone_title, date_day
+select
+    b.*,
+    fm.milestone_state,
+    fm.is_overdue,
+    fm.total_issues
+from burndown b
+left join {{ ref('fct_milestones') }} fm
+    on b.milestone_title = fm.milestone_title
+where b.cumulative_opened > 0
+order by b.milestone_title, b.date_day
