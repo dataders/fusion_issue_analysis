@@ -4,26 +4,37 @@
 **Author:** Anders Swanson
 **Status:** Draft
 
-## Prerequisites
+## Phase 0 — Plumb `issue_type` end-to-end
 
-This spec assumes the `feat/categorize-with-issue-type` branch
-(commits `1db7750d` "Pull GitHub Issue Type into stg_issues" and
-`c2c61666` "Use GitHub Issue Type in issue_category") has merged to
-`main`. That branch:
+The Epic definition relies on `issue_type = 'Task'`. As of writing,
+`issue_type` is not yet on `main` — it lives on the unmerged
+`feat/categorize-with-issue-type` branch (commits `1db7750d` and
+`c2c61666`). Rather than waiting on that branch, this spec absorbs
+those changes as Phase 0 so the work is self-contained.
 
-- Adds `issueType { name }` to `extract/github/queries.py:ISSUES_QUERY`
-  (guarded by inline-fragment-style template substitution because the
-  same query body is reused for pull requests where `issueType` is
-  unavailable).
-- Adds `issue_type__name as issue_type` passthrough to `stg_issues.sql`
-  and declares it under `_sources.yml`.
-- Surfaces `issue_type` on `fct_issues` and folds it into
-  `issue_category`, and creates `transform/models/marts/_schema.yml`.
+If `grep -r issue_type extract/github/ transform/models/` returns
+non-empty when implementation begins, Phase 0 is already done — skip
+it. Otherwise, do all of the following before Phase 1:
 
-If that branch has not merged when this work begins, this spec's
-implementation plan must absorb those changes as a Phase 0. Verify
-before starting: `grep -r issue_type extract/github/ transform/models/`
-should return non-empty.
+- **Extract** — add `issueType { name }` to the issue node selection
+  in `extract/github/queries.py:ISSUES_QUERY`. The same query body is
+  reused for `pullRequests`, where `issueType` is not a valid field.
+  Guard with the existing `%s` template substitution pattern (or an
+  inline-fragment workaround) so the issues-only field is only
+  emitted when the query targets `issues`.
+- **Source** — declare `issue_type__name` under the `issues` table in
+  `transform/models/staging/_sources.yml`.
+- **Staging** — in `stg_issues.sql`, select
+  `issue_type__name as issue_type`.
+- **Marts** — in `fct_issues.sql`, passthrough `i.issue_type`. Update
+  the existing `issue_category` CASE to consider `issue_type`
+  alongside the label flags (so issues with native Issue Type but no
+  matching label stop falling through to `'other'`). Create
+  `transform/models/marts/_schema.yml` if it doesn't exist and
+  document the new column.
+
+This Phase 0 mirrors the unmerged branch's intent. After it lands,
+Phases 1–3 below proceed unchanged.
 
 ## Problem
 
