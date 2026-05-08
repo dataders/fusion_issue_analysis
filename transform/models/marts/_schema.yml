@@ -3,8 +3,8 @@ version: 2
 models:
   - name: fct_issues
     description: >
-      One row per GitHub issue with derived metrics (time-to-close, time-to-first-response),
-      label-derived flags, and a coarse `issue_category` classification.
+      One row per GitHub issue with derived metrics, issue-type classification,
+      and parent hierarchy fields for epic/task rollups.
     columns:
       - name: issue_dlt_id
         tests:
@@ -27,14 +27,33 @@ models:
           or for repos that don't use Issue Types.
       - name: issue_category
         description: >
-          Coarse bucket — 'bug', 'enhancement', 'epic', or 'other'.
-          Resolved by combining label-derived flags (`bug` / `enhancement` / `EPIC`)
-          with GitHub's native Issue Type ('Bug' / 'Feature' / 'Epic').
-          'Feature' and 'Enhancement' Issue Types both map to 'enhancement'.
-          Issues with Issue Type 'Task' (or any unrecognized type) without a
-          matching label fall into 'other'.
+          Coarse bucket resolved by combining label-derived flags with GitHub's
+          native Issue Type. Task-typed issues without a stronger label map to
+          'task'.
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['bug', 'enhancement', 'epic', 'other']
+                values: ['bug', 'enhancement', 'epic', 'task', 'other']
+      - name: is_epic
+        description: True when issue_type = 'Task' and 'epic' appears in title (authoritative epic flag; preferred over the legacy label-based has_epic).
+        tests:
+          - not_null
+      - name: has_epic_parent
+        description: True when this issue's parent is an epic (parent_issue_type = 'Task' and 'epic' in parent_title).
+        tests:
+          - not_null
+      - name: is_orphan
+        description: Open issue that is neither an epic nor has an epic parent.
+        tests:
+          - not_null
+      - name: parent_number
+        description: GitHub sub-issue parent's issue number, if any.
+        tests:
+          - relationships:
+              arguments:
+                to: ref('fct_issues')
+                field: issue_number
+              config:
+                where: "parent_number is not null"
+                severity: warn  # parent may be cross-repo or pre-extract; warn rather than block
