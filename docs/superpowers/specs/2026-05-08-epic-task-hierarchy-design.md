@@ -4,6 +4,27 @@
 **Author:** Anders Swanson
 **Status:** Draft
 
+## Prerequisites
+
+This spec assumes the `feat/categorize-with-issue-type` branch
+(commits `1db7750d` "Pull GitHub Issue Type into stg_issues" and
+`c2c61666` "Use GitHub Issue Type in issue_category") has merged to
+`main`. That branch:
+
+- Adds `issueType { name }` to `extract/github/queries.py:ISSUES_QUERY`
+  (guarded by inline-fragment-style template substitution because the
+  same query body is reused for pull requests where `issueType` is
+  unavailable).
+- Adds `issue_type__name as issue_type` passthrough to `stg_issues.sql`
+  and declares it under `_sources.yml`.
+- Surfaces `issue_type` on `fct_issues` and folds it into
+  `issue_category`, and creates `transform/models/marts/_schema.yml`.
+
+If that branch has not merged when this work begins, this spec's
+implementation plan must absorb those changes as a Phase 0. Verify
+before starting: `grep -r issue_type extract/github/ transform/models/`
+should return non-empty.
+
 ## Problem
 
 The current `fct_issues` model knows whether an issue has a label, an
@@ -28,6 +49,22 @@ Without parent-child information in the warehouse we cannot answer:
 - **Epic.** An issue where `issue_type = 'Task'` and
   `lower(title) LIKE '%epic%'`. Epics are a strict subset of
   Task-typed issues — all Epics are Tasks, but not all Tasks are Epics.
+  Note: `is_epic` does not gate on state — both open and closed Epics
+  qualify, so historical reporting and burndown can include closed
+  Epics.
+
+### Naming reconciliation: `is_epic` vs existing `has_epic`
+
+`fct_issues` currently has `has_epic` (0/1 flag, true when an issue
+carries the `EPIC` label) and `issue_category` (string with `'epic'`
+as one value). These are **label-based**.
+
+The new `is_epic` is **issue-type + title based** and is the
+authoritative epic flag going forward — the dbt-fusion team has moved
+off the `EPIC` label and onto native Issue Types with title
+conventions. Keep `has_epic` as-is for now (some dashboards may still
+read it) but document in `_schema.yml` that `is_epic` is preferred.
+Removing `has_epic` is a separate cleanup, out of scope here.
 - **`has_epic_parent`.** True when an issue's parent (via GitHub
   sub-issue relation) satisfies the Epic definition above.
 - **Task (in this design).** Any open, non-epic issue that has an
@@ -126,14 +163,17 @@ parent__issue_type__name as parent_issue_type,
 
 ### `fct_issues` — new columns
 
+The prereq branch already exposes `issue_type` (passthrough from
+`stg_issues`). On top of that, this spec adds:
+
 ```sql
--- Epic identity
+-- Epic identity (issue_type + title; authoritative going forward)
 case
   when issue_type = 'Task' and lower(title) like '%epic%'
   then true else false
 end as is_epic,
 
--- Parent relationship
+-- Parent relationship (passthroughs from stg_issues)
 parent_number,
 parent_title,
 parent_issue_type,
@@ -148,6 +188,19 @@ case
   then true else false
 end as is_orphan
 ```
+
+`fct_issues` should also expose enriched milestone columns so
+downstream marts (`fct_epics`, audits, burndown) don't need to
+re-join `dim_milestones`. Add these passthroughs:
+
+```sql
+i.milestone_state,
+i.milestone_due_on,
+i.milestone_created_at,
+i.milestone_closed_at,
+```
+
+(`stg_issues` already selects all four from the source.)
 
 ### `fct_epics` (new)
 
@@ -262,6 +315,10 @@ shape: a thin filter on `fct_issues` / `fct_epics` that returns the
 - **`audit_epics_without_milestone`** — `select … from fct_epics where is_orphan_epic`.
 - **`audit_tasks_without_milestone`** — open issues where
   `has_epic_parent = true AND milestone_number IS NULL`.
+
+Sanity test: `audit_epics_without_milestone` row count should equal
+`count(*) filter (where is_orphan_epic)` from `fct_epics`. Encode as
+a `dbt_utils.equal_rowcount` test or equivalent.
 
 ### `epic_burndown` (new)
 
