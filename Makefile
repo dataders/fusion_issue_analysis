@@ -31,6 +31,7 @@ extract:
 ## prefab       Export all Prefab dashboards to static HTML
 prefab:
 	uv run prefab export dashboard/prefab/app.py          -o dashboard/prefab/app.html
+	uv run prefab export dashboard/prefab/app_reactive.py -o dashboard/prefab/app_reactive.html
 	uv run prefab export dashboard/prefab/app_myspace.py  -o dashboard/prefab/app_myspace.html
 	uv run prefab export dashboard/prefab/app_windows_2000.py -o dashboard/prefab/app_windows_2000.html
 
@@ -85,7 +86,7 @@ kill-server:
 
 ## clean        Remove all generated dashboard files
 clean:
-	rm -f  dashboard/prefab/app.html dashboard/prefab/app_myspace.html dashboard/prefab/app_windows_2000.html
+	rm -f  dashboard/prefab/app.html dashboard/prefab/app_reactive.html dashboard/prefab/app_myspace.html dashboard/prefab/app_windows_2000.html
 	rm -f  dashboard/ggsql/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
 	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html

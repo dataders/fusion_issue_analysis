@@ -70,6 +70,7 @@ jobs:
           cp dashboard/shaper/fusion-issue-health.dashboard.sql preview/shaper/fusion-issue-health.dashboard.sql
           cp dashboard/shaper/shaper.json preview/shaper/shaper.json
           uv run prefab export dashboard/prefab/app.py -o preview/prefab/app.html
+          uv run prefab export dashboard/prefab/app_reactive.py -o preview/prefab/app_reactive.html
           uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
           uv run prefab export dashboard/prefab/app_windows_2000.py -o preview/prefab/app_windows_2000.html
 
@@ -166,6 +167,7 @@ jobs:
               '| Framework | File | Status |',
               '|-----------|------|--------|',
               `| Prefab | \`prefab/app.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| Prefab (reactive) | \`prefab/app_reactive.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               `| Prefab MySpace | \`prefab/app_myspace.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               `| Prefab Windows 2000 | \`prefab/app_windows_2000.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               `| ggsql + Vega-Lite | \`ggsql/index.html\` | ${fmt('${{ steps.ggsql.outcome }}')} |`,
