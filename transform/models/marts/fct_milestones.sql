@@ -37,7 +37,7 @@ select
     case
         when m.milestone_state = 'OPEN'
             and m.milestone_due_on is not null
-            and m.milestone_due_on < current_date
+            and m.milestone_due_on::date < current_date
         then true else false
     end                          as is_overdue
 from milestones m
