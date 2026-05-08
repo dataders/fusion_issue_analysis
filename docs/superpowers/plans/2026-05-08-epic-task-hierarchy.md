@@ -406,6 +406,7 @@ models:
                 field: issue_number
               config:
                 where: "parent_number is not null"
+                severity: warn  # parent may be cross-repo or pre-extract; warn rather than block
 ```
 
 - [ ] **Step 2: Run tests**
@@ -967,7 +968,7 @@ EOF
 )"
 ```
 
-- [ ] **Step 2: Confirm with user**
+- [ ] **Step 3: Confirm with user**
 
 Surface the PR URL and stop. Do not merge — leave that to the user.
 
