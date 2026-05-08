@@ -35,10 +35,19 @@ jobs:
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      # Workaround for dbt-labs/dbt-fusion#1574 — Fusion's bespoke DuckDB ADBC
+      # driver SIGFPEs against MotherDuck on Linux x86_64. Installing the
+      # official DuckDB ADBC driver via `dbc` (from columnar.tech) puts it on
+      # the system path; Fusion's existing LoadStrategy::SystemThenCdnCache
+      # finds the system driver first and avoids the broken bespoke one.
+      # Track dbt-labs/fs#9958 + dbt-labs/fs#10002 — once those merge, this
+      # step becomes unnecessary.
+      - name: Install DuckDB ADBC driver (dbt-fusion#1574 workaround)
+        run: |
+          curl -LsSf https://dbc.columnar.tech/install.sh | sh
+          dbc install duckdb
+
       - name: Refresh dbt models in MotherDuck
-        # TODO: Remove timeout + continue-on-error once dbt-labs/dbt-fusion#1574 is fixed
-        timeout-minutes: 5
-        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |

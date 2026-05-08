@@ -43,9 +43,15 @@ jobs:
           curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      # Workaround for dbt-labs/dbt-fusion#1574 — see extract.yml for context.
+      - name: Install DuckDB ADBC driver (dbt-fusion#1574 workaround)
+        if: github.actor != 'dependabot[bot]'
+        run: |
+          curl -LsSf https://dbc.columnar.tech/install.sh | sh
+          dbc install duckdb
+
       - name: Compile dbt models
         if: github.actor != 'dependabot[bot]'
-        timeout-minutes: 5
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
