@@ -75,6 +75,7 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           uv run prefab export dashboard/prefab/app.py -o /tmp/prefab_app.html
+          uv run prefab export dashboard/prefab/app_reactive.py -o /tmp/prefab_app_reactive.html
           uv run prefab export dashboard/prefab/app_myspace.py -o /tmp/prefab_myspace.html
           uv run prefab export dashboard/prefab/app_windows_2000.py -o /tmp/prefab_windows_2000.html
 

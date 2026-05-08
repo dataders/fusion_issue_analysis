@@ -130,6 +130,7 @@
     </nav>
     <div class="subnav" id="prefab-themes" aria-label="Prefab theme">
       <button class="active" data-src="prefab/app.html" data-theme="vanilla" onclick="switchPrefabTheme(this)">Vanilla</button>
+      <button data-src="prefab/app_reactive.html" data-theme="reactive" onclick="switchPrefabTheme(this)">Reactive</button>
       <button data-src="prefab/app_myspace.html" data-theme="myspace" onclick="switchPrefabTheme(this)">MySpace</button>
       <button data-src="prefab/app_windows_2000.html" data-theme="windows-2000" onclick="switchPrefabTheme(this)">Windows 2000</button>
     </div>
@@ -142,6 +143,7 @@
     const prefabThemeBar = document.getElementById('prefab-themes');
     const frame = document.getElementById('frame');
     const legacyPrefabThemeAliases = {
+      "prefab-reactive": "reactive",
       "prefab-myspace": "myspace",
       "prefab-windows-2000": "windows-2000",
     };
