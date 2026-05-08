@@ -72,3 +72,14 @@ models:
         description: Open epic with no milestone attached.
         tests:
           - not_null
+
+  - name: fct_milestones
+    description: One row per milestone with rollup of issues, epics, tasks, and overdue flag.
+    columns:
+      - name: milestone_number
+        tests:
+          - unique
+          - not_null
+      - name: total_issues
+        tests:
+          - not_null
