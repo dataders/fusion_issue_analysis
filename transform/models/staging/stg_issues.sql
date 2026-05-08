@@ -26,7 +26,11 @@ renamed as (
         comments_total_count,
         created_at,
         updated_at,
-        closed_at
+        closed_at,
+        issue_type__name as issue_type,
+        parent__number as parent_number,
+        parent__title as parent_title,
+        parent__issue_type__name as parent_issue_type
     from source
 )
 
