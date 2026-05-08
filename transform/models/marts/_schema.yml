@@ -57,3 +57,18 @@ models:
               config:
                 where: "parent_number is not null"
                 severity: warn  # parent may be cross-repo or pre-extract; warn rather than block
+
+  - name: fct_epics
+    description: One row per Epic (Task-typed issue with 'epic' in title), enriched with child counts and milestone attribution.
+    columns:
+      - name: epic_number
+        tests:
+          - unique
+          - not_null
+      - name: child_total
+        tests:
+          - not_null
+      - name: is_orphan_epic
+        description: Open epic with no milestone attached.
+        tests:
+          - not_null
