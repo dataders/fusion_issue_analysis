@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Fusion Issue Health MCP App</title>
+    <script type="module" src="/src/mcp-app.ts"></script>
+  </head>
+  <body>
+    <main id="app" class="shell">
+      <section class="hero">
+        <div>
+          <p class="eyebrow">dbt Fusion issue health</p>
+          <h1>MCP App Dashboard</h1>
+        </div>
+        <button id="refresh" type="button">Refresh</button>
+      </section>
+      <p id="status" class="status">Waiting for host data...</p>
+      <section id="kpis" class="kpi-grid"></section>
+      <section class="panel">
+        <h2>Weekly Flow</h2>
+        <div id="weekly-flow" class="chart"></div>
+      </section>
+      <section class="grid">
+        <article class="panel">
+          <h2>Category State Mix</h2>
+          <div id="categories" class="stack"></div>
+        </article>
+        <article class="panel">
+          <h2>Open Epics</h2>
+          <div id="epics" class="stack"></div>
+        </article>
+      </section>
+      <section class="panel">
+        <h2>Community Priorities</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>Title</th>
+              <th>Type</th>
+              <th>Reactions</th>
+              <th>Comments</th>
+            </tr>
+          </thead>
+          <tbody id="priorities"></tbody>
+        </table>
+      </section>
+    </main>
+  </body>
+</html>

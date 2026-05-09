@@ -33,6 +33,7 @@ make dbt
 make build
 make ui-test
 make serve
+make mcp-app
 ```
 
 What they do:
@@ -42,8 +43,9 @@ What they do:
 - `make build`: export all dashboard variants
 - `make ui-test`: run Playwright checks against the generated dashboard exports
 - `make serve`: build and open local static wrapper
+- `make mcp-app`: build a local MCP Apps proof of concept for agent-hosted dashboard consumption
 
-Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, and DAC.
+Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, DAC, and Shaper. The MCP Apps spike is local-only for now.
 
 ## Repo Shape
 
