@@ -176,6 +176,9 @@ test.describe("dashboard UI controls", () => {
     const menu = evidence.getByLabel("Menu");
     await expect(menu).toBeVisible();
     await menu.click();
-    await expect(menu).toHaveAttribute("aria-expanded", "true");
+    await expect(
+      evidence.getByRole("link", { name: "Built with Evidence" }),
+    ).toBeVisible();
+    await expect(page.locator("#frame")).toHaveAttribute("src", /evidence\/build\/$/);
   });
 });

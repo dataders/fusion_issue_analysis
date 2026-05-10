@@ -40,6 +40,9 @@ class UiE2eWiringTests(unittest.TestCase):
 
         self.assertIn("Install Playwright browsers", content)
         self.assertIn("npx playwright install --with-deps chromium", content)
+        self.assertIn("Cache MDV build", content)
+        self.assertIn("Smoke-test MDV", content)
+        self.assertIn("bash dashboard/mdv/build.sh", content)
         self.assertIn("Run Playwright UI tests", content)
         self.assertIn("npm run test:ui", content)
 

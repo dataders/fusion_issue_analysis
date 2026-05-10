@@ -1,5 +1,8 @@
 name: CI
 
+env:
+  MDV_SHA: b9d5a8c1bb66b094a8745775cb9bf1389f08403f
+
 on:
   pull_request:
   push:
@@ -24,6 +27,14 @@ jobs:
           key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
+
+      - name: Cache MDV build
+        uses: actions/cache@v4
+        with:
+          path: ${{ runner.temp }}/fusion-mdv-cache
+          key: ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-${{ hashFiles('dashboard/mdv/build.sh') }}
+          restore-keys: |
+            ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-
 
       - name: Install dependencies
         run: uv sync --dev
@@ -99,6 +110,13 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           FUSION_DB: md:fusion_issues
         run: uv run dashboard/ggsql/build.py
+
+      - name: Smoke-test MDV
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          MDV_CACHE_DIR: ${{ runner.temp }}/fusion-mdv-cache/mdv-${{ env.MDV_SHA }}
+        run: bash dashboard/mdv/build.sh
 
       - name: Smoke-test Marimo
         if: github.actor != 'dependabot[bot]'
