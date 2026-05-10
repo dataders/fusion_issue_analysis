@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
+.PHONY: serve build ui-test about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -13,6 +13,10 @@ serve: build kill-server
 
 ## build        Build every dashboard's static output (no serve)
 build: about prefab ggsql npm-dashboards mdv marimo quarto dac shaper
+
+## ui-test      Run Playwright checks against generated dashboard exports
+ui-test:
+	npm run test:ui
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:

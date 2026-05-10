@@ -31,6 +31,7 @@ Common commands:
 make extract
 make dbt
 make build
+make ui-test
 make serve
 ```
 
@@ -39,6 +40,7 @@ What they do:
 - `make extract`: pull GitHub issue data with dlt
 - `make dbt`: build shared models in DuckDB
 - `make build`: export all dashboard variants
+- `make ui-test`: run Playwright checks against the generated dashboard exports
 - `make serve`: build and open local static wrapper
 
 Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, and DAC.

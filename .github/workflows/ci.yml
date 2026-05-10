@@ -21,12 +21,19 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
       - name: Install dependencies
         run: uv sync --dev
+
+      - name: Install root npm dependencies
+        run: npm ci --prefer-offline --no-audit --no-fund
+
+      - name: Install Playwright browsers
+        if: github.actor != 'dependabot[bot]'
+        run: npx playwright install --with-deps chromium
 
       - name: Install DAC
         run: |
@@ -74,10 +81,10 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          uv run prefab export dashboard/prefab/app.py -o /tmp/prefab_app.html
-          uv run prefab export dashboard/prefab/app_reactive.py -o /tmp/prefab_app_reactive.html
-          uv run prefab export dashboard/prefab/app_myspace.py -o /tmp/prefab_myspace.html
-          uv run prefab export dashboard/prefab/app_windows_2000.py -o /tmp/prefab_windows_2000.html
+          uv run prefab export dashboard/prefab/app.py -o dashboard/prefab/app.html
+          uv run prefab export dashboard/prefab/app_reactive.py -o dashboard/prefab/app_reactive.html
+          uv run prefab export dashboard/prefab/app_myspace.py -o dashboard/prefab/app_myspace.html
+          uv run prefab export dashboard/prefab/app_windows_2000.py -o dashboard/prefab/app_windows_2000.html
 
       - name: Smoke-test npm dashboards
         if: github.actor != 'dependabot[bot]'
@@ -97,7 +104,7 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o /tmp/marimo.html
+        run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o dashboard/marimo.html
 
       - name: Install Quarto
         uses: quarto-dev/quarto-actions/setup@v2
@@ -116,7 +123,19 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           DAC_ENVIRONMENT: prod
-          DAC_OUTPUT: /tmp/dac-build
+          DAC_OUTPUT: dashboard/dac/build
         run: |
           uv run python3 dashboard/dac/render.py
-          ! grep -q 'bruin query failed' /tmp/dac-build/index.html
+          ! grep -q 'bruin query failed' dashboard/dac/build/index.html
+
+      - name: Run Playwright UI tests
+        if: github.actor != 'dependabot[bot]'
+        run: npm run test:ui
+
+      - name: Upload Playwright report
+        if: always() && github.actor != 'dependabot[bot]'
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: playwright-report/
+          if-no-files-found: ignore
