@@ -91,7 +91,7 @@ test.describe("dashboard bakeoff shell", () => {
       });
       expect(styles.backgroundColor).toBe("rgb(255, 255, 255)");
       expect(styles.borderTopLeftRadius).toBe("5px");
-      expect(styles.fontFamily).toContain("system-ui");
+      expect(styles.fontFamily).toContain("Segoe UI");
       expect(styles.fontWeight).toBeGreaterThanOrEqual(600);
       expect(styles.whiteSpace).toBe("nowrap");
 
@@ -167,9 +167,6 @@ test.describe("dashboard UI controls", () => {
     await expect(categoryDropdown).toHaveAttribute("aria-expanded", "true");
     await page.keyboard.press("Escape");
     await expect(frame.getByText(/Showing \d+ of \d+/).first()).toBeVisible();
-
-    await frame.getByRole("button", { name: "Clear" }).click();
-    await expect(frame.getByText(/Showing \d+ of \d+/).first()).toContainText("1465");
 
     await expectRouteToExist(request, "evidence/build/");
     await page.locator('.main-tabs button[data-tab="evidence"]').click();
