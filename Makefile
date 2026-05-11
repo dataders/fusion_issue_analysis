@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
+.PHONY: serve build data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,11 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: about prefab ggsql npm-dashboards mdv marimo quarto dac shaper
+build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper
+
+## data-freshness Write source-data freshness metadata for the dashboard chrome
+data-freshness:
+	uv run python dashboard/write_data_freshness.py
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:
@@ -87,6 +91,7 @@ kill-server:
 ## clean        Remove all generated dashboard files
 clean:
 	rm -f  dashboard/prefab/app.html dashboard/prefab/app_reactive.html dashboard/prefab/app_myspace.html dashboard/prefab/app_windows_2000.html
+	rm -f  dashboard/data_freshness.json
 	rm -f  dashboard/ggsql/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
 	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html
