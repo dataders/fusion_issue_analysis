@@ -19,10 +19,8 @@ const conn = await (async () => {
 })();
 
 async function queryRows(conn, sql) {
-  const result = await conn.evaluateStreamingQuery(sql);
-  const table = await result.arrowStream.readAll();
-  const fields = table.schema.fields.map(f => f.name);
-  return [...table].map(row => Object.fromEntries(fields.map(f => [f, row[f]])));
+  const result = await conn.evaluateQuery(sql);
+  return result.data.toRows();
 }
 ```
 
