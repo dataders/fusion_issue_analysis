@@ -2,11 +2,12 @@
 //
 // Connector pattern from motherduckdb/wasm-client examples/mosaic-integration:
 //   - MDConnection.create({mdToken}) from @motherduck/wasm-client
-//   - evaluateStreamingQuery() + apache-arrow for result handling
+//   - evaluateStreamingQuery() + @uwdata/flechette for result handling
 //   - coordinator().databaseConnector(connector) to wire into Mosaic
-//   - vg.plot(), vg.barY(), vg.barX(), vg.from(), vg.Selection from @uwdata/vgplot v0.3.x
+//   - vg.plot(), vg.barY(), vg.barX(), vg.from(), vg.Selection from @uwdata/vgplot v0.25.x
 
-import * as arrow from 'apache-arrow';
+import {Table, tableToIPC} from 'apache-arrow';
+import {tableFromIPC} from '@uwdata/flechette';
 import {MDConnection} from '@motherduck/wasm-client';
 import * as vg from '@uwdata/vgplot';
 
@@ -24,23 +25,26 @@ if (!TOKEN || TOKEN === '__MOTHERDUCK_READ_TOKEN__') {
   });
 }
 
-function makeMDConnector(token) {
-  const connection = MDConnection.create({mdToken: token});
+function makeMDConnector(connection) {
   return {
     query: async (query) => {
       const {sql, type} = query;
+      if (type === 'exec') {
+        await connection.evaluateQuery(sql);
+        return undefined;
+      }
       const result = await connection.evaluateStreamingQuery(sql);
       if (result.type !== 'streaming') {
         throw new Error('expected streaming result from MotherDuck');
       }
       const batches = await result.arrowStream.readAll();
-      const table = new arrow.Table(batches);
+      const ipcBytes = tableToIPC(new Table(batches));
+      const table = tableFromIPC(ipcBytes, {useDate: true});
       switch (type) {
         case 'arrow':
           return table;
         case 'json':
-          return Array.from(table);
-        case 'exec':
+          return table.toArray();
         default:
           return undefined;
       }
@@ -49,8 +53,11 @@ function makeMDConnector(token) {
 }
 
 async function setup() {
+  const connection = MDConnection.create({mdToken: TOKEN});
+  await connection.isInitialized();
+
   // Wire the Mosaic coordinator to MotherDuck
-  vg.coordinator().databaseConnector(makeMDConnector(TOKEN));
+  vg.coordinator().databaseConnector(makeMDConnector(connection));
 
   // Ensure the fusion_issues database is attached
   await vg.coordinator().exec("ATTACH IF NOT EXISTS 'md:fusion_issues' AS fusion_issues;");

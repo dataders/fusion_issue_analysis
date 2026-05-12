@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "@motherduck/wasm-client": "^0.8",
+    "@uwdata/flechette": "^2.5.0",
     "@uwdata/vgplot": "^0.25",
     "apache-arrow": "^17"
   },
