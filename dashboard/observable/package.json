@@ -4,10 +4,13 @@
   "type": "module",
   "scripts": {
     "dev": "observable preview",
-    "build": "observable build",
+    "build": "observable build && mkdir -p dist/live && cp dist/live.html dist/live/index.html",
     "clean": "rm -rf dist"
   },
   "dependencies": {
     "@observablehq/framework": "^1"
+  },
+  "devDependencies": {
+    "@motherduck/wasm-client": "^0.3"
   }
 }
