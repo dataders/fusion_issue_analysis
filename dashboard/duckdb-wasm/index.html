@@ -27,7 +27,7 @@
     import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
     import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
 
-    const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
+    const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZGVycy5zd2Fuc29uQGRidGxhYnMuY29tIiwibWRSZWdpb24iOiJhd3MtdXMtZWFzdC0xIiwic2Vzc2lvbiI6ImFuZGVycy5zd2Fuc29uLmRidGxhYnMuY29tIiwicGF0IjoiSzlmZXM2QjJ2UjcwYlBMX0Y3WmVpVFpnb2xTeGRSTHRjWTJjd2FvOVRYTSIsInVzZXJJZCI6IjExZDBhYzg0LTE5OTgtNGFlMS05YzcyLTRmZWJkMTgwOWFjZiIsImlzcyI6Im1kX3BhdCIsInJlYWRPbmx5Ijp0cnVlLCJ0b2tlblR5cGUiOiJyZWFkX3NjYWxpbmciLCJpYXQiOjE3Nzg2MDU2Nzl9.5YKVJPbGIN-7G5SxNDVHwf6uZSh2sTAU-aiWT7-Bz3w';
     const status = document.getElementById('status');
 
     if (!TOKEN || TOKEN.startsWith('__')) {
@@ -44,7 +44,7 @@
     async function queryRows(conn, sql) {
       const result = await conn.evaluateStreamingQuery(sql);
       const table = await result.arrowStream.readAll();
-      return [...table].map(row => row.toJSON());
+      return [...table].map(row => Object.fromEntries(row));
     }
 
     async function main() {

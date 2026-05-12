@@ -21,7 +21,7 @@ const conn = await (async () => {
 async function queryRows(conn, sql) {
   const result = await conn.evaluateStreamingQuery(sql);
   const table = await result.arrowStream.readAll();
-  return [...table].map(row => row.toJSON());
+  return [...table].map(row => Object.fromEntries(row));
 }
 ```
 
