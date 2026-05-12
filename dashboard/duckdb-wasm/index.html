@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dbt-fusion Issue Health · DuckDB WASM</title>
+  <style>
+    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px; }
+    h1 { font-size: 1.2rem; margin-bottom: 4px; }
+    #status { color: #a6adc8; font-style: italic; font-size: 0.85rem; margin-bottom: 16px; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
+    .kpi-card { background: #313244; border-radius: 8px; padding: 16px; text-align: center; }
+    .kpi-value { font-size: 2rem; font-weight: bold; }
+    .kpi-label { color: #a6adc8; font-size: 0.75rem; margin-top: 4px; }
+    #chart { margin-top: 20px; }
+    .error { color: #f38ba8; }
+  </style>
+</head>
+<body>
+  <h1>dbt-fusion Issue Health · DuckDB WASM + MotherDuck</h1>
+  <p id="status">Connecting to MotherDuck…</p>
+  <div class="kpi-grid" id="kpis"></div>
+  <div id="chart"></div>
+
+  <script type="module">
+    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.3';
+    import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
+
+    const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
+    const status = document.getElementById('status');
+
+    if (!TOKEN || TOKEN === '__MOTHERDUCK_READ_TOKEN__') {
+      status.textContent = 'Token not injected — run deploy workflow to embed MOTHERDUCK_READ_TOKEN.';
+      status.className = 'error';
+    } else {
+      main().catch(err => {
+        status.textContent = `Error: ${err.message}`;
+        status.className = 'error';
+        console.error(err);
+      });
+    }
+
+    async function main() {
+      const conn = MDConnection.create({mdToken: TOKEN});
+      await conn.isInitialized();
+      status.textContent = 'Connected. Loading data…';
+
+      const triage = await conn.evaluateQuery(
+        'SELECT * FROM fusion_issues.main.issue_triage_health'
+      ).then(r => r.toRows()[0]);
+
+      const KPIS = [
+        ['slipped_through_count', '#f38ba8', 'Slipped through'],
+        ['triage_queue_count',    '#fab387', 'Triage queue'],
+        ['hard_blocker_count',   '#eba0ac', 'Hard blockers'],
+        ['needs_repro_count',    '#89dceb', 'Needs repro'],
+        ['repro_verified_count', '#a6e3a1', 'Repro verified'],
+        ['stale_count',          '#cba6f7', 'Stale'],
+      ];
+      document.getElementById('kpis').innerHTML = KPIS.map(([k, color, label]) => `
+        <div class="kpi-card">
+          <div class="kpi-value" style="color:${color}">${triage[k] ?? '—'}</div>
+          <div class="kpi-label">${label}</div>
+        </div>
+      `).join('');
+
+      const velocity = await conn.evaluateQuery(`
+        SELECT week,
+          max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
+          max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
+        FROM fusion_issues.main.velocity GROUP BY week ORDER BY week
+      `).then(r => r.toRows());
+
+      const chart = Plot.plot({
+        style: {background: 'transparent', color: '#cdd6f4'},
+        color: {legend: true},
+        marks: [
+          Plot.lineY(velocity, {x: 'week', y: 'bugs', stroke: '#f38ba8', tip: true}),
+          Plot.lineY(velocity, {x: 'week', y: 'enhancements', stroke: '#89b4fa', tip: true}),
+        ]
+      });
+      document.getElementById('chart').append(chart);
+      status.textContent = 'Data loaded live from MotherDuck (DuckDB WASM).';
+    }
+  </script>
+</body>
+</html>
