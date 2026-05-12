@@ -49,6 +49,21 @@ function escapeRegExp(value) {
 }
 
 test.describe("dashboard bakeoff shell", () => {
+  test("shows refresh metadata and source repository link in the chrome", async ({ page }) => {
+    await page.goto("/index.html");
+
+    const refreshLabel = page.locator("#data-refreshed");
+    await expect(refreshLabel).toHaveText(/^Data refreshed: .+/);
+    await expect(refreshLabel).not.toHaveText(/Invalid Date/);
+
+    const repoLink = page.getByRole("link", { name: "Open source repository" });
+    await expect(repoLink).toHaveAttribute("href", "https://github.com/dataders/fusion_issue_analysis");
+    await expect(repoLink.locator("img")).toHaveAttribute(
+      "src",
+      "https://github.githubassets.com/favicons/favicon.svg",
+    );
+  });
+
   test("keeps one shared tab contract and active style across dashboards", async ({ page, request }) => {
     await page.goto("/index.html");
 

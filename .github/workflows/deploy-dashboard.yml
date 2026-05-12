@@ -69,6 +69,11 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
+      - name: Write data freshness metadata
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run python dashboard/write_data_freshness.py
+
       - name: Export Prefab dashboards
         id: prefab
         continue-on-error: true

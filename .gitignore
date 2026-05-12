@@ -168,6 +168,7 @@ dashboard/observable/node_modules/
 
 # Dashboard build artifacts (index.html is the bakeoff wrapper, tracked in git)
 dashboard/about.html
+dashboard/data_freshness.json
 dashboard/app.html
 dashboard/app_myspace.html
 dashboard/prefab/app.html
@@ -196,7 +197,7 @@ dashboard/dac/build/
 logs/queries
 
 # Claude Code session state
-.claude/scheduled_tasks.lock
+.claude/
 
 # Git worktrees
 .worktrees/
