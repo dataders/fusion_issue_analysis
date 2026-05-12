@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -12,7 +12,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: about prefab ggsql npm-dashboards mdv marimo quarto dac shaper
+build: about prefab ggsql npm-dashboards mdv marimo quarto dac shaper graphene
 
 ## about        Render dashboard/about.html from dashboard/about.md
 about:
@@ -78,6 +78,13 @@ dac:
 shaper:
 	uv run python3 dashboard/shaper/build.py
 
+## graphene     Build Graphene source and static Pages tab
+graphene:
+	npm --prefix dashboard/graphene ci --prefer-offline --no-audit --no-fund --silent
+	uv run python3 dashboard/graphene/build.py
+	cd dashboard/graphene && npm exec graphene -- check
+	cd dashboard/graphene && npm exec graphene -- run index.md -q kpis
+
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 ## kill-server  Kill whatever is running on PORT (default: 8081)
@@ -92,6 +99,7 @@ clean:
 	rm -f  dashboard/quarto/index.html
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto
 	rm -rf dashboard/dac/build
+	rm -f  dashboard/graphene/index.html dashboard/graphene/fusion_graphene.duckdb dashboard/graphene/fusion_graphene.duckdb.wal
 
 ## help         Show this help
 help:
@@ -103,3 +111,4 @@ help:
 	@echo "  Set MOTHERDUCK_TOKEN to build against MotherDuck instead of local DuckDB"
 	@echo "  npm-dashboards installs nested Node dependencies before building"
 	@echo "  dac requires the dac and bruin CLIs"
+	@echo "  graphene uses the public Graphene CLI plus a static Pages compatibility export"

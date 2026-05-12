@@ -1,0 +1,29 @@
+{
+  "name": "fusion-issue-analysis-graphene",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "graphene check",
+    "serve": "graphene serve",
+    "run": "graphene run"
+  },
+  "engines": {
+    "node": ">=20.0.0",
+    "npm": ">=7.0.0"
+  },
+  "graphene": {
+    "duckdb": {
+      "path": "fusion_graphene.duckdb"
+    },
+    "ignoredFiles": [
+      "**/README.md",
+      "**/AGENTS.md",
+      "**/node_modules/**"
+    ]
+  },
+  "dependencies": {
+    "@duckdb/node-api": "1.3.2-alpha.26",
+    "@graphenedata/cli": "0.0.18"
+  }
+}

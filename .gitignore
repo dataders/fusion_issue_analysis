@@ -191,6 +191,8 @@ dashboard/quarto/.quarto/
 dashboard/quarto/index.html
 dashboard/quarto/index_files/
 dashboard/dac/build/
+dashboard/graphene/index.html
+dashboard/graphene/fusion_graphene.duckdb*
 logs/queries
 
 # Claude Code session state
