@@ -6,28 +6,88 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dbt-fusion Issue Health · DuckDB WASM</title>
   <style>
-    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px; }
-    h1 { font-size: 1.2rem; margin-bottom: 4px; }
-    #status { color: #a6adc8; font-style: italic; font-size: 0.85rem; margin-bottom: 16px; }
-    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 12px; margin: 16px 0; }
-    .kpi-card { background: #313244; border-radius: 8px; padding: 16px; text-align: center; }
-    .kpi-value { font-size: 2rem; font-weight: bold; }
-    .kpi-label { color: #a6adc8; font-size: 0.75rem; margin-top: 4px; }
-    #chart { margin-top: 20px; }
-    .error { color: #f38ba8; }
+    *, *::before, *::after { box-sizing: border-box; }
+    body {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px 24px 40px;
+      max-width: 960px;
+    }
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 2px; }
+    #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
+    .error { color: #f38ba8 !important; }
+
+    /* KPIs: 3-up on first row, 3-up on second */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 28px;
+    }
+    .kpi-card {
+      background: #313244;
+      border-radius: 8px;
+      padding: 14px 12px 12px;
+      text-align: center;
+    }
+    .kpi-value { font-size: 2rem; font-weight: 700; line-height: 1; }
+    .kpi-label { color: #a6adc8; font-size: 0.7rem; margin-top: 6px; }
+
+    /* Chart sections */
+    .section { margin-bottom: 28px; }
+    .section-title {
+      font-size: 0.78rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #7f849c;
+      margin: 0 0 10px;
+    }
+    .chart-wrap { overflow-x: auto; }
+    .chart-wrap svg { max-width: 100%; }
+
+    /* Two-column chart layout */
+    .charts-2col {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 640px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+      .charts-2col { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
   <h1>dbt-fusion Issue Health · DuckDB WASM + MotherDuck</h1>
-  <p id="status">Connecting to MotherDuck…</p>
+  <p id="status">Connecting…</p>
+
   <div class="kpi-grid" id="kpis"></div>
-  <div id="chart"></div>
+
+  <div class="section">
+    <div class="section-title">Resolution time (median days to close)</div>
+    <div class="chart-wrap" id="chart-velocity"></div>
+  </div>
+
+  <div class="charts-2col">
+    <div class="section">
+      <div class="section-title">Open issues by age</div>
+      <div class="chart-wrap" id="chart-age"></div>
+    </div>
+    <div class="section">
+      <div class="section-title">Assignee workload</div>
+      <div class="chart-wrap" id="chart-workload"></div>
+    </div>
+  </div>
 
   <script type="module">
     import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
     import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
 
-    const TOKEN = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZGVycy5zd2Fuc29uQGRidGxhYnMuY29tIiwibWRSZWdpb24iOiJhd3MtdXMtZWFzdC0xIiwic2Vzc2lvbiI6ImFuZGVycy5zd2Fuc29uLmRidGxhYnMuY29tIiwicGF0IjoiSzlmZXM2QjJ2UjcwYlBMX0Y3WmVpVFpnb2xTeGRSTHRjWTJjd2FvOVRYTSIsInVzZXJJZCI6IjExZDBhYzg0LTE5OTgtNGFlMS05YzcyLTRmZWJkMTgwOWFjZiIsImlzcyI6Im1kX3BhdCIsInJlYWRPbmx5Ijp0cnVlLCJ0b2tlblR5cGUiOiJyZWFkX3NjYWxpbmciLCJpYXQiOjE3Nzg2MDU2Nzl9.5YKVJPbGIN-7G5SxNDVHwf6uZSh2sTAU-aiWT7-Bz3w';
+    const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
     const status = document.getElementById('status');
 
     if (!TOKEN || TOKEN.startsWith('__')) {
@@ -46,44 +106,115 @@
       return result.data.toRows();
     }
 
+    function weekLabel(v) {
+      const s = v instanceof Date ? v.toISOString() : String(v);
+      return s.slice(5, 10); // "MM-DD"
+    }
+
+    const STYLE = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
+
     async function main() {
       const conn = MDConnection.create({mdToken: TOKEN});
       await conn.isInitialized();
-      status.textContent = 'Connected. Loading data…';
+      status.textContent = 'Loading data…';
 
-      const triage = (await queryRows(conn, 'SELECT * FROM fusion_issues.main.issue_triage_health'))[0];
+      const [triage, velocity, ageDist, workload] = await Promise.all([
+        queryRows(conn, 'SELECT * FROM fusion_issues.main.issue_triage_health'),
+        queryRows(conn, `
+          SELECT week,
+            max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
+            max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
+          FROM fusion_issues.main.velocity GROUP BY week ORDER BY week
+        `),
+        queryRows(conn, `
+          SELECT age_bucket, issue_category, issue_count
+          FROM fusion_issues.main.age_distribution
+          ORDER BY CASE age_bucket
+            WHEN '0-7d' THEN 1 WHEN '8-30d' THEN 2 WHEN '31-90d' THEN 3
+            WHEN '91-180d' THEN 4 ELSE 5 END
+        `),
+        queryRows(conn, `
+          SELECT assignee_login, open_issues
+          FROM fusion_issues.main.assignee_workload
+          WHERE assignee_login IS NOT NULL
+          ORDER BY open_issues DESC LIMIT 12
+        `),
+      ]);
 
-      const KPIS = [
+      // KPIs
+      const t = triage[0] ?? {};
+      document.getElementById('kpis').innerHTML = [
         ['slipped_through_count', '#f38ba8', 'Slipped through'],
         ['triage_queue_count',    '#fab387', 'Triage queue'],
         ['hard_blocker_count',   '#eba0ac', 'Hard blockers'],
         ['needs_repro_count',    '#89dceb', 'Needs repro'],
         ['repro_verified_count', '#a6e3a1', 'Repro verified'],
         ['stale_count',          '#cba6f7', 'Stale'],
-      ];
-      document.getElementById('kpis').innerHTML = KPIS.map(([k, color, label]) => `
+      ].map(([k, color, label]) => `
         <div class="kpi-card">
-          <div class="kpi-value" style="color:${color}">${triage[k] ?? '—'}</div>
+          <div class="kpi-value" style="color:${color}">${t[k] ?? '—'}</div>
           <div class="kpi-label">${label}</div>
-        </div>
-      `).join('');
+        </div>`).join('');
 
-      const velocity = await queryRows(conn, `
-        SELECT week,
-          max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
-          max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
-        FROM fusion_issues.main.velocity GROUP BY week ORDER BY week
-      `);
+      // Velocity — x-axis: show ~10 evenly spaced labels
+      const weeks = [...new Set(velocity.map(r => weekLabel(r.week)))];
+      const step = Math.max(1, Math.floor(weeks.length / 10));
+      const tickWeeks = new Set(weeks.filter((_, i) => i % step === 0));
 
-      const chart = Plot.plot({
-        style: {background: 'transparent', color: '#cdd6f4'},
-        color: {legend: true},
+      document.getElementById('chart-velocity').append(Plot.plot({
+        style: STYLE,
+        width: 880,
+        height: 220,
+        marginBottom: 40,
+        x: {
+          label: null,
+          tickFormat: v => tickWeeks.has(weekLabel(v)) ? weekLabel(v) : '',
+          tickRotate: -45,
+        },
+        y: {label: 'Median days', grid: true, gridColor: '#313244'},
+        color: {legend: true, domain: ['bugs', 'enhancements'], range: ['#f38ba8', '#89b4fa']},
         marks: [
-          Plot.lineY(velocity, {x: 'week', y: 'bugs', stroke: '#f38ba8', tip: true}),
-          Plot.lineY(velocity, {x: 'week', y: 'enhancements', stroke: '#89b4fa', tip: true}),
-        ]
-      });
-      document.getElementById('chart').append(chart);
+          Plot.lineY(velocity, {x: 'week', y: 'bugs', stroke: '#f38ba8', strokeWidth: 2, tip: true}),
+          Plot.lineY(velocity, {x: 'week', y: 'enhancements', stroke: '#89b4fa', strokeWidth: 2, tip: true}),
+        ],
+      }));
+
+      // Age distribution — stacked bar
+      const AGE_COLORS = {'bug': '#f38ba8', 'enhancement': '#89b4fa', 'other': '#a6adc8'};
+      document.getElementById('chart-age').append(Plot.plot({
+        style: STYLE,
+        width: 420,
+        height: 220,
+        marginBottom: 30,
+        x: {label: null},
+        y: {label: 'Issues', grid: true, gridColor: '#313244'},
+        color: {legend: true, domain: ['bug', 'enhancement', 'other'], range: Object.values(AGE_COLORS)},
+        marks: [
+          Plot.barY(ageDist, Plot.stackY({
+            x: 'age_bucket', y: 'issue_count', fill: 'issue_category', tip: true,
+          })),
+          Plot.ruleY([0], {stroke: '#45475a'}),
+        ],
+      }));
+
+      // Assignee workload — horizontal bar
+      document.getElementById('chart-workload').append(Plot.plot({
+        style: STYLE,
+        width: 420,
+        height: 220,
+        marginLeft: 90,
+        marginBottom: 30,
+        x: {label: 'Open issues', grid: true, gridColor: '#313244'},
+        y: {label: null},
+        marks: [
+          Plot.barX(workload, {
+            y: 'assignee_login', x: 'open_issues',
+            fill: '#cba6f7', sort: {y: '-x'}, tip: true,
+          }),
+          Plot.ruleX([0], {stroke: '#45475a'}),
+        ],
+      }));
+
       status.textContent = 'Data loaded live from MotherDuck (DuckDB WASM).';
     }
   </script>
