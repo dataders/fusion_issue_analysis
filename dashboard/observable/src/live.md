@@ -12,7 +12,7 @@ import {MDConnection} from "@motherduck/wasm-client";
 const TOKEN = "__MOTHERDUCK_READ_TOKEN__";
 
 const conn = await (async () => {
-  if (!TOKEN || TOKEN === "__MOTHERDUCK_READ_TOKEN__") return null;
+  if (!TOKEN || TOKEN.startsWith("__")) return null;
   const c = MDConnection.create({mdToken: TOKEN});
   await c.isInitialized();
   return c;

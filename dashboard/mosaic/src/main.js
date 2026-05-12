@@ -11,10 +11,10 @@ import {tableFromIPC} from '@uwdata/flechette';
 import {MDConnection} from '@motherduck/wasm-client';
 import * as vg from '@uwdata/vgplot';
 
-const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
+const TOKEN = (window.__MD_TOKEN__ && !window.__MD_TOKEN__.startsWith('__')) ? window.__MD_TOKEN__ : '';
 const status = document.getElementById('status');
 
-if (!TOKEN || TOKEN === '__MOTHERDUCK_READ_TOKEN__') {
+if (!TOKEN) {
   status.textContent = 'Token not injected — run deploy workflow.';
   status.className = 'error';
 } else {

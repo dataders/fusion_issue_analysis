@@ -30,7 +30,7 @@
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
     const status = document.getElementById('status');
 
-    if (!TOKEN || TOKEN === '__MOTHERDUCK_READ_TOKEN__') {
+    if (!TOKEN || TOKEN.startsWith('__')) {
       status.textContent = 'Token not injected — run deploy workflow to embed MOTHERDUCK_READ_TOKEN.';
       status.className = 'error';
     } else {
