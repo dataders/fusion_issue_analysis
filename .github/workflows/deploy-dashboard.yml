@@ -43,7 +43,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json', 'dashboard/mosaic/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -140,6 +140,14 @@ jobs:
           uv run python3 dashboard/dac/render.py
           ! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
+      - name: Inject MotherDuck read-scaling token
+        env:
+          MOTHERDUCK_READ_TOKEN: ${{ secrets.MOTHERDUCK_READ_TOKEN }}
+        run: |
+          find dashboard -type f \( -name "*.html" -o -name "*.js" \) \
+            -exec grep -l '__MOTHERDUCK_READ_TOKEN__' {} \; \
+            | xargs -I{} sed -i "s|__MOTHERDUCK_READ_TOKEN__|${MOTHERDUCK_READ_TOKEN}|g" {}
+
       # Upload whatever built successfully; deploy job runs regardless of framework failures.
       - name: Upload Pages artifact
         if: always()
@@ -165,6 +173,9 @@ jobs:
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+            echo "| DuckDB WASM (live) | static — no build step |"
+            echo "| Mosaic (live) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| Observable (live) | $(icon '${{ steps.npm.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           # Fail the job so GitHub sends a notification email, but only after
           # the artifact has already been uploaded above.
