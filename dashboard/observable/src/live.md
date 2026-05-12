@@ -17,11 +17,17 @@ const conn = await (async () => {
   await c.isInitialized();
   return c;
 })();
+
+async function queryRows(conn, sql) {
+  const result = await conn.evaluateStreamingQuery(sql);
+  const table = await result.arrowStream.readAll();
+  return [...table].map(row => row.toJSON());
+}
 ```
 
 ```js
 const triageHealth = conn
-  ? await conn.evaluateQuery("SELECT * FROM fusion_issues.main.issue_triage_health").then(r => r.toRows()[0])
+  ? (await queryRows(conn, "SELECT * FROM fusion_issues.main.issue_triage_health"))[0]
   : null;
 ```
 
@@ -45,12 +51,12 @@ ${triageHealth == null
 
 ```js
 const velocity = conn
-  ? await conn.evaluateQuery(`
+  ? await queryRows(conn, `
       SELECT week,
         max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
         max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
       FROM fusion_issues.main.velocity GROUP BY week ORDER BY week
-    `).then(r => r.toRows())
+    `)
   : [];
 ```
 
