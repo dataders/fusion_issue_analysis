@@ -1,0 +1,17 @@
+{
+  "name": "fusion-mosaic",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@motherduck/wasm-client": "^0.8",
+    "@uwdata/vgplot": "^0.25",
+    "apache-arrow": "^17"
+  },
+  "devDependencies": {
+    "vite": "^5"
+  }
+}

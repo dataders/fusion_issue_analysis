@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dbt-fusion Issue Health · Mosaic</title>
+  <style>
+    body {
+      background: #1e1e2e;
+      color: #cdd6f4;
+      font-family: -apple-system, "Segoe UI", sans-serif;
+      margin: 0;
+      padding: 20px;
+    }
+    h1 { font-size: 1.2rem; margin-bottom: 4px; }
+    #status { color: #a6adc8; font-size: 0.85rem; font-style: italic; margin-bottom: 12px; }
+    #app { margin-top: 20px; }
+    .error { color: #f38ba8; }
+    .chart-title {
+      font-size: 0.9rem;
+      color: #a6e3a1;
+      margin-top: 24px;
+      margin-bottom: 6px;
+      font-weight: 600;
+    }
+    .hint {
+      font-size: 0.78rem;
+      color: #6c7086;
+      margin-bottom: 8px;
+    }
+  </style>
+</head>
+<body>
+  <h1>dbt-fusion Issue Health · Mosaic + MotherDuck live</h1>
+  <p id="status">Connecting…</p>
+  <div id="app"></div>
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>
