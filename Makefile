@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper kill-server clean help
+.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene-mcp kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -85,6 +85,10 @@ dac:
 ## shaper       Build Shaper source-preview tab
 shaper:
 	uv run python3 dashboard/shaper/build.py
+
+## graphene-mcp  Start the FastMCP server for the Graphene dashboard (builds snapshot on start)
+graphene-mcp:
+	uv run /Users/dataders/Developer/fusion_issue_analysis/.worktrees/codex-graphene-prod/dashboard/graphene/mcp_server.py
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
