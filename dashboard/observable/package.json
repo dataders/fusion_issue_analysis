@@ -9,7 +9,7 @@
   },
   "dependencies": {
     "@observablehq/framework": "^1",
-    "apache-arrow": "^21.1.0"
+    "apache-arrow": "^17"
   },
   "devDependencies": {
     "@motherduck/wasm-client": "^0.8"
