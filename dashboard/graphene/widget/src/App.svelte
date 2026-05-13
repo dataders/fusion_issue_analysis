@@ -40,11 +40,16 @@
 
   onMount(async () => {
     try {
-      const app = await App.connect();
-      const result = await app.callTool("get_dashboard_data", {});
-      data = result.structuredContent as DashboardData;
-      const categories = uniqueCategories(data.categories);
-      selectedCategory = categories.includes("bug") ? "bug" : categories[0] ?? "";
+      const app = new App({ name: "fusion-graphene", version: "1.0.0" });
+      app.ontoolresult = (result: { content?: Array<{ type: string; text?: string }> }) => {
+        const text = result.content?.find((c) => c.type === "text")?.text;
+        if (text) {
+          data = JSON.parse(text) as DashboardData;
+          const categories = uniqueCategories(data.categories);
+          selectedCategory = categories.includes("bug") ? "bug" : categories[0] ?? "";
+        }
+      };
+      await app.connect();
     } catch (err) {
       error = err instanceof Error ? err.message : String(err);
     }

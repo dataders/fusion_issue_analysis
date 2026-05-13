@@ -181,6 +181,7 @@ dashboard/ggsql/index.html
 dashboard/__marimo__/
 dashboard/marimo/__marimo__/
 dashboard/observable/dist/
+!dashboard/graphene/widget/dist/
 dashboard/observable/src/.observablehq/
 dashboard/evidence/build/
 dashboard/evidence/sources/fusion/*.csv
