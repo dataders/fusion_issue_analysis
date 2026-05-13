@@ -81,7 +81,7 @@ def show_issue_health() -> str:
 
 @mcp.resource(
     RESOURCE_URI,
-    app=AppConfig(csp=ResourceCSP(frame_domains=[GRAPHENE_URL])),
+    app=AppConfig(csp=ResourceCSP(frameDomains=[GRAPHENE_URL])),
 )
 def graphene_view() -> str:
     return f"""<!DOCTYPE html>
