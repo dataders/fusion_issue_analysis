@@ -35,7 +35,8 @@ def _build_snapshot() -> None:
 
 def _start_graphene_serve() -> subprocess.Popen:
     proc = subprocess.Popen(
-        ["npm", "--prefix", str(GRAPHENE_DIR), "exec", "graphene", "--", "serve"],
+        ["npm", "exec", "graphene", "--", "serve"],
+        cwd=str(GRAPHENE_DIR),
         stdout=sys.stderr,
         stderr=sys.stderr,
     )
