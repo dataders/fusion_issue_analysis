@@ -43,7 +43,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json', 'dashboard/mosaic/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -174,7 +174,7 @@ jobs:
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
             echo "| DuckDB WASM (live) | static — no build step |"
-            echo "| Mosaic (live) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| Mosaic (live) | static — no build step |"
             echo "| Observable (live) | $(icon '${{ steps.npm.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           # Fail the job so GitHub sends a notification email, but only after
