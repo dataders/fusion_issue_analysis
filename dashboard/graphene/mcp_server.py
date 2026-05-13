@@ -70,7 +70,7 @@ _kill_existing_graphene()
 _build_snapshot()
 
 # Read KPIs before graphene serve locks the DB.
-with duckdb.connect(str(DB_PATH), read_only=True) as _conn:
+with duckdb.connect(str(DB_PATH)) as _conn:
     _kpis = _conn.execute("SELECT * FROM summary_kpis").fetchdf().to_dict("records")[0]
 
 _start_graphene_serve()
