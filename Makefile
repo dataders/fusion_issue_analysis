@@ -78,12 +78,14 @@ dac:
 shaper:
 	uv run python3 dashboard/shaper/build.py
 
-## graphene     Build Graphene source and static Pages tab
+## graphene     Build Graphene source, static Pages tab, and MCP widget
 graphene:
 	npm --prefix dashboard/graphene ci --prefer-offline --no-audit --no-fund --silent
 	uv run python3 dashboard/graphene/build.py
 	cd dashboard/graphene && npm exec graphene -- check
 	cd dashboard/graphene && npm exec graphene -- run index.md -q kpis
+	npm --prefix dashboard/graphene/widget ci --prefer-offline --no-audit --no-fund --silent
+	npm --prefix dashboard/graphene/widget run build
 
 ## graphene-mcp  Start the FastMCP server for the Graphene dashboard (builds snapshot on start)
 graphene-mcp:
@@ -104,6 +106,7 @@ clean:
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto
 	rm -rf dashboard/dac/build
 	rm -f  dashboard/graphene/index.html dashboard/graphene/fusion_graphene.duckdb dashboard/graphene/fusion_graphene.duckdb.wal
+	rm -rf dashboard/graphene/widget/dist dashboard/graphene/widget/node_modules
 
 ## help         Show this help
 help:
