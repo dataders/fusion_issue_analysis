@@ -21,7 +21,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json', 'dashboard/graphene/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -63,6 +63,13 @@ jobs:
 
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
+
+      - name: Build Graphene tab
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: make graphene
 
       # ── Dashboard smoke-test (all frameworks, no || true) ─────────────────
       # Data comes from MotherDuck — extract.yml keeps it fresh 4x/day.

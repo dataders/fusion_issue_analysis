@@ -1,0 +1,51 @@
+-- Dashboard-ready dbt-fusion issue health extracts.
+-- dashboard/graphene/build.py materializes these tables from canonical dbt dashboard models.
+
+table summary_kpis (
+  opened_4w BIGINT -- Issues opened in the last 28 days, excluding epics
+  closed_4w BIGINT -- Issues closed in the last 28 days, excluding epics
+  open_issues BIGINT -- Current open non-epic issues
+  total_issues BIGINT -- Total non-epic issues in the modeled dataset
+  rolling_median_close_days DOUBLE -- Median days to close among issues closed in the last 28 days
+  pct_responded_48h FLOAT -- Percent of recent issues with first response within 48 hours #pct
+  stale_count BIGINT -- Open non-epic issues without updates in the last 30 days
+)
+
+table triage_health (
+  total_open BIGINT
+  pct_labeled FLOAT #pct
+  pct_assigned FLOAT #pct
+  pct_milestoned FLOAT #pct
+  pct_typed FLOAT #pct
+  unlabeled_count BIGINT
+  unassigned_count BIGINT
+)
+
+table weekly_flow (
+  week DATE #timeGrain=week
+  opened BIGINT
+  closed BIGINT
+)
+
+table open_vs_closed_by_category (
+  issue_category VARCHAR -- bug, enhancement, epic, or other
+  state VARCHAR -- OPEN or CLOSED
+  n BIGINT
+)
+
+table response_pctiles (
+  week DATE #timeGrain=week
+  p25 DOUBLE -- 25th percentile hours to first response
+  p50 DOUBLE -- Median hours to first response
+  p75 DOUBLE -- 75th percentile hours to first response
+)
+
+table community_priorities (
+  issue_number BIGINT
+  title VARCHAR
+  issue_category VARCHAR
+  reactions_total_count BIGINT
+  comments_total_count BIGINT
+  age_days BIGINT
+  url VARCHAR
+)

@@ -81,12 +81,13 @@ Moving on.
 
 ### Layer 2 (data transport): this is where I'm stuck
 
-Of the nine variants in the bakeoff, eight do the same basic thing: at build time, run SQL against the warehouse, dump the results into a flat file (JSON, CSV, Parquet), and bake that file into the static site. Evidence.dev does something slightly different: SQL still runs at build time, but instead of embedding results directly in the page, it ships them as Parquet files alongside the HTML. Then DuckDB-WASM runs in the browser and lets you filter and aggregate over those Parquet files without touching a server. The data is still frozen at build time — but the browser-side query layer means interactive filtering without a roundtrip.
+Most variants in the bakeoff do the same basic thing: at build time, run SQL against the warehouse, dump the results into a flat file (JSON, CSV, Parquet), and bake that file into the static site. Evidence.dev does something slightly different: SQL still runs at build time, but instead of embedding results directly in the page, it ships them as Parquet files alongside the HTML. Then DuckDB-WASM runs in the browser and lets you filter and aggregate over those Parquet files without touching a server. The data is still frozen at build time — but the browser-side query layer means interactive filtering without a roundtrip.
 
 | Mode | What happens | Frameworks in the bakeoff |
 |---|---|---|
 | Build-time bake | SQL runs in CI; results get written into the static artifact | Prefab, mviz, MDV, ggsql, Observable, Marimo, Quarto |
 | Build-time bake + browser-side querying | SQL runs at build time; browser queries frozen Parquet via DuckDB-WASM | Evidence.dev |
+| Server-backed authoring with static compatibility export | Graphene's CLI validates the GSQL and Markdown project, while this Pages tab renders a static artifact from the same dbt dashboard tables | Graphene |
 
 Both share the same fundamental problem: the data is frozen at build time. "Refresh the dashboard" means "rerun the build and redeploy."
 
@@ -98,7 +99,7 @@ data source + dashboard infra → on dashboard load:
   2. render the dashboard into the page
 ```
 
-Which, if you squint, is just Looker or Mode or Power BI's "live query" mode. The HTML is "static" in the sense that the dashboard *spec* is static and versionable, but the data is fetched fresh every time. None of the nine frameworks I tried do this cleanly today; most are committed to one mode or the other, and the live-query path basically doesn't exist outside of full SaaS BI tools.
+Which, if you squint, is just Looker or Mode or Power BI's "live query" mode. The HTML is "static" in the sense that the dashboard *spec* is static and versionable, but the data is fetched fresh every time. None of the static-friendly frameworks I tried do this cleanly today; most are committed to one mode or the other, and the live-query path basically doesn't exist outside of full SaaS BI tools.
 
 What I'd want from a "good" stack is the ability to start with build-time bake (because it's simple, cacheable, and the static artifacts are diffable), then promote individual queries to render-time when they actually need it — *without rewriting the dashboard*. That doesn't exist yet either.
 
@@ -121,13 +122,13 @@ A healthy Layer 3 says things like *"give me weekly active issues, broken down b
 
 The reason agents (and humans) drift the wrong way is that the second kind of code is *easier to write in the moment* than going back and fixing the dbt model. A good authoring layer makes the easy path the right one: the chart spec can name a metric, but it cannot *define* one. Looker famously got bitten by the inverse — a long tail of dashboard-specific edge cases got jammed into LookML because there wasn't a clean place for last-mile shaping, and the semantic layer slowly turned into a junk drawer. And you get the opposite failure if the semantic layer is too rigid: dashboards become the junk drawer for anything that doesn't fit the model. A good Layer 3 lets last-mile *presentation* tweaks happen in the dashboard (rename a label, sort differently, change a date format) while pushing anything that touches *meaning* back upstream.
 
-I don't think any of the nine frameworks I tried gets this fully right. The closest are the ones where the chart spec is genuinely a thin SQL `SELECT` against pre-modeled tables; the worst are the ones that hand the agent a Python notebook and a CSV and say "good luck."
+I don't think any of the frameworks I tried gets this fully right. The closest are the ones where the chart spec is genuinely a thin SQL `SELECT` against pre-modeled tables; the worst are the ones that hand the agent a Python notebook and a CSV and say "good luck."
 
 One thread worth pulling: a DSL with mature language tooling — validation, static analysis, diagnostics — may be the structural answer to keeping agents in bounds here, not just a matter of authoring convention. Python and JavaScript are powerful but open-ended in ways that make it easy for an agent to produce output that's valid syntax but semantically wrong. A constrained DSL with a language server can catch that before it hits a warehouse. SQL already has this property to a degree; tools like dbt Fusion are pushing it further with type-aware static analysis that validates queries regardless of whether a human or a machine wrote them. My intuition is that "which frameworks are most agent-friendly at Layer 3" and "which frameworks have the richest language tooling" are going to turn out to be the same question.
 
 ### Layers 4–6: mostly where opinions live — at least at my scale
 
-I'm going to move past chart grammar, chart runtime, and layout pretty quickly because *in my bakeoff* these layers felt like they mattered less than I expected. Agents handled all nine variants with roughly equal ease. The output looks different, but the *amount of work to get a working dashboard* was surprisingly constant across the lot.
+I'm going to move past chart grammar, chart runtime, and layout pretty quickly because *in my bakeoff* these layers felt like they mattered less than I expected. Agents handled the variants with roughly equal ease. The output looks different, but the *amount of work to get a working dashboard* was surprisingly constant across the lot.
 
 That said — I'd push back on myself here in two ways.
 
@@ -151,7 +152,7 @@ There are basically three surfaces a static dashboard can live on today, and eac
 | MCP app inside an agent | "Tell Claude to load the marketing WBR dashboard" | The agent client handles auth; the dashboard inherits it |
 | Image or PDF dropped in Slack | A baked snapshot, no interactivity | None needed — it's just a file |
 
-All three are real, and each one is the right answer for some set of users. None of the nine frameworks I tried treats this layer as a first-class concern though.
+All three are real, and each one is the right answer for some set of users. None of the static-friendly frameworks I tried treats this layer as a first-class concern though.
 
 #### The MCP-app argument
 
@@ -203,6 +204,7 @@ If you only need a TL;DR for which framework fits which job, here's the table I 
 | Rich interactivity + bespoke viz if you accept Node | [Observable Framework](./?tab=observable) |
 | Narrative report or document feel | [Quarto](./?tab=quarto) |
 | SQL-first product dashboard with sharing, embeds, and reports if a server is acceptable | [Shaper](./?tab=shaper) |
+| Agent-oriented BI with Markdown pages, GSQL semantic modeling, and CLI validation | [Graphene](./?tab=graphene) |
 
 ## What about modern BI tools?
 

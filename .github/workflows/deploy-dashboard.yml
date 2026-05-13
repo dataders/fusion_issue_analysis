@@ -42,7 +42,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json', 'dashboard/graphene/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -67,6 +67,14 @@ jobs:
 
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
+
+      - name: Build Graphene tab
+        id: graphene
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: make graphene
 
       - name: Export Prefab dashboards
         id: prefab
@@ -159,6 +167,7 @@ jobs:
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+            echo "| Graphene | $(icon '${{ steps.graphene.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           # Fail the job so GitHub sends a notification email, but only after
           # the artifact has already been uploaded above.
@@ -169,7 +178,8 @@ jobs:
             '${{ steps.ggsql.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
-            '${{ steps.dac.outcome }}'; do
+            '${{ steps.dac.outcome }}' \
+            '${{ steps.graphene.outcome }}'; do
             if [ "$outcome" = "failure" ]; then
               echo "One or more framework builds failed — see table above." >&2
               exit 1

@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json', 'dashboard/graphene/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -52,6 +52,18 @@ jobs:
 
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
+
+      - name: Build Graphene tab
+        id: graphene
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: |
+          make graphene
+          mkdir -p preview/graphene
+          cp dashboard/graphene/index.html preview/graphene/index.html
 
       # Data comes from MotherDuck — no extract or dbt build needed.
 
@@ -179,6 +191,7 @@ jobs:
               `| Quarto | \`quarto/index.html\` | ${fmt('${{ steps.quarto.outcome }}')} |`,
               `| DAC | \`dac/index.html\` | ${fmt('${{ steps.dac.outcome }}')} |`,
               `| Shaper | \`shaper/index.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| Graphene | \`graphene/index.html\` | ${fmt('${{ steps.graphene.outcome }}')} |`,
               `| About | \`about.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               '',
               `_[Workflow run](${runUrl})_`,
@@ -225,6 +238,7 @@ jobs:
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+            echo "| Graphene | $(icon '${{ steps.graphene.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           for outcome in \
             '${{ steps.prefab.outcome }}' \
@@ -233,7 +247,8 @@ jobs:
             '${{ steps.ggsql.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
-            '${{ steps.dac.outcome }}'; do
+            '${{ steps.dac.outcome }}' \
+            '${{ steps.graphene.outcome }}'; do
             if [ "$outcome" = "failure" ]; then
               echo "One or more framework builds failed — see table above." >&2
               exit 1
