@@ -1,3 +1,4 @@
+import sys
 from pathlib import Path
 
 import duckdb
@@ -11,8 +12,10 @@ DB_PATH = GRAPHENE_DIR / "fusion_graphene.duckdb"
 HTML_PATH = GRAPHENE_DIR / "index.html"
 RESOURCE_URI = "ui://fusion-graphene/issue-health.html"
 
-# Snapshot MotherDuck → local DuckDB + render index.html at startup.
+# Redirect stdout → stderr during build so print() doesn't corrupt the stdio transport.
+sys.stdout = sys.stderr
 graphene_build.main()
+sys.stdout = sys.__stdout__
 
 mcp = fastmcp.FastMCP("Fusion Issue Health (Graphene)")
 
