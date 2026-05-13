@@ -24,6 +24,19 @@ GRAPHENE_PORT = 4000
 GRAPHENE_URL = f"http://localhost:{GRAPHENE_PORT}"
 
 
+def _kill_existing_graphene() -> None:
+    """Kill any leftover graphene serve process from a previous session."""
+    try:
+        result = subprocess.run(["lsof", "-ti", f":{GRAPHENE_PORT}"], capture_output=True, text=True)
+        pids = result.stdout.split()
+        for pid in pids:
+            subprocess.run(["kill", pid], capture_output=True)
+        if pids:
+            time.sleep(1)
+    except Exception:
+        pass
+
+
 def _build_snapshot() -> None:
     # Redirect stdout so build.py's print() doesn't corrupt the stdio transport.
     sys.stdout = sys.stderr
@@ -53,6 +66,7 @@ def _start_graphene_serve() -> subprocess.Popen:
     raise RuntimeError(f"graphene serve did not start on port {GRAPHENE_PORT} within 30s")
 
 
+_kill_existing_graphene()
 _build_snapshot()
 
 # Read KPIs before graphene serve locks the DB.
