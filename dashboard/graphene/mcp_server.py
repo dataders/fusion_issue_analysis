@@ -54,6 +54,11 @@ def _start_graphene_serve() -> subprocess.Popen:
 
 
 _build_snapshot()
+
+# Read KPIs before graphene serve locks the DB.
+with duckdb.connect(str(DB_PATH), read_only=True) as _conn:
+    _kpis = _conn.execute("SELECT * FROM summary_kpis").fetchdf().to_dict("records")[0]
+
 _start_graphene_serve()
 
 mcp = fastmcp.FastMCP("Fusion Issue Health (Graphene)")
@@ -62,14 +67,11 @@ mcp = fastmcp.FastMCP("Fusion Issue Health (Graphene)")
 @mcp.tool(app=AppConfig(resource_uri=RESOURCE_URI))
 def show_issue_health() -> str:
     """Show dbt Fusion issue health as a live interactive dashboard."""
-    with duckdb.connect(str(DB_PATH), read_only=True) as conn:
-        row = conn.execute("SELECT * FROM summary_kpis").fetchdf().to_dict("records")[0]
-
-    opened = row.get("opened_4w", "?")
-    closed = row.get("closed_4w", "?")
-    open_issues = row.get("open_issues", "?")
-    stale = row.get("stale_count", "?")
-    responded = row.get("pct_responded_48h", "?")
+    opened = _kpis.get("opened_4w", "?")
+    closed = _kpis.get("closed_4w", "?")
+    open_issues = _kpis.get("open_issues", "?")
+    stale = _kpis.get("stale_count", "?")
+    responded = _kpis.get("pct_responded_48h", "?")
 
     delta = int(closed) - int(opened) if isinstance(closed, (int, float)) and isinstance(opened, (int, float)) else 0
     trend = f"{abs(delta)} more {'closed' if delta >= 0 else 'opened'} than {'opened' if delta >= 0 else 'closed'}"
