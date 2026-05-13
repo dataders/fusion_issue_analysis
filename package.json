@@ -2,11 +2,10 @@
   "name": "fusion-issue-analysis",
   "private": true,
   "scripts": {
-    "build:npm-dashboards": "npm run build:mviz && npm --prefix dashboard/observable ci --prefer-offline --no-audit --no-fund --silent && npm run build:observable && npm --prefix dashboard/evidence ci --legacy-peer-deps --prefer-offline --no-audit --no-fund --silent && npm run build:evidence && npm --prefix dashboard/mosaic ci --prefer-offline --no-audit --no-fund --silent && npm run build:mosaic",
+    "build:npm-dashboards": "npm run build:mviz && npm --prefix dashboard/observable ci --prefer-offline --no-audit --no-fund --silent && npm run build:observable && npm --prefix dashboard/evidence ci --legacy-peer-deps --prefer-offline --no-audit --no-fund --silent && npm run build:evidence",
     "build:npm-dashboards:preview": "npm run build:npm-dashboards && mkdir -p preview/mviz preview/observable preview/evidence && cp dashboard/mviz/index.html preview/mviz/index.html && cp -R dashboard/observable/dist/. preview/observable/ && cp -R dashboard/evidence/build/. preview/evidence/",
     "build:mviz": "uv run python3 dashboard/mviz/generate_data.py && npx --yes --prefer-offline mviz@1.6.7 dashboard/mviz/dashboard.md -o dashboard/mviz/index.html",
     "build:observable": "npm --prefix dashboard/observable run build",
-    "build:mosaic": "npm --prefix dashboard/mosaic run build",
     "build:evidence": "uv run python3 dashboard/evidence/generate_sources.py && npm --prefix dashboard/evidence run sources && npm --prefix dashboard/evidence run build",
     "test:ui": "playwright test",
     "test:ui:headed": "playwright test --headed"

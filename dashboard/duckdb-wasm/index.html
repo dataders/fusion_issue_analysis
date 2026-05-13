@@ -101,14 +101,15 @@
       });
     }
 
-    async function queryRows(conn, sql) {
-      const result = await conn.evaluateQuery(sql);
-      return result.data.toRows();
+    async function sql(path) {
+      const res = await fetch(path);
+      if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
+      return res.text();
     }
 
-    function weekLabel(v) {
-      const s = v instanceof Date ? v.toISOString() : String(v);
-      return s.slice(5, 10); // "MM-DD"
+    async function queryRows(conn, sqlText) {
+      const result = await conn.evaluateQuery(sqlText);
+      return result.data.toRows();
     }
 
     const STYLE = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
@@ -118,28 +119,22 @@
       await conn.isInitialized();
       status.textContent = 'Loading data…';
 
-      const [triage, velocity, ageDist, workload] = await Promise.all([
-        queryRows(conn, 'SELECT * FROM fusion_issues.main.issue_triage_health'),
-        queryRows(conn, `
-          SELECT week,
-            max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
-            max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
-          FROM fusion_issues.main.velocity GROUP BY week ORDER BY week
-        `),
-        queryRows(conn, `
-          SELECT age_bucket, issue_category, issue_count
-          FROM fusion_issues.main.age_distribution
-          ORDER BY CASE age_bucket
-            WHEN '0-7d' THEN 1 WHEN '8-30d' THEN 2 WHEN '31-90d' THEN 3
-            WHEN '91-180d' THEN 4 ELSE 5 END
-        `),
-        queryRows(conn, `
-          SELECT assignee_login, open_issues
-          FROM fusion_issues.main.assignee_workload
-          WHERE assignee_login IS NOT NULL
-          ORDER BY open_issues DESC LIMIT 12
-        `),
+      const Q = 'queries';
+      const [triageSql, velocitySql, ageSql, workloadSql] = await Promise.all([
+        sql(`${Q}/triage_health.sql`),
+        sql(`${Q}/velocity.sql`),
+        sql(`${Q}/age_distribution.sql`),
+        sql(`${Q}/assignee_workload.sql`),
       ]);
+
+      const [triage, velocityRaw, ageDist, workload] = await Promise.all([
+        queryRows(conn, triageSql),
+        queryRows(conn, velocitySql),
+        queryRows(conn, ageSql),
+        queryRows(conn, workloadSql),
+      ]);
+      // Parse week strings to Date so Plot uses a proper time scale
+      const velocity = velocityRaw.map(r => ({...r, week: new Date(r.week)}));
 
       // KPIs
       const t = triage[0] ?? {};
@@ -156,21 +151,12 @@
           <div class="kpi-label">${label}</div>
         </div>`).join('');
 
-      // Velocity — x-axis: show ~10 evenly spaced labels
-      const weeks = [...new Set(velocity.map(r => weekLabel(r.week)))];
-      const step = Math.max(1, Math.floor(weeks.length / 10));
-      const tickWeeks = new Set(weeks.filter((_, i) => i % step === 0));
-
       document.getElementById('chart-velocity').append(Plot.plot({
         style: STYLE,
         width: 880,
         height: 220,
-        marginBottom: 40,
-        x: {
-          label: null,
-          tickFormat: v => tickWeeks.has(weekLabel(v)) ? weekLabel(v) : '',
-          tickRotate: -45,
-        },
+        marginBottom: 36,
+        x: {label: null, tickRotate: -45},
         y: {label: 'Median days', grid: true, gridColor: '#313244'},
         color: {legend: true, domain: ['bugs', 'enhancements'], range: ['#f38ba8', '#89b4fa']},
         marks: [

@@ -2,40 +2,121 @@
 <html lang="en">
 <head>
   <script src="https://unpkg.com/coi-serviceworker@0.1.6/coi-serviceworker.js"></script>
-  <script>window.__MD_TOKEN__ = '__MOTHERDUCK_READ_TOKEN__';</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dbt-fusion Issue Health · Mosaic</title>
   <style>
+    *, *::before, *::after { box-sizing: border-box; }
     body {
       background: #1e1e2e;
       color: #cdd6f4;
-      font-family: -apple-system, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
       margin: 0;
-      padding: 20px;
+      padding: 20px 24px 40px;
+      max-width: 960px;
     }
-    h1 { font-size: 1.2rem; margin-bottom: 4px; }
-    #status { color: #a6adc8; font-size: 0.85rem; font-style: italic; margin-bottom: 12px; }
-    #app { margin-top: 20px; }
-    .error { color: #f38ba8; }
-    .chart-title {
-      font-size: 0.9rem;
-      color: #a6e3a1;
-      margin-top: 24px;
-      margin-bottom: 6px;
-      font-weight: 600;
-    }
-    .hint {
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 2px; }
+    #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
+    .error { color: #f38ba8 !important; }
+    .section-title {
       font-size: 0.78rem;
-      color: #6c7086;
-      margin-bottom: 8px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #7f849c;
+      margin: 20px 0 4px;
     }
+    .hint { color: #585b70; font-size: 0.75rem; margin-bottom: 8px; }
+    #app svg { display: block; }
   </style>
 </head>
 <body>
   <h1>dbt-fusion Issue Health · Mosaic + MotherDuck live</h1>
   <p id="status">Connecting…</p>
   <div id="app"></div>
-  <script type="module" src="/src/main.js"></script>
+
+  <script type="module">
+    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
+    import * as vg from 'https://esm.sh/@uwdata/vgplot@0.25.0';
+
+    const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
+    const status = document.getElementById('status');
+
+    if (!TOKEN || TOKEN.startsWith('__')) {
+      status.textContent = 'Token not injected — run deploy workflow.';
+      status.className = 'error';
+    } else {
+      setup().catch(err => {
+        status.textContent = `Error: ${err.message}`;
+        status.className = 'error';
+        console.error(err);
+      });
+    }
+
+    function makeMDConnector(connection) {
+      return {
+        query: async (query) => {
+          const {sql, type} = query;
+          if (type === 'exec') {
+            await connection.evaluateQuery(sql);
+            return undefined;
+          }
+          const result = await connection.evaluateQuery(sql);
+          return result.data.toRows();
+        },
+      };
+    }
+
+    async function setup() {
+      const connection = MDConnection.create({mdToken: TOKEN});
+      await connection.isInitialized();
+      vg.coordinator().databaseConnector(makeMDConnector(connection));
+      await vg.coordinator().exec("ATTACH IF NOT EXISTS 'md:fusion_issues' AS fusion_issues;");
+      status.textContent = 'Connected. Rendering…';
+
+      const sel = vg.Selection.crossfilter();
+      const app = document.getElementById('app');
+
+      const h1 = document.createElement('div');
+      h1.className = 'section-title';
+      h1.textContent = 'Open issues by age bucket';
+
+      const hint = document.createElement('div');
+      hint.className = 'hint';
+      hint.textContent = 'Click a bar to crossfilter the workload chart below.';
+
+      const ageChart = vg.plot(
+        vg.barY(
+          vg.from('fusion_issues.main.age_distribution', {filterBy: sel}),
+          {x: 'age_bucket', y: vg.sum('issue_count'), fill: 'issue_category', tip: true}
+        ),
+        vg.toggleX({as: sel}),
+        vg.colorLegend(),
+        vg.xLabel('Age bucket'),
+        vg.yLabel('Open issues'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(700),
+        vg.height(260)
+      );
+
+      const h2 = document.createElement('div');
+      h2.className = 'section-title';
+      h2.textContent = 'Assignee workload';
+
+      const workloadChart = vg.plot(
+        vg.barX(
+          vg.from('fusion_issues.main.assignee_workload', {filterBy: sel}),
+          {y: 'assignee_login', x: 'open_issues', fill: '#89b4fa', tip: true, sort: {y: '-x'}}
+        ),
+        vg.xLabel('Open issues'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(700),
+        vg.height(300)
+      );
+
+      app.append(h1, hint, ageChart, h2, workloadChart);
+      status.textContent = 'Data loaded live from MotherDuck (Mosaic).';
+    }
+  </script>
 </body>
 </html>
