@@ -1,4 +1,3 @@
-import sys
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
@@ -11,18 +10,12 @@ import duckdb
 import fastmcp
 from fastmcp.apps import AppConfig, ResourceCSP
 
-import build as graphene_build
-
 GRAPHENE_DIR = Path(__file__).resolve().parent
 HTML_PATH = GRAPHENE_DIR / "widget" / "dist" / "index.html"
 RESOURCE_URI = "ui://fusion-graphene/issue-health.html"
 
-# Build snapshot from MotherDuck → index.html at startup.
-sys.stdout = sys.stderr
-try:
-    graphene_build.main()
-finally:
-    sys.stdout = sys.__stdout__
+if not HTML_PATH.exists():
+    raise SystemExit(f"Widget not built. Run: make graphene\n(expected: {HTML_PATH})")
 
 mcp = fastmcp.FastMCP("Fusion Issue Health (Graphene)")
 
