@@ -5,6 +5,12 @@ import time
 import urllib.request
 from pathlib import Path
 
+from dotenv import load_dotenv
+
+# Load .env from project root so MOTHERDUCK_TOKEN etc. don't need to be
+# hardcoded in claude_desktop_config.json.
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+
 import duckdb
 import fastmcp
 from fastmcp.apps import AppConfig, ResourceCSP
