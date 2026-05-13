@@ -1,7 +1,8 @@
 PORT ?= 8081
+MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene-mcp kill-server clean help
+.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -90,6 +91,17 @@ shaper:
 graphene-mcp:
 	uv run /Users/dataders/Developer/fusion_issue_analysis/.worktrees/codex-graphene-prod/dashboard/graphene/mcp_server.py
 
+## mcp-app      Build local MCP Apps dashboard bundle
+mcp-app:
+	uv run python dashboard/mcp-app/build_data.py
+	NPM_CONFIG_CACHE="$(CURDIR)/.cache/npm" npm --prefix dashboard/mcp-app ci --no-audit --no-fund --silent
+	NPM_CONFIG_CACHE="$(CURDIR)/.cache/npm" npm --prefix dashboard/mcp-app run build
+	NPM_CONFIG_CACHE="$(CURDIR)/.cache/npm" npm --prefix dashboard/mcp-app run smoke
+
+## mcp-app-serve Build and serve local MCP Apps dashboard over streamable HTTP
+mcp-app-serve: mcp-app
+	NPM_CONFIG_CACHE="$(CURDIR)/.cache/npm" PORT=$(MCP_APP_PORT) npm --prefix dashboard/mcp-app start
+
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
 ## kill-server  Kill whatever is running on PORT (default: 8081)
@@ -105,6 +117,8 @@ clean:
 	rm -f  dashboard/quarto/index.html
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto
 	rm -rf dashboard/dac/build
+	rm -rf dashboard/mcp-app/dist
+	rm -f  dashboard/mcp-app/data/issue-health.json
 
 ## help         Show this help
 help:
@@ -116,3 +130,4 @@ help:
 	@echo "  Set MOTHERDUCK_TOKEN to build against MotherDuck instead of local DuckDB"
 	@echo "  npm-dashboards installs nested Node dependencies before building"
 	@echo "  dac requires the dac and bruin CLIs"
+	@echo "  mcp-app is local-only: run make mcp-app-serve and connect an MCP Apps-capable host"

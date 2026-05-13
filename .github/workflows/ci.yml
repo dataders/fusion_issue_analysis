@@ -24,7 +24,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json', 'dashboard/mcp-app/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -151,6 +151,13 @@ jobs:
         run: |
           uv run python3 dashboard/dac/render.py
           ! grep -q 'bruin query failed' dashboard/dac/build/index.html
+
+      - name: Smoke-test MCP App
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: make mcp-app
 
       - name: Run Playwright UI tests
         if: github.actor != 'dependabot[bot]'

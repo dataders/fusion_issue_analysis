@@ -194,6 +194,8 @@ dashboard/quarto/.quarto/
 dashboard/quarto/index.html
 dashboard/quarto/index_files/
 dashboard/dac/build/
+dashboard/mcp-app/data/issue-health.json
+dashboard/mcp-app/dist/
 logs/queries
 
 # Claude Code session state
