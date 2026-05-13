@@ -98,19 +98,17 @@ def show_issue_health() -> str:
 
 @mcp.resource(
     RESOURCE_URI,
-    app=AppConfig(csp=ResourceCSP(frameDomains=[GRAPHENE_URL])),
+    app=AppConfig(csp=ResourceCSP(
+        resourceDomains=[GRAPHENE_URL],
+        connectDomains=[GRAPHENE_URL],
+    )),
 )
 def graphene_view() -> str:
-    return f"""<!DOCTYPE html>
-<html>
-<head>
-  <meta charset="utf-8">
-  <style>html, body, iframe {{ margin: 0; padding: 0; width: 100%; height: 100vh; border: none; }}</style>
-</head>
-<body>
-  <iframe src="{GRAPHENE_URL}/" allowfullscreen></iframe>
-</body>
-</html>"""
+    # Proxy the live Graphene page and rewrite relative URLs via <base href>
+    # so all assets load from localhost:4000 without a nested iframe.
+    with urllib.request.urlopen(f"{GRAPHENE_URL}/") as resp:
+        html = resp.read().decode("utf-8")
+    return html.replace("<head>", f'<head>\n  <base href="{GRAPHENE_URL}/">', 1)
 
 
 if __name__ == "__main__":
