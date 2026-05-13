@@ -13,8 +13,18 @@ import duckdb
 HERE = Path(__file__).resolve().parent
 REPO_ROOT = HERE.parents[1]
 SOURCE_ROOT = Path(os.environ.get("FUSION_PROJECT_ROOT", REPO_ROOT))
-SOURCE_DB = os.environ.get("FUSION_DB", str(SOURCE_ROOT / "data" / "fusion_issues.duckdb"))
 OUT_PATH = HERE / "data" / "issue-health.json"
+
+
+def default_source_db() -> str:
+    if os.environ.get("FUSION_DB"):
+        return os.environ["FUSION_DB"]
+    if os.environ.get("MOTHERDUCK_TOKEN"):
+        return "md:fusion_issues"
+    return str(SOURCE_ROOT / "data" / "fusion_issues.duckdb")
+
+
+SOURCE_DB = default_source_db()
 
 
 def _json_default(value: Any) -> str:

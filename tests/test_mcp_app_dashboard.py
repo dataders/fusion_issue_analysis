@@ -1,7 +1,9 @@
 import json
 import unittest
 import importlib.util
+import os
 from pathlib import Path
+from unittest.mock import patch
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +65,27 @@ class McpAppDashboardTests(unittest.TestCase):
             "epic_list",
         ]:
             self.assertIn(f"main.{model}", builder)
+
+    def test_data_builder_source_database_follows_dashboard_precedence(self) -> None:
+        with patch.dict(os.environ, {"FUSION_DB": "custom.duckdb", "MOTHERDUCK_TOKEN": "token"}, clear=True):
+            self.assertEqual(load_build_data_module().SOURCE_DB, "custom.duckdb")
+
+        with patch.dict(os.environ, {"MOTHERDUCK_TOKEN": "token"}, clear=True):
+            self.assertEqual(load_build_data_module().SOURCE_DB, "md:fusion_issues")
+
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertEqual(load_build_data_module().SOURCE_DB, str(REPO_ROOT / "data" / "fusion_issues.duckdb"))
+
+    def test_http_server_defaults_to_loopback_and_local_cors(self) -> None:
+        main = (MCP_APP_DIR / "main.ts").read_text()
+        self.assertIn('process.env.MCP_APP_HOST ?? "127.0.0.1"', main)
+        self.assertIn("createMcpExpressApp({ host })", main)
+        self.assertIn("app.listen(port, host", main)
+        self.assertIn("isAllowedOrigin", main)
+        self.assertIn('"localhost"', main)
+        self.assertIn('"127.0.0.1"', main)
+        self.assertIn('"::1"', main)
+        self.assertNotIn("app.use(cors());", main)
 
     def test_data_builder_enriches_agent_command_center_payload(self) -> None:
         build_data = load_build_data_module()
@@ -132,6 +155,8 @@ class McpAppDashboardTests(unittest.TestCase):
         self.assertIn('"fusion-issue-health"', readme)
         self.assertIn("--stdio", readme)
         self.assertIn("MCP Apps", readme)
+        self.assertIn("/absolute/path/to/fusion_issue_analysis/dashboard/mcp-app", readme)
+        self.assertNotIn("fusion_issue_analysis.codex-mcp-ui-app-spike", readme)
 
 
 if __name__ == "__main__":

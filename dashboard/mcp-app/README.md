@@ -27,14 +27,15 @@ FUSION_PROJECT_ROOT=/Users/dataders/Developer/fusion_issue_analysis make mcp-app
 ```
 
 To try it in Claude Desktop, add this to `claude_desktop_config.json` after
-running `make mcp-app`:
+running `make mcp-app`. Replace `/absolute/path/to/fusion_issue_analysis` with
+the absolute path to your checkout:
 
 ```json
 {
   "mcpServers": {
     "fusion-issue-health": {
       "command": "npm",
-      "args": ["--prefix", "/Users/dataders/Developer/fusion_issue_analysis.codex-mcp-ui-app-spike/dashboard/mcp-app", "run", "start:stdio"]
+      "args": ["--prefix", "/absolute/path/to/fusion_issue_analysis/dashboard/mcp-app", "run", "start:stdio"]
     }
   }
 }
@@ -43,4 +44,5 @@ running `make mcp-app`:
 The `start:stdio` script runs `tsx main.ts --stdio`, which is the local
 transport Claude Desktop expects. Then ask Claude to show the Fusion issue
 health dashboard. For HTTP transport, `make mcp-app-serve` starts the server at
-`http://localhost:3001/mcp`.
+`http://127.0.0.1:3001/mcp` by default. Set `MCP_APP_HOST` only when you
+intentionally want to bind another interface.
