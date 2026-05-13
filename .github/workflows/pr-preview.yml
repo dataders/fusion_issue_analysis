@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -53,6 +53,12 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
+      - name: Write data freshness metadata
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run python dashboard/write_data_freshness.py
+
       # Data comes from MotherDuck — no extract or dbt build needed.
 
       - name: Export Prefab dashboards
@@ -65,6 +71,7 @@ jobs:
           mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
           cp dashboard/about.html preview/about.html
+          cp dashboard/data_freshness.json preview/data_freshness.json
           mkdir -p preview/shaper
           cp dashboard/shaper/index.html preview/shaper/index.html
           cp dashboard/shaper/fusion-issue-health.dashboard.sql preview/shaper/fusion-issue-health.dashboard.sql

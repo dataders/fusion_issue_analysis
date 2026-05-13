@@ -23,13 +23,59 @@
       border-bottom: 1px solid #333;
     }
 
+    .chrome-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+      min-width: 0;
+    }
+
     .header-title {
       font-size: 0.78rem;
       font-weight: 400;
       color: #666;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chrome-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+      color: #777;
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border: 1px solid #2d2d2d;
+      border-radius: 4px;
+      background: #1a1a1a;
+      opacity: 0.76;
+      transition: opacity 0.1s, border-color 0.1s;
+    }
+
+    .repo-link:hover,
+    .repo-link:focus-visible {
+      border-color: #666;
+      opacity: 1;
+    }
+
+    .repo-link img {
+      width: 16px;
+      height: 16px;
     }
 
     nav {
@@ -109,12 +155,52 @@
       border: none;
       background: #fff;
     }
+
+    @media (max-width: 720px) {
+      header {
+        padding-right: 12px;
+        padding-left: 12px;
+      }
+
+      .chrome-bar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .header-title {
+        white-space: normal;
+      }
+
+      .chrome-meta {
+        font-size: 0.72rem;
+      }
+    }
   </style>
 </head>
 <body>
   <!-- Deploy smoke test: keep dashboard/** path change behaviorless. -->
   <header>
-    <p class="header-title">dbt-fusion Issue Analysis — Visualization Framework Bakeoff</p>
+    <div class="chrome-bar">
+      <p class="header-title">dbt-fusion Issue Analysis — Visualization Framework Bakeoff</p>
+      <div class="chrome-meta" aria-label="Dashboard metadata">
+        <span id="data-refreshed">Data refreshed: unavailable</span>
+        <a
+          class="repo-link"
+          href="https://github.com/dataders/fusion_issue_analysis"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open source repository"
+          title="Open source repository"
+        >
+          <img
+            src="https://github.githubassets.com/favicons/favicon.svg"
+            alt=""
+            aria-hidden="true"
+          >
+        </a>
+      </div>
+    </div>
     <nav class="main-tabs" aria-label="Dashboard framework">
       <button class="active" data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
       <button data-src="ggsql/index.html" data-tab="ggsql" onclick="switchTab(this)">ggsql + Vega-Lite</button>
@@ -142,11 +228,48 @@
     const prefabThemes = Array.from(document.querySelectorAll('#prefab-themes button'));
     const prefabThemeBar = document.getElementById('prefab-themes');
     const frame = document.getElementById('frame');
+    const dataRefreshed = document.getElementById('data-refreshed');
     const legacyPrefabThemeAliases = {
       "prefab-reactive": "reactive",
       "prefab-myspace": "myspace",
       "prefab-windows-2000": "windows-2000",
     };
+
+    function formatTimestamp(value) {
+      if (!value) return null;
+      const timestamp = new Date(value);
+      if (Number.isNaN(timestamp.getTime())) return null;
+      return timestamp.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    }
+
+    async function loadDataFreshness() {
+      try {
+        const response = await fetch("data_freshness.json", { cache: "no-store" });
+        if (!response.ok) throw new Error("missing data freshness metadata");
+        const metadata = await response.json();
+        const latestLoad = formatTimestamp(metadata.latest_load_at);
+        if (!latestLoad) throw new Error("invalid data freshness timestamp");
+
+        dataRefreshed.textContent = `Data refreshed: ${latestLoad}`;
+
+        const details = [];
+        if (metadata.source) details.push(`Source: ${metadata.source}`);
+        if (metadata.issue_rows) details.push(`Issues loaded: ${metadata.issue_rows}`);
+        const latestSourceUpdate = formatTimestamp(metadata.latest_source_updated_at);
+        if (latestSourceUpdate) details.push(`Latest GitHub update in data: ${latestSourceUpdate}`);
+        dataRefreshed.title = details.join("\n");
+      } catch {
+        dataRefreshed.textContent = "Data refreshed: unavailable";
+        dataRefreshed.title = "Run `make data-freshness` to generate dashboard/data_freshness.json.";
+      }
+    }
 
     function setActive(buttons, active) {
       buttons.forEach(button => button.classList.toggle('active', button === active));
@@ -214,6 +337,7 @@
     }
 
     loadTabFromHash();
+    loadDataFreshness();
     window.addEventListener("popstate", loadTabFromHash);
     window.addEventListener("hashchange", loadTabFromHash);
   </script>

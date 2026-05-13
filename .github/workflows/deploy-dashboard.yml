@@ -10,6 +10,7 @@ on:
     paths:
       - 'dashboard/**'
       - 'package.json'
+      - 'package-lock.json'
       - '.github/workflows/deploy-dashboard.yml'
   # Run daily at 6am UTC
   schedule:
@@ -42,7 +43,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -67,6 +68,11 @@ jobs:
 
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
+
+      - name: Write data freshness metadata
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run python dashboard/write_data_freshness.py
 
       - name: Export Prefab dashboards
         id: prefab
