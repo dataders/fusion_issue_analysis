@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onMount } from "svelte";
+  import { onMount, tick } from "svelte";
   import * as Plot from "@observablehq/plot";
   import { App } from "@modelcontextprotocol/ext-apps";
   import type {
@@ -200,13 +200,16 @@
   }
 
   $: if (data) {
-    renderWeeklyFlow(data.weekly_flow);
-    renderAllCategories(data.categories);
-    renderResponse(data.response_pctiles);
+    tick().then(() => {
+      renderWeeklyFlow(data!.weekly_flow);
+      renderAllCategories(data!.categories);
+      renderResponse(data!.response_pctiles);
+      if (selectedCategory) renderSelectedCategory(data!.categories, selectedCategory);
+    });
   }
 
   $: if (data && selectedCategory) {
-    renderSelectedCategory(data.categories, selectedCategory);
+    tick().then(() => renderSelectedCategory(data!.categories, selectedCategory));
   }
 
   $: categories = data ? uniqueCategories(data.categories) : [];
