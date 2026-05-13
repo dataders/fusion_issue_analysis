@@ -106,6 +106,29 @@
       bottom: -1px;
     }
 
+    .tab-divider {
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      color: #444;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex: 0 0 auto;
+      gap: 5px;
+      position: relative;
+      bottom: -1px;
+    }
+    .tab-divider::before {
+      content: '';
+      display: block;
+      width: 1px;
+      height: 14px;
+      background: #333;
+    }
+
     nav button:hover {
       color: #ccc;
     }
@@ -212,6 +235,10 @@
       <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
       <button data-src="dac/build/" data-tab="dac" onclick="switchTab(this)">DAC</button>
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
+      <span class="tab-divider">live</span>
+      <button data-src="duckdb-wasm/index.html" data-tab="duckdb-wasm" onclick="switchTab(this)">DuckDB WASM</button>
+      <button data-src="mosaic/index.html" data-tab="mosaic" onclick="switchTab(this)">Mosaic</button>
+      <button data-src="observable/dist/live.html" data-tab="observable-live" onclick="switchTab(this)">Observable (live)</button>
       <button data-src="about.html" data-tab="about" onclick="switchTab(this)">About</button>
     </nav>
     <div class="subnav" id="prefab-themes" aria-label="Prefab theme">
