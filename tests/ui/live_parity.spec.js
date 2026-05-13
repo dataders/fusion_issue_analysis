@@ -8,7 +8,7 @@
 const { test, expect } = require("@playwright/test");
 
 const LIVE_TIMEOUT = 35000;
-
+const LIVE = !!process.env.MOTHERDUCK_READ_TOKEN;
 const MOTHERDUCK_TOKEN = process.env.MOTHERDUCK_READ_TOKEN || "";
 
 /** Intercept HTML/JS responses and inject the read-scaling token in-memory */
@@ -54,7 +54,9 @@ test.describe("static tab baselines", () => {
 
 // ── Live tab parity ──────────────────────────────────────────────────────────
 
+test.describe.configure({ mode: "serial" });
 test.describe("live tabs match static visual density", () => {
+  test.skip(!LIVE, "MOTHERDUCK_READ_TOKEN not set — skipping live parity tests");
   // Observable (live) vs Observable (static): same framework, should be comparable
   test("Observable live ≥ Observable static chart+table count", async ({ page }) => {
     const ref = await countVisuals(page, "/observable/dist/");

@@ -1,5 +1,7 @@
 const { test, expect } = require("@playwright/test");
+const LIVE = !!process.env.MOTHERDUCK_READ_TOKEN;
 
+test.skip(!LIVE, "MOTHERDUCK_READ_TOKEN not set");
 test("mosaic loads live data with charts", async ({ page }) => {
   const errors = [];
   const logs = [];
