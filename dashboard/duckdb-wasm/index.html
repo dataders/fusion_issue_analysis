@@ -6,81 +6,37 @@
   <title>dbt-fusion Issue Health · DuckDB WASM</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 20px 24px 40px;
-      max-width: 960px;
-    }
+    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px 24px 40px; max-width: 960px; }
     h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 2px; }
+    h2 { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #7f849c; margin: 24px 0 10px; }
     #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
     .error { color: #f38ba8 !important; }
-
-    /* KPIs: 3-up on first row, 3-up on second */
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      margin-bottom: 28px;
-    }
-    .kpi-card {
-      background: #313244;
-      border-radius: 8px;
-      padding: 14px 12px 12px;
-      text-align: center;
-    }
-    .kpi-value { font-size: 2rem; font-weight: 700; line-height: 1; }
-    .kpi-label { color: #a6adc8; font-size: 0.7rem; margin-top: 6px; }
-
-    /* Chart sections */
-    .section { margin-bottom: 28px; }
-    .section-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #7f849c;
-      margin: 0 0 10px;
-    }
-    .chart-wrap { overflow-x: auto; }
-    .chart-wrap svg { max-width: 100%; }
-
-    /* Two-column chart layout */
-    .charts-2col {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 20px;
-      margin-bottom: 28px;
-    }
-    @media (max-width: 640px) {
-      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
-      .charts-2col { grid-template-columns: 1fr; }
+    .kpi-grid { display: grid; gap: 10px; margin-bottom: 8px; }
+    .kpi-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
+    .kpi-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
+    .kpi-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .kpi-card { background: #313244; border-radius: 8px; padding: 14px 12px 12px; text-align: center; }
+    .kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+    .kpi-label { color: #a6adc8; font-size: 0.68rem; margin-top: 6px; }
+    .chart-wrap { overflow-x: auto; margin-bottom: 4px; }
+    .chart-wrap svg { max-width: 100%; display: block; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
+    th { border-bottom: 1px solid #313244; color: #a6adc8; text-align: left; padding: 6px 8px; }
+    td { border-bottom: 1px solid #1e1e2e; padding: 6px 8px; }
+    td a { color: #89b4fa; }
+    td.num { text-align: right; color: #f38ba8; font-weight: 600; }
+    .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    @media (max-width: 680px) {
+      .kpi-grid.cols-6 { grid-template-columns: repeat(3, 1fr); }
+      .kpi-grid.cols-5 { grid-template-columns: repeat(3, 1fr); }
+      .cols-2 { grid-template-columns: 1fr; }
     }
   </style>
 </head>
 <body>
   <h1>dbt-fusion Issue Health · DuckDB WASM + MotherDuck</h1>
   <p id="status">Connecting…</p>
-
-  <div class="kpi-grid" id="kpis"></div>
-
-  <div class="section">
-    <div class="section-title">Resolution time (median days to close)</div>
-    <div class="chart-wrap" id="chart-velocity"></div>
-  </div>
-
-  <div class="charts-2col">
-    <div class="section">
-      <div class="section-title">Open issues by age</div>
-      <div class="chart-wrap" id="chart-age"></div>
-    </div>
-    <div class="section">
-      <div class="section-title">Assignee workload</div>
-      <div class="chart-wrap" id="chart-workload"></div>
-    </div>
-  </div>
+  <div id="root"></div>
 
   <script type="module">
     import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
@@ -88,127 +44,187 @@
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
     const status = document.getElementById('status');
+    const root   = document.getElementById('root');
 
     if (!TOKEN || TOKEN.startsWith('__')) {
       status.textContent = 'Token not injected — run deploy workflow to embed MOTHERDUCK_READ_TOKEN.';
       status.className = 'error';
     } else {
-      main().catch(err => {
-        status.textContent = `Error: ${err.message}`;
-        status.className = 'error';
-        console.error(err);
-      });
+      main().catch(err => { status.textContent = `Error: ${err.message}`; status.className = 'error'; console.error(err); });
     }
 
-    async function sql(path) {
-      const res = await fetch(path);
-      if (!res.ok) throw new Error(`Failed to load ${path}: ${res.status}`);
-      return res.text();
+    async function loadSql(name) {
+      const r = await fetch(`queries/${name}.sql`);
+      if (!r.ok) throw new Error(`queries/${name}.sql: ${r.status}`);
+      return r.text();
     }
 
-    const CACHE_TTL = 60 * 60 * 1000; // 1 hour
-    async function queryRows(conn, sqlText) {
+    const TTL = 60 * 60 * 1000;
+    async function q(conn, sqlText) {
       const key = `md:${btoa(sqlText).slice(0, 40)}`;
       const hit = sessionStorage.getItem(key);
-      if (hit) {
-        const {rows, ts} = JSON.parse(hit);
-        if (Date.now() - ts < CACHE_TTL) return rows;
-      }
+      if (hit) { const {rows, ts} = JSON.parse(hit); if (Date.now() - ts < TTL) return rows; }
       const result = await conn.evaluateQuery(sqlText);
       const rows = result.data.toRows();
-      const json = JSON.stringify({rows, ts: Date.now()}, (_, v) => typeof v === 'bigint' ? Number(v) : v);
-      sessionStorage.setItem(key, json);
+      sessionStorage.setItem(key, JSON.stringify({rows, ts: Date.now()}, (_, v) => typeof v === 'bigint' ? Number(v) : v));
       return rows;
     }
 
-    const STYLE = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
+    const S = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
+    function section(title) { const h = document.createElement('h2'); h.textContent = title; root.append(h); }
+    function kpis(items, cols = 6) {
+      const g = document.createElement('div'); g.className = `kpi-grid cols-${cols}`;
+      g.innerHTML = items.map(([v, color, label]) =>
+        `<div class="kpi-card"><div class="kpi-value" style="color:${color}">${v ?? '—'}</div><div class="kpi-label">${label}</div></div>`
+      ).join(''); root.append(g);
+    }
+    function chart(plot, id) {
+      const d = document.createElement('div'); d.className = 'chart-wrap'; if (id) d.id = id;
+      d.append(plot); root.append(d);
+    }
+    function cols2(left, right) {
+      const g = document.createElement('div'); g.className = 'cols-2';
+      const l = document.createElement('div'); l.append(left);
+      const r = document.createElement('div'); r.append(right);
+      g.append(l, r); root.append(g);
+    }
+    function toDate(v) { return v instanceof Date ? v : new Date(v); }
 
     async function main() {
       const conn = MDConnection.create({mdToken: TOKEN});
       await conn.isInitialized();
       status.textContent = 'Loading data…';
 
-      const Q = 'queries';
-      const [triageSql, velocitySql, ageSql, workloadSql] = await Promise.all([
-        sql(`${Q}/triage_health.sql`),
-        sql(`${Q}/velocity.sql`),
-        sql(`${Q}/age_distribution.sql`),
-        sql(`${Q}/assignee_workload.sql`),
-      ]);
+      const sqls = await Promise.all([
+        'triage_health','summary_kpis','triage_pcts','oldest_untriaged',
+        'cumulative_flow','velocity','response_pctiles','age_distribution',
+        'close_by_label','assignee_workload','community_priorities',
+      ].map(loadSql));
 
-      const [triage, velocityRaw, ageDist, workload] = await Promise.all([
-        queryRows(conn, triageSql),
-        queryRows(conn, velocitySql),
-        queryRows(conn, ageSql),
-        queryRows(conn, workloadSql),
-      ]);
-      // Parse week strings to Date so Plot uses a proper time scale
-      const velocity = velocityRaw.map(r => ({...r, week: new Date(r.week)}));
+      const [triage, summary, triagePcts, oldest,
+             cumFlow, velocityRaw, respPct, ageDist,
+             closeLabel, workload, community] = await Promise.all(sqls.map(s => q(conn, s)));
 
-      // KPIs
-      const t = triage[0] ?? {};
-      document.getElementById('kpis').innerHTML = [
-        ['slipped_through_count', '#f38ba8', 'Slipped through'],
-        ['triage_queue_count',    '#fab387', 'Triage queue'],
-        ['hard_blocker_count',   '#eba0ac', 'Hard blockers'],
-        ['needs_repro_count',    '#89dceb', 'Needs repro'],
-        ['repro_verified_count', '#a6e3a1', 'Repro verified'],
-        ['stale_count',          '#cba6f7', 'Stale'],
-      ].map(([k, color, label]) => `
-        <div class="kpi-card">
-          <div class="kpi-value" style="color:${color}">${t[k] ?? '—'}</div>
-          <div class="kpi-label">${label}</div>
-        </div>`).join('');
+      const t = triage[0] ?? {}, sm = summary[0] ?? {}, tp = triagePcts[0] ?? {};
+      const vel = velocityRaw.map(r => ({...r, week: toDate(r.week)}));
+      const cum = cumFlow.map(r => ({...r, week: toDate(r.week)}));
+      const rp  = respPct.map(r => ({...r, week: toDate(r.week)}));
 
-      document.getElementById('chart-velocity').append(Plot.plot({
-        style: STYLE,
-        width: 880,
-        height: 220,
-        marginBottom: 36,
-        x: {label: null, tickRotate: -45},
+      // ── Daily triage ────────────────────────────────────────────────────────
+      section('Daily triage');
+      kpis([
+        [t.slipped_through_count, '#f38ba8', 'Slipped through'],
+        [t.triage_queue_count,    '#fab387', 'Triage queue'],
+        [t.hard_blocker_count,   '#eba0ac', 'Hard blockers'],
+        [t.stale_count,          '#cba6f7', 'Stale'],
+        [t.needs_repro_count,    '#89dceb', 'Needs repro'],
+        [t.repro_verified_count, '#a6e3a1', 'Repro verified'],
+      ], 6);
+
+      const tbl = document.createElement('table');
+      tbl.innerHTML = `<thead><tr><th>Issue</th><th>Title</th><th style="text-align:right">Age (days)</th></tr></thead>
+        <tbody>${oldest.map(d => `<tr>
+          <td><a href="${d.issue_url}" target="_blank">#${d.issue_number}</a></td>
+          <td>${d.title}</td><td class="num">${d.age_days}</td></tr>`).join('')}</tbody>`;
+      root.append(tbl);
+
+      // ── Key metrics ─────────────────────────────────────────────────────────
+      section('Key metrics');
+      const net = (sm.closed_4w ?? 0) - (sm.opened_4w ?? 0);
+      kpis([
+        [sm.open_issues,               '#cba6f7', 'Open issues'],
+        [(net >= 0 ? '+' : '') + net,  '#a6e3a1', 'Net flow (4 wk)'],
+        [sm.rolling_median_close_days, '#89dceb', 'Median close (4 wk)'],
+        [sm.pct_responded_48h != null ? sm.pct_responded_48h + '%' : null, '#fab387', '48h response SLA'],
+        [sm.stale_count,               '#f38ba8', 'Stale (30d+)'],
+      ], 5);
+
+      // ── Cumulative flow ──────────────────────────────────────────────────────
+      section('Cumulative issue flow');
+      chart(Plot.plot({
+        style: S, width: 880, height: 260, marginBottom: 36,
+        x: {type: 'utc', label: null, tickRotate: -30},
+        y: {label: 'Issues', grid: true, gridColor: '#313244'},
+        color: {legend: true},
+        marks: [
+          Plot.areaY(cum, {x: 'week', y: 'cumulative_opened', fill: '#f38ba8', fillOpacity: 0.35, tip: true}),
+          Plot.areaY(cum, {x: 'week', y: 'cumulative_closed',  fill: '#a6e3a1', fillOpacity: 0.35, tip: true}),
+          Plot.lineY(cum, {x: 'week', y: 'cumulative_opened', stroke: '#f38ba8', strokeWidth: 2}),
+          Plot.lineY(cum, {x: 'week', y: 'cumulative_closed',  stroke: '#a6e3a1', strokeWidth: 2}),
+        ],
+      }));
+
+      // ── Velocity & response ──────────────────────────────────────────────────
+      section('Velocity & response');
+      const velChart = Plot.plot({
+        style: S, width: 420, height: 220, marginBottom: 36,
+        x: {type: 'utc', label: null, tickRotate: -30},
         y: {label: 'Median days', grid: true, gridColor: '#313244'},
         color: {legend: true, domain: ['bugs', 'enhancements'], range: ['#f38ba8', '#89b4fa']},
         marks: [
-          Plot.lineY(velocity, {x: 'week', y: 'bugs', stroke: '#f38ba8', strokeWidth: 2, tip: true}),
-          Plot.lineY(velocity, {x: 'week', y: 'enhancements', stroke: '#89b4fa', strokeWidth: 2, tip: true}),
+          Plot.lineY(vel.filter(d => d.bugs != null),         {x: 'week', y: 'bugs',         stroke: '#f38ba8', strokeWidth: 2, tip: true}),
+          Plot.lineY(vel.filter(d => d.enhancements != null), {x: 'week', y: 'enhancements', stroke: '#89b4fa', strokeWidth: 2, tip: true}),
         ],
-      }));
+      });
+      const respChart = Plot.plot({
+        style: S, width: 420, height: 220, marginBottom: 36,
+        x: {type: 'utc', label: null, tickRotate: -30},
+        y: {label: 'Hours', grid: true, gridColor: '#313244'},
+        color: {legend: true, domain: ['p75', 'p50', 'p25'], range: ['#f38ba8', '#89b4fa', '#a6e3a1']},
+        marks: [
+          Plot.lineY(rp, {x: 'week', y: 'p75', stroke: '#f38ba8', strokeWidth: 1.5, tip: true}),
+          Plot.lineY(rp, {x: 'week', y: 'p50', stroke: '#89b4fa', strokeWidth: 2,   tip: true}),
+          Plot.lineY(rp, {x: 'week', y: 'p25', stroke: '#a6e3a1', strokeWidth: 1.5, tip: true}),
+        ],
+      });
+      cols2(velChart, respChart);
 
-      // Age distribution — stacked bar
-      const AGE_COLORS = {'bug': '#f38ba8', 'enhancement': '#89b4fa', 'other': '#a6adc8'};
-      document.getElementById('chart-age').append(Plot.plot({
-        style: STYLE,
-        width: 420,
-        height: 220,
-        marginBottom: 30,
+      // ── Issue distribution ───────────────────────────────────────────────────
+      section('Issue distribution');
+      const ageChart = Plot.plot({
+        style: S, width: 420, height: 220,
         x: {label: null},
         y: {label: 'Issues', grid: true, gridColor: '#313244'},
-        color: {legend: true, domain: ['bug', 'enhancement', 'other'], range: Object.values(AGE_COLORS)},
-        marks: [
-          Plot.barY(ageDist, Plot.stackY({
-            x: 'age_bucket', y: 'issue_count', fill: 'issue_category', tip: true,
-          })),
-          Plot.ruleY([0], {stroke: '#45475a'}),
-        ],
-      }));
+        color: {legend: true, domain: ['bug', 'enhancement', 'other'], range: ['#f38ba8', '#89b4fa', '#a6adc8']},
+        marks: [Plot.barY(ageDist, Plot.stackY({x: 'age_bucket', y: 'issue_count', fill: 'issue_category', tip: true}))],
+      });
+      const labelChart = Plot.plot({
+        style: S, width: 420, height: 220, marginLeft: 140,
+        x: {label: 'Median days', grid: true, gridColor: '#313244'},
+        y: {label: null},
+        marks: [Plot.barX(closeLabel, {x: 'median_days_to_close', y: 'label_name', fill: '#89b4fa', tip: true, sort: {y: '-x'}})],
+      });
+      cols2(ageChart, labelChart);
 
-      // Assignee workload — horizontal bar
-      document.getElementById('chart-workload').append(Plot.plot({
-        style: STYLE,
-        width: 420,
-        height: 220,
-        marginLeft: 90,
-        marginBottom: 30,
+      // ── Triage health ────────────────────────────────────────────────────────
+      section('Triage health');
+      kpis([
+        [tp.pct_labeled    != null ? tp.pct_labeled    + '%' : null, '#a6e3a1', '% Labeled'],
+        [tp.pct_typed      != null ? tp.pct_typed      + '%' : null, '#fab387', '% Typed'],
+        [tp.pct_assigned   != null ? tp.pct_assigned   + '%' : null, '#89dceb', '% Assigned'],
+        [tp.pct_milestoned != null ? tp.pct_milestoned + '%' : null, '#cba6f7', '% Milestoned'],
+      ], 4);
+
+      // ── Workload & priorities ────────────────────────────────────────────────
+      section('Workload & priorities');
+      const workChart = Plot.plot({
+        style: S, width: 420, height: 300, marginLeft: 110,
         x: {label: 'Open issues', grid: true, gridColor: '#313244'},
         y: {label: null},
-        marks: [
-          Plot.barX(workload, {
-            y: 'assignee_login', x: 'open_issues',
-            fill: '#cba6f7', sort: {y: '-x'}, tip: true,
-          }),
-          Plot.ruleX([0], {stroke: '#45475a'}),
-        ],
-      }));
+        marks: [Plot.barX(workload, {y: 'assignee_login', x: 'open_issues', fill: '#cba6f7', tip: true, sort: {y: '-x'}})],
+      });
+      const commChart = Plot.plot({
+        style: S, width: 420, height: 300, marginLeft: 160,
+        x: {label: 'Reactions', grid: true, gridColor: '#313244'},
+        y: {label: null},
+        color: {legend: true, domain: ['bug', 'enhancement', 'other'], range: ['#f38ba8', '#89b4fa', '#a6adc8']},
+        marks: [Plot.barX(community, {
+          x: 'reactions_total_count',
+          y: d => `#${d.issue_number} ${String(d.title).slice(0, 35)}`,
+          fill: 'issue_category', tip: true, sort: {y: '-x'},
+        })],
+      });
+      cols2(workChart, commChart);
 
       status.textContent = 'Data loaded live from MotherDuck (DuckDB WASM).';
     }

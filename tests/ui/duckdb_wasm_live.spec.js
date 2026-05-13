@@ -31,7 +31,7 @@ test("duckdb-wasm loads live data with all charts", async ({ page }) => {
     console.log("CONSOLE ERRORS:", consoleLogs.filter(l => l.toLowerCase().includes("error")));
 
   expect(errors, "no JS errors").toHaveLength(0);
-  expect(kpis.length, "6 KPI cards").toBe(6);
+  expect(kpis.length, "at least 6 KPI cards").toBeGreaterThanOrEqual(6);
   expect(kpis.some((v) => /\d+/.test(v)), "at least one numeric KPI").toBe(true);
   expect(svgCount, "3 charts rendered").toBeGreaterThanOrEqual(3);
 });

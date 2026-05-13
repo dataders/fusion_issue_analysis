@@ -6,27 +6,15 @@
   <title>dbt-fusion Issue Health · Mosaic</title>
   <style>
     *, *::before, *::after { box-sizing: border-box; }
-    body {
-      background: #1e1e2e;
-      color: #cdd6f4;
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      margin: 0;
-      padding: 20px 24px 40px;
-      max-width: 960px;
-    }
-    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 2px; }
+    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px 24px 40px; max-width: 960px; }
+    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 4px; }
+    h2 { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #7f849c; margin: 24px 0 4px; }
     #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
     .error { color: #f38ba8 !important; }
-    .section-title {
-      font-size: 0.78rem;
-      font-weight: 600;
-      text-transform: uppercase;
-      letter-spacing: 0.06em;
-      color: #7f849c;
-      margin: 20px 0 4px;
-    }
-    .hint { color: #585b70; font-size: 0.75rem; margin-bottom: 8px; }
+    .hint { color: #585b70; font-size: 0.73rem; margin-bottom: 8px; }
     #app svg { display: block; }
+    .row { display: flex; gap: 20px; flex-wrap: wrap; }
+    .row > * { flex: 1 1 300px; }
   </style>
 </head>
 <body>
@@ -40,80 +28,137 @@
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
     const status = document.getElementById('status');
+    const app    = document.getElementById('app');
 
     if (!TOKEN || TOKEN.startsWith('__')) {
       status.textContent = 'Token not injected — run deploy workflow.';
       status.className = 'error';
     } else {
-      setup().catch(err => {
-        status.textContent = `Error: ${err.message}`;
-        status.className = 'error';
-        console.error(err);
-      });
+      setup().catch(err => { status.textContent = `Error: ${err.message}`; status.className = 'error'; console.error(err); });
     }
 
-    function makeMDConnector(connection) {
+    function makeMDConnector(conn) {
       return {
-        query: async (query) => {
-          const {sql, type} = query;
-          if (type === 'exec') {
-            await connection.evaluateQuery(sql);
-            return undefined;
-          }
-          const result = await connection.evaluateQuery(sql);
-          return result.data.toRows();
+        query: async ({sql, type}) => {
+          if (type === 'exec') { await conn.evaluateQuery(sql); return undefined; }
+          const result = await conn.evaluateQuery(sql);
+          // Convert BigInt → Number so vgplot arithmetic doesn't throw
+          return JSON.parse(JSON.stringify(result.data.toRows(),
+            (_, v) => typeof v === 'bigint' ? Number(v) : v));
         },
       };
     }
 
+    function h2(text, hint) {
+      const el = document.createElement('h2'); el.textContent = text; app.append(el);
+      if (hint) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = hint; app.append(p); }
+    }
+    function row(...els) {
+      const d = document.createElement('div'); d.className = 'row'; d.append(...els); app.append(d);
+    }
+
     async function setup() {
-      const connection = MDConnection.create({mdToken: TOKEN});
-      await connection.isInitialized();
-      vg.coordinator().databaseConnector(makeMDConnector(connection));
+      const conn = MDConnection.create({mdToken: TOKEN});
+      await conn.isInitialized();
+      vg.coordinator().databaseConnector(makeMDConnector(conn));
       await vg.coordinator().exec("ATTACH IF NOT EXISTS 'md:fusion_issues' AS fusion_issues;");
       status.textContent = 'Connected. Rendering…';
 
-      const sel = vg.Selection.crossfilter();
-      const app = document.getElementById('app');
+      // ── Selection handles ────────────────────────────────────────────────────
+      const timeSel = vg.Selection.intersect();   // time-range brush on cumulative flow
+      const ageSel  = vg.Selection.crossfilter(); // age-bucket click → workload
 
-      const h1 = document.createElement('div');
-      h1.className = 'section-title';
-      h1.textContent = 'Open issues by age bucket';
+      // ── 1. Cumulative flow + velocity (time brush links them) ────────────────
+      h2('Cumulative issue flow', 'Brush the time axis to filter the velocity chart below.');
 
-      const hint = document.createElement('div');
-      hint.className = 'hint';
-      hint.textContent = 'Click a bar to crossfilter the workload chart below.';
+      const cumChart = vg.plot(
+        vg.areaY(vg.from('fusion_issues.main.cumulative_flow'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'cumulative_opened', fill: '#f38ba8', fillOpacity: 0.35, tip: true,
+        }),
+        vg.areaY(vg.from('fusion_issues.main.cumulative_flow'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'cumulative_closed', fill: '#a6e3a1', fillOpacity: 0.35, tip: true,
+        }),
+        vg.lineY(vg.from('fusion_issues.main.cumulative_flow'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'cumulative_opened', stroke: '#f38ba8', strokeWidth: 2,
+        }),
+        vg.lineY(vg.from('fusion_issues.main.cumulative_flow'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'cumulative_closed', stroke: '#a6e3a1', strokeWidth: 2,
+        }),
+        vg.intervalX({as: timeSel}),
+        vg.xLabel('Week'), vg.yLabel('Cumulative issues'),
+        vg.colorLegend(),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(880), vg.height(200),
+      );
+      app.append(cumChart);
+
+      h2('Velocity (filtered by time brush)');
+      const velBugs = vg.plot(
+        vg.lineY(vg.from('fusion_issues.main.velocity', {filterBy: timeSel}), {
+          filter: vg.sql`issue_category = 'bug'`,
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'median_days', stroke: '#f38ba8', strokeWidth: 2, tip: true,
+        }),
+        vg.xLabel('Week'), vg.yLabel('Median days (bugs)'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(420), vg.height(180),
+      );
+      const velEnh = vg.plot(
+        vg.lineY(vg.from('fusion_issues.main.velocity', {filterBy: timeSel}), {
+          filter: vg.sql`issue_category = 'enhancement'`,
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'median_days', stroke: '#89b4fa', strokeWidth: 2, tip: true,
+        }),
+        vg.xLabel('Week'), vg.yLabel('Median days (enhancements)'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(420), vg.height(180),
+      );
+      row(velBugs, velEnh);
+
+      // ── 2. Age distribution + assignee workload (crossfilter) ────────────────
+      h2('Open issues by age', 'Click an age bucket to filter the assignee workload chart.');
 
       const ageChart = vg.plot(
-        vg.barY(
-          vg.from('fusion_issues.main.age_distribution', {filterBy: sel}),
-          {x: 'age_bucket', y: vg.sum('issue_count'), fill: 'issue_category', tip: true}
-        ),
-        vg.toggleX({as: sel}),
+        vg.barY(vg.from('fusion_issues.main.age_distribution', {filterBy: ageSel}), {
+          x: 'age_bucket', y: vg.sum('issue_count'), fill: 'issue_category', tip: true,
+        }),
+        vg.toggleX({as: ageSel}),
         vg.colorLegend(),
-        vg.xLabel('Age bucket'),
-        vg.yLabel('Open issues'),
+        vg.xLabel('Age bucket'), vg.yLabel('Open issues'),
         vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(700),
-        vg.height(260)
+        vg.width(420), vg.height(220),
       );
 
-      const h2 = document.createElement('div');
-      h2.className = 'section-title';
-      h2.textContent = 'Assignee workload';
-
-      const workloadChart = vg.plot(
-        vg.barX(
-          vg.from('fusion_issues.main.assignee_workload', {filterBy: sel}),
-          {y: 'assignee_login', x: 'open_issues', fill: '#89b4fa', tip: true, sort: {y: '-x'}}
-        ),
+      h2('Assignee workload (filtered by age selection)');
+      const workChart = vg.plot(
+        vg.barX(vg.from('fusion_issues.main.assignee_workload', {filterBy: ageSel}), {
+          y: 'assignee_login', x: 'open_issues', fill: '#cba6f7', tip: true, sort: {y: '-x'},
+        }),
         vg.xLabel('Open issues'),
         vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(700),
-        vg.height(300)
+        vg.width(420), vg.height(280),
       );
+      row(ageChart, workChart);
 
-      app.append(h1, hint, ageChart, h2, workloadChart);
+      // ── 3. Community priorities ──────────────────────────────────────────────
+      h2('Community priorities');
+      const commChart = vg.plot(
+        vg.barX(vg.from('fusion_issues.main.community_priorities'), {
+          y: vg.sql`'#' || issue_number::TEXT || ' ' || left(title, 40)`,
+          x: 'reactions_total_count', fill: 'issue_category', tip: true,
+          sort: {y: '-x'},
+        }),
+        vg.colorLegend(),
+        vg.xLabel('Reactions'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(880), vg.height(340),
+      );
+      app.append(commChart);
+
       status.textContent = 'Data loaded live from MotherDuck (Mosaic).';
     }
   </script>
