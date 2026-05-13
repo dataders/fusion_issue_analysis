@@ -37,6 +37,7 @@ def _start_graphene_serve() -> subprocess.Popen:
     proc = subprocess.Popen(
         ["npm", "exec", "graphene", "--", "serve"],
         cwd=str(GRAPHENE_DIR),
+        stdin=subprocess.DEVNULL,
         stdout=sys.stderr,
         stderr=sys.stderr,
     )
