@@ -12,7 +12,7 @@ from fastmcp.apps import AppConfig, ResourceCSP
 import build as graphene_build
 
 GRAPHENE_DIR = Path(__file__).resolve().parent
-HTML_PATH = GRAPHENE_DIR / "index.html"
+HTML_PATH = GRAPHENE_DIR / "widget" / "dist" / "index.html"
 RESOURCE_URI = "ui://fusion-graphene/issue-health.html"
 
 # Build snapshot from MotherDuck → index.html at startup.
@@ -31,15 +31,6 @@ with duckdb.connect() as _conn:
     ).fetchdf().to_dict("records")[0]
 
 mcp = fastmcp.FastMCP("Fusion Issue Health (Graphene)")
-
-_CONNECT_SCRIPT = """
-<script type="module">
-  import { App } from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
-  const app = new App({ name: "fusion-graphene", version: "1.0.0" });
-  app.ontoolresult = () => {};
-  await app.connect();
-</script>
-"""
 
 
 @mcp.tool(app=AppConfig(resource_uri=RESOURCE_URI))
@@ -60,13 +51,9 @@ def show_issue_health() -> str:
     )
 
 
-@mcp.resource(
-    RESOURCE_URI,
-    app=AppConfig(csp=ResourceCSP(resourceDomains=["https://unpkg.com"])),
-)
+@mcp.resource(RESOURCE_URI, app=AppConfig(csp=ResourceCSP()))
 def graphene_view() -> str:
-    html = HTML_PATH.read_text()
-    return html.replace("</head>", f"{_CONNECT_SCRIPT}</head>", 1)
+    return HTML_PATH.read_text()
 
 
 if __name__ == "__main__":
