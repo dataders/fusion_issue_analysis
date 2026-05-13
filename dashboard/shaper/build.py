@@ -11,7 +11,8 @@ CONFIG = HERE / "shaper.json"
 TARGET = HERE / "index.html"
 DOCS_URL = "https://taleshape.com/shaper/docs/"
 REPO_URL = "https://github.com/taleshape-com/shaper"
-SCREENSHOT_URL = "https://taleshape.com/images/session_dashboard.png"
+DEMO_URL = "https://demo.taleshape.com/view/xfson08vefirflcql478uck4"
+SCREENSHOT_URL = "https://taleshape.com/images/fusion-issue-health-shaper-demo-screenshot.png"
 SHAPER_ID_RE = re.compile(r"^-- shaperid:[^\s]+$", re.MULTILINE)
 
 
@@ -115,12 +116,29 @@ def render_page(sql: str) -> str:
       text-decoration: none;
     }}
     .panel {{
+      position: relative;
       min-width: 0;
       border: 1px solid #d8dde7;
       border-radius: 8px;
       background: #fff;
       padding: 18px;
       box-shadow: 0 8px 24px rgba(33, 41, 54, 0.07);
+    }}
+    .copy-button {{
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      padding: 5px 9px;
+      background: #f3f4f6;
+      border: 1px solid #d1d5db;
+      border-radius: 4px;
+      color: #374151;
+      font-size: 0.75rem;
+      font-weight: 600;
+      cursor: pointer;
+    }}
+    .copy-button:hover {{
+      background: #e5e7eb;
     }}
     .grid {{
       display: grid;
@@ -164,6 +182,10 @@ def render_page(sql: str) -> str:
       border-radius: 4px;
       background: #eef3ff;
       font-size: 0.93em;
+    }}
+    pre code {{
+      padding: 0;
+      background: none;
     }}
     pre {{
       max-width: 100%;
@@ -211,8 +233,7 @@ def render_page(sql: str) -> str:
         <h1>Shaper</h1>
         <p class="hero-text">Open source Shaper joins the bakeoff as a SQL-first DuckDB dashboard. This tab ships the tracked <code>.dashboard.sql</code> source and makes the GitHub Pages limitation explicit: Shaper renders from a live Shaper server, not a static export bundle.</p>
         <div class="actions">
-          <a href="fusion-issue-health.dashboard.sql">Dashboard SQL</a>
-          <a href="shaper.json">shaper.json</a>
+          <a href="{DEMO_URL}" target="_blank" rel="noreferrer" style="background: #173c66; color: #fff; border-color: #173c66;">Live Demo</a>
           <a href="{DOCS_URL}" target="_blank" rel="noreferrer">Docs</a>
           <a href="{REPO_URL}" target="_blank" rel="noreferrer">Source</a>
         </div>
@@ -236,14 +257,25 @@ def render_page(sql: str) -> str:
           <li>Shared semantic layer stays in dbt tables like <code>summary_kpis</code>, <code>cumulative_flow</code>, and <code>open_issues_table</code>.</li>
           <li>Local live rendering starts from <code>dashboard/shaper</code> with Shaper pointed at a DuckDB or MotherDuck-backed database.</li>
         </ul>
-        <p class="small">Generated from <code>{SOURCE.name}</code> and <code>{CONFIG.name}</code>.</p>
+        <p class="small">Generated from <code>{SOURCE.name}</code>.</p>
       </div>
       <div class="panel">
         <h2>Dashboard source</h2>
-        <pre><code>{escaped_sql}</code></pre>
+        <button class="copy-button" onclick="copySql()">Copy</button>
+        <pre><code id="sql-source">{escaped_sql}</code></pre>
       </div>
     </section>
   </main>
+  <script>
+    function copySql() {{
+      const sql = document.getElementById('sql-source').textContent;
+      navigator.clipboard.writeText(sql).then(() => {{
+        const btn = document.querySelector('.copy-button');
+        btn.textContent = 'Copied!';
+        setTimeout(() => btn.textContent = 'Copy', 2000);
+      }});
+    }}
+  </script>
 </body>
 </html>
 """
