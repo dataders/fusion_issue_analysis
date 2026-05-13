@@ -39,5 +39,8 @@ else
   echo "   Add it to .env.local: MOTHERDUCK_READ_TOKEN=your_token_here"
 fi
 
+# Free the port if something else is already holding it
+lsof -ti :9321 | xargs kill -9 2>/dev/null || true
+
 echo "Serving at http://127.0.0.1:9321"
 uv run python3 dashboard/serve_local.py
