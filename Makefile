@@ -1,7 +1,7 @@
 PORT ?= 8081
 
 .DEFAULT_GOAL := help
-.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene kill-server clean help
+.PHONY: serve build about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene graphene-mcp kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -84,6 +84,10 @@ graphene:
 	uv run python3 dashboard/graphene/build.py
 	cd dashboard/graphene && npm exec graphene -- check
 	cd dashboard/graphene && npm exec graphene -- run index.md -q kpis
+
+## graphene-mcp  Start the FastMCP server for the Graphene dashboard (builds snapshot on start)
+graphene-mcp:
+	uv run dashboard/graphene/mcp_server.py
 
 # ── Utilities ─────────────────────────────────────────────────────────────────
 
