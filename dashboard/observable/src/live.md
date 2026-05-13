@@ -18,9 +18,22 @@ const conn = await (async () => {
   return c;
 })();
 
-async function queryRows(conn, sql) {
+async function queryRows(conn, sql, {cache = true, ttlMs = 60 * 60 * 1000} = {}) {
+  if (cache) {
+    const key = `md:${btoa(sql).slice(0, 40)}`;
+    const hit = sessionStorage.getItem(key);
+    if (hit) {
+      const {rows, ts} = JSON.parse(hit);
+      if (Date.now() - ts < ttlMs) return rows;
+    }
+  }
   const result = await conn.evaluateQuery(sql);
-  return result.data.toRows();
+  const rows = result.data.toRows();
+  if (cache) {
+    const key = `md:${btoa(sql).slice(0, 40)}`;
+    sessionStorage.setItem(key, JSON.stringify({rows, ts: Date.now()}, (_, v) => typeof v === 'bigint' ? Number(v) : v));
+  }
+  return rows;
 }
 ```
 
@@ -50,12 +63,12 @@ ${triageHealth == null
 
 ```js
 const velocity = conn
-  ? await queryRows(conn, `
+  ? (await queryRows(conn, `
       SELECT week,
         max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
         max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
       FROM fusion_issues.main.velocity GROUP BY week ORDER BY week
-    `)
+    `)).map(r => ({...r, week: new Date(r.week)}))
   : [];
 ```
 

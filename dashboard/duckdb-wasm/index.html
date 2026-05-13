@@ -107,9 +107,19 @@
       return res.text();
     }
 
+    const CACHE_TTL = 60 * 60 * 1000; // 1 hour
     async function queryRows(conn, sqlText) {
+      const key = `md:${btoa(sqlText).slice(0, 40)}`;
+      const hit = sessionStorage.getItem(key);
+      if (hit) {
+        const {rows, ts} = JSON.parse(hit);
+        if (Date.now() - ts < CACHE_TTL) return rows;
+      }
       const result = await conn.evaluateQuery(sqlText);
-      return result.data.toRows();
+      const rows = result.data.toRows();
+      const json = JSON.stringify({rows, ts: Date.now()}, (_, v) => typeof v === 'bigint' ? Number(v) : v);
+      sessionStorage.setItem(key, json);
+      return rows;
     }
 
     const STYLE = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
