@@ -16,6 +16,9 @@ async function loadDashboardData() {
 }
 
 function summarizeDashboard(data: Record<string, unknown>): string {
+  const brief = data.agent_brief as { headline?: string } | undefined;
+  if (brief?.headline) return brief.headline;
+
   const kpis = data.summary_kpis as Record<string, number | null>;
   const triage = data.triage_health as Record<string, number | null>;
   const openIssues = kpis.open_issues ?? "unknown";

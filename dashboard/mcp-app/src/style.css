@@ -1,7 +1,7 @@
 :root {
   font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--color-text-primary, #161a20);
-  background: var(--color-background-primary, #f6f7f9);
+  background: var(--color-background-primary, #eef2f5);
 }
 
 * {
@@ -11,21 +11,22 @@
 body {
   margin: 0;
   min-width: 320px;
-  background: var(--color-background-primary, #f6f7f9);
+  background: linear-gradient(180deg, #eef2f5 0, #f8fafc 260px);
 }
 
 button {
-  border: 1px solid var(--color-border-primary, #c8d0dc);
+  border: 1px solid #344054;
   border-radius: 6px;
-  padding: 8px 12px;
-  background: var(--color-background-secondary, #ffffff);
-  color: inherit;
+  padding: 8px 13px;
+  background: #111827;
+  color: #ffffff;
   cursor: pointer;
   font: inherit;
+  font-weight: 650;
 }
 
 button:hover {
-  border-color: var(--color-border-accent, #65758b);
+  background: #263242;
 }
 
 .shell {
@@ -39,8 +40,47 @@ button:hover {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding-bottom: 14px;
-  border-bottom: 1px solid var(--color-border-primary, #d9dee7);
+  padding: 16px;
+  border: 1px solid #1f2937;
+  border-radius: 8px;
+  background: #111827;
+  color: #ffffff;
+  box-shadow: 0 14px 34px rgba(17, 24, 39, 0.12);
+}
+
+.hero .eyebrow {
+  color: #cbd5e1;
+}
+
+.hero button {
+  border-color: #ffffff;
+  background: #ffffff;
+  color: #111827;
+}
+
+.hero button:hover {
+  background: #e5e7eb;
+}
+
+.command-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.chip,
+.prompt-row span {
+  display: inline-flex;
+  align-items: center;
+  min-height: 28px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 999px;
+  padding: 4px 9px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #e5e7eb;
+  font-size: 0.76rem;
 }
 
 .eyebrow {
@@ -57,7 +97,7 @@ h2 {
 }
 
 h1 {
-  font-size: 1.35rem;
+  font-size: 1.42rem;
 }
 
 h2 {
@@ -69,6 +109,13 @@ h2 {
   margin: 12px 0;
   color: var(--color-text-secondary, #667085);
   font-size: 0.88rem;
+}
+
+.briefing-grid {
+  display: grid;
+  grid-template-columns: minmax(260px, 0.9fr) minmax(320px, 1.4fr);
+  gap: 12px;
+  margin: 12px 0;
 }
 
 .kpi-grid,
@@ -104,6 +151,159 @@ h2 {
 .panel {
   padding: 14px;
   margin-top: 12px;
+}
+
+.workbench {
+  margin: 16px 0;
+}
+
+.section-head {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.section-head .eyebrow {
+  color: #475467;
+}
+
+.pulse {
+  display: grid;
+  align-content: space-between;
+  min-height: 205px;
+  border-left: 6px solid #64748b;
+}
+
+.pulse.cooling {
+  border-left-color: #16a34a;
+}
+
+.pulse.heating {
+  border-left-color: #dc2626;
+}
+
+.pulse.steady {
+  border-left-color: #2563eb;
+}
+
+.pulse-headline,
+.brief-headline {
+  margin: 12px 0 0;
+  color: #111827;
+  font-size: 1.05rem;
+  font-weight: 680;
+  line-height: 1.35;
+}
+
+.pulse-metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.pulse-metrics span {
+  min-height: 54px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+  background: #f9fafb;
+  color: #475467;
+  font-size: 0.76rem;
+}
+
+.pulse-metrics strong {
+  display: block;
+  color: #111827;
+  font-size: 1rem;
+}
+
+.brief-list {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: #344054;
+  line-height: 1.45;
+}
+
+.brief-list li + li {
+  margin-top: 6px;
+}
+
+.prompt-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+
+.prompt-row span {
+  border-color: #d0d5dd;
+  background: #f2f4f7;
+  color: #344054;
+}
+
+.queue-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(165px, 1fr));
+  gap: 10px;
+}
+
+.queue {
+  min-height: 132px;
+  border: 1px solid #d9dee7;
+  border-top: 4px solid #64748b;
+  border-radius: 8px;
+  padding: 12px;
+  background: #ffffff;
+}
+
+.queue.critical {
+  border-top-color: #dc2626;
+}
+
+.queue.warning {
+  border-top-color: #f59e0b;
+}
+
+.queue.watch {
+  border-top-color: #2563eb;
+}
+
+.queue.clear {
+  border-top-color: #16a34a;
+}
+
+.queue-top {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.queue-top span {
+  color: #344054;
+  font-size: 0.82rem;
+  font-weight: 650;
+}
+
+.queue-top strong {
+  color: #111827;
+  font-size: 1.55rem;
+}
+
+.queue p {
+  min-height: 34px;
+  margin: 8px 0;
+  color: #475467;
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.queue small {
+  color: #101828;
+  font-weight: 620;
+  line-height: 1.35;
 }
 
 .chart {
@@ -185,4 +385,24 @@ a {
 
 a:hover {
   text-decoration: underline;
+}
+
+@media (max-width: 760px) {
+  .hero,
+  .briefing-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hero {
+    display: grid;
+    align-items: start;
+  }
+
+  .command-strip {
+    justify-content: flex-start;
+  }
+
+  .bar-row {
+    grid-template-columns: 74px 1fr 54px;
+  }
 }
