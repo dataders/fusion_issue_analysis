@@ -99,16 +99,31 @@ def show_issue_health() -> str:
 @mcp.resource(
     RESOURCE_URI,
     app=AppConfig(csp=ResourceCSP(
-        resourceDomains=[GRAPHENE_URL],
+        resourceDomains=[GRAPHENE_URL, "https://unpkg.com"],
         connectDomains=[GRAPHENE_URL],
     )),
 )
 def graphene_view() -> str:
-    # Proxy the live Graphene page and rewrite relative URLs via <base href>
-    # so all assets load from localhost:4000 without a nested iframe.
-    with urllib.request.urlopen(f"{GRAPHENE_URL}/") as resp:
-        html = resp.read().decode("utf-8")
-    return html.replace("<head>", f'<head>\n  <base href="{GRAPHENE_URL}/">', 1)
+    # Shell HTML: completes the MCP App handshake (App.connect()), then
+    # iframes in the live Graphene server. The handshake must happen before
+    # the host will render anything in the widget area.
+    return f"""<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>html, body {{ margin: 0; padding: 0; height: 100%; width: 100%; }}
+  iframe {{ border: 0; width: 100%; height: 100vh; display: block; }}</style>
+</head>
+<body>
+  <iframe src="{GRAPHENE_URL}/"></iframe>
+  <script type="module">
+    import {{ App }} from "https://unpkg.com/@modelcontextprotocol/ext-apps@0.4.0/app-with-deps";
+    const app = new App({{ name: "fusion-graphene", version: "1.0.0" }});
+    app.ontoolresult = () => {{}};
+    await app.connect();
+  </script>
+</body>
+</html>"""
 
 
 if __name__ == "__main__":
