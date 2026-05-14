@@ -81,6 +81,7 @@ def get_reactions_data(
     access_token: str,
     items_per_page: int,
     max_items: Optional[int],
+    since: Optional[str] = None,
 ) -> Iterator[Iterator[StrAny]]:
     variables = {
         "owner": owner,
@@ -93,8 +94,16 @@ def get_reactions_data(
     }
     # `issueType` and `parent` are only valid on the Issue type; they would
     # cause a GraphQL validation error if included in the pullRequests body.
+    # `filterBy: {since}` is also only valid on issues, not pullRequests.
     issue_only_fields = ISSUE_ONLY_FIELDS if node_type == "issues" else ""
-    query = ISSUES_QUERY % (node_type, issue_only_fields)
+    if node_type == "issues":
+        since_var_decl = ", $since: DateTime"
+        filterby_clause = ", filterBy: {since: $since}"
+        variables["since"] = since
+    else:
+        since_var_decl = ""
+        filterby_clause = ""
+    query = ISSUES_QUERY % (since_var_decl, node_type, filterby_clause, issue_only_fields)
     for page_items in _get_graphql_pages(
         access_token, query, variables, node_type, max_items
     ):

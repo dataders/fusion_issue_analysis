@@ -2,8 +2,8 @@ name: Extract GitHub Issues
 
 on:
   schedule:
-    # Run every 6 hours (4x per day) at :00 UTC
-    - cron: '0 */6 * * *'
+    # Run every 2 hours at :00 UTC
+    - cron: '0 */2 * * *'
   push:
     branches: [main]
     paths:
