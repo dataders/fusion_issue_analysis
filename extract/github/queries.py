@@ -17,9 +17,9 @@ ISSUE_ONLY_FIELDS = """
 """
 
 ISSUES_QUERY = """
-query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions: Int!, $first_comments: Int!, $first_timeline_items: Int!, $page_after: String) {
+query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions: Int!, $first_comments: Int!, $first_timeline_items: Int!, $page_after: String, $since: DateTime) {
   repository(owner: $owner, name: $name) {
-    %s(first: $issues_per_page, orderBy: {field: CREATED_AT, direction: DESC}, after: $page_after) {
+    %s(first: $issues_per_page, filterBy: {since: $since}, orderBy: {field: UPDATED_AT, direction: DESC}, after: $page_after) {
       totalCount
       pageInfo {
         endCursor

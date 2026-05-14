@@ -32,37 +32,34 @@ def github_reactions(
         access_token (str): The classic access token. Will be injected from secrets if not provided.
         items_per_page (int, optional): How many issues/pull requests to get in single page. Defaults to 100.
         max_items (int, optional): How many issues/pull requests to get in total. None means All.
-        max_item_age_seconds (float, optional): Do not get items older than this. Defaults to None. NOT IMPLEMENTED
 
     Returns:
         Sequence[DltResource]: Two DltResources: `issues` with issues and `pull_requests` with pull requests
     """
-    return (
-        dlt.resource(
-            get_reactions_data(
-                "issues",
-                owner,
-                name,
-                access_token,
-                items_per_page,
-                max_items,
-            ),
-            name="issues",
-            write_disposition="replace",
+
+    @dlt.resource(primary_key="number", write_disposition="merge")
+    def issues(
+        updated_at: dlt.sources.incremental[str] = dlt.sources.incremental(
+            "updatedAt", initial_value="1970-01-01T00:00:00Z"
         ),
-        dlt.resource(
-            get_reactions_data(
-                "pullRequests",
-                owner,
-                name,
-                access_token,
-                items_per_page,
-                max_items,
-            ),
-            name="pull_requests",
-            write_disposition="replace",
+    ):
+        yield from get_reactions_data(
+            "issues", owner, name, access_token, items_per_page, max_items,
+            since=updated_at.last_value,
+        )
+
+    @dlt.resource(primary_key="number", write_disposition="merge")
+    def pull_requests(
+        updated_at: dlt.sources.incremental[str] = dlt.sources.incremental(
+            "updatedAt", initial_value="1970-01-01T00:00:00Z"
         ),
-    )
+    ):
+        yield from get_reactions_data(
+            "pullRequests", owner, name, access_token, items_per_page, max_items,
+            since=updated_at.last_value,
+        )
+
+    return issues, pull_requests
 
 
 @dlt.source(max_table_nesting=2)
