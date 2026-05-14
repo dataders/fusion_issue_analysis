@@ -55,6 +55,12 @@ jobs:
       - name: Test extract helpers
         run: uv run --with pytest pytest extract/tests/ -v
 
+      # ── dlt smoke-test: real GraphQL call, local parquet, no MotherDuck ──
+      - name: Smoke-test dlt extract (incremental, --limit 5)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: cd extract && uv run python run.py --limit 5
+
       # ── dbt compile against prod ─────────────────────────────────────────
       - name: Install dbt Fusion
         run: |
@@ -89,7 +95,7 @@ jobs:
         run: uv run python dashboard/write_data_freshness.py
 
       # ── Dashboard smoke-test (all frameworks, no || true) ─────────────────
-      # Data comes from MotherDuck — extract.yml keeps it fresh 4x/day.
+      # Data comes from MotherDuck — extract.yml keeps it fresh 12x/day.
       # No extract or dbt build here; those run in extract.yml on schedule
       # and on push to extract/** or transform/**.
 

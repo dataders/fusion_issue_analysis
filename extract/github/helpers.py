@@ -81,6 +81,7 @@ def get_reactions_data(
     access_token: str,
     items_per_page: int,
     max_items: Optional[int],
+    since: Optional[str] = None,
 ) -> Iterator[Iterator[StrAny]]:
     variables = {
         "owner": owner,
@@ -90,6 +91,7 @@ def get_reactions_data(
         "first_comments": 100,
         "first_timeline_items": 50,
         "node_type": node_type,
+        "since": since,
     }
     # `issueType` and `parent` are only valid on the Issue type; they would
     # cause a GraphQL validation error if included in the pullRequests body.
