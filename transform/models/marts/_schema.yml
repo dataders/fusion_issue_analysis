@@ -5,11 +5,17 @@ models:
     description: >
       One row per GitHub issue with derived metrics, issue-type classification,
       and parent hierarchy fields for epic/task rollups.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: created_at
     columns:
       - name: issue_dlt_id
         tests:
           - not_null
           - unique
+        entity:
+          name: issue
+          type: primary
       - name: issue_number
         tests:
           - not_null
@@ -20,6 +26,8 @@ models:
           - accepted_values:
               arguments:
                 values: ['OPEN', 'CLOSED']
+        dimension:
+          type: categorical
       - name: issue_type
         description: >
           Raw value of GitHub's native Issue Type field. Common values:
@@ -35,6 +43,26 @@ models:
           - accepted_values:
               arguments:
                 values: ['bug', 'enhancement', 'epic', 'task', 'other']
+        dimension:
+          type: categorical
+      - name: milestone_number
+        entity:
+          name: milestone
+          type: foreign
+      - name: milestone_title
+        dimension:
+          type: categorical
+      - name: author_login
+        dimension:
+          type: categorical
+      - name: created_at
+        granularity: day
+        dimension:
+          type: time
+      - name: closed_at
+        granularity: day
+        dimension:
+          type: time
       - name: is_epic
         description: True when issue_type = 'Task' and 'epic' appears in title (authoritative epic flag; preferred over the legacy label-based has_epic).
         tests:
@@ -57,6 +85,72 @@ models:
               config:
                 where: "parent_number is not null"
                 severity: warn  # parent may be cross-repo or pre-extract; warn rather than block
+    metrics:
+      - name: open_issue_count
+        type: simple
+        description: Number of currently open non-epic issues.
+        label: Open issue count
+        agg: count
+        expr: issue_dlt_id
+        filter: |
+          {{ Dimension('issue__state') }} = 'OPEN'
+          AND {{ Dimension('issue__issue_category') }} != 'epic'
+      - name: avg_time_to_close
+        type: simple
+        description: Average hours from open to close across all non-epic issues.
+        label: Avg time to close
+        agg: average
+        expr: hours_to_close
+        agg_time_dimension: closed_at
+      - name: issues_opened_per_week
+        type: simple
+        description: Count of all issues opened, grouped at weekly granularity.
+        label: Issues opened per week
+        agg: count
+        expr: issue_dlt_id
+      - name: bug_fix_velocity
+        type: simple
+        description: Median hours to close bug-categorised issues. Tracks fix throughput over time.
+        label: Bug fix velocity
+        agg: median
+        expr: hours_to_close
+        agg_time_dimension: closed_at
+        filter: |
+          {{ Dimension('issue__issue_category') }} = 'bug'
+
+  - name: fct_issue_comments
+    description: >
+      One row per issue comment. Used for response-time metrics and
+      community engagement measures.
+    semantic_model:
+      enabled: true
+    agg_time_dimension: created_at
+    columns:
+      - name: comment_dlt_id
+        entity:
+          name: comment
+          type: primary
+      - name: issue_dlt_id
+        entity:
+          name: issue
+          type: foreign
+      - name: created_at
+        granularity: day
+        dimension:
+          type: time
+      - name: author_login
+        dimension:
+          type: categorical
+      - name: author_association
+        dimension:
+          type: categorical
+    metrics:
+      - name: comment_count
+        type: simple
+        description: Total number of issue comments.
+        label: Comment count
+        agg: count
+        expr: comment_dlt_id
 
   - name: fct_epics
     description: One row per Epic (Task-typed issue with 'epic' in title), enriched with child counts and milestone attribution.

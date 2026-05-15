@@ -11,6 +11,7 @@ const DASHBOARD_TABS = [
   { label: "Quarto", tab: "quarto", src: "quarto/index.html" },
   { label: "DAC", tab: "dac", src: "dac/build/" },
   { label: "Shaper", tab: "shaper", src: "shaper/index.html" },
+  { label: "Dataface", tab: "dataface", src: "dataface/index.html" },
   { label: "DuckDB WASM", tab: "duckdb-wasm", src: "duckdb-wasm/index.html" },
   { label: "Mosaic", tab: "mosaic", src: "mosaic/index.html" },
   { label: "Observable (live)", tab: "observable-live", src: "observable/dist/live.html" },
