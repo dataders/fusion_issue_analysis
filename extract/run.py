@@ -63,6 +63,12 @@ def main():
         max_items=args.limit,
     ).with_resources("issues", "pull_requests")
 
+    # dlt's merge disposition generates a SQL file that fails against a fresh
+    # MotherDuck destination because it assumes child tables already exist.
+    # Replace is safe here — PR data is small and fully replaced each run.
+    if args.motherduck:
+        source.resources["pull_requests"].apply_hints(write_disposition="replace")
+
     loader_kwargs = {}
     if not args.motherduck:
         loader_kwargs["loader_file_format"] = "parquet"
