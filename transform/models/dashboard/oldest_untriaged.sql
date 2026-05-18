@@ -5,7 +5,7 @@ with issue_labels_agg as (
     select
         issue_dlt_id,
         max(case when label_name in (
-            'triage', 'needs-repro', 'has-repro', 'repro/verified',
+            'triage', 'needs-repro', 'has-repro', 'repro/verified', 'fidget-repro-complete',
             'hard-blocker', 'release/awaiting-release', 'cleanup/stale'
         ) then 1 else 0 end) as has_triage_signal
     from {{ ref('stg_issue_labels') }}

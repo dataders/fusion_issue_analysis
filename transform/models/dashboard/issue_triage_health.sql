@@ -8,7 +8,7 @@ with issue_triage as (
         i.updated_at,
         max(case when l.label_name = 'triage' then 1 else 0 end) as has_triage,
         max(case when l.label_name = 'needs-repro' then 1 else 0 end) as has_needs_repro,
-        max(case when l.label_name in ('has-repro', 'repro/verified') then 1 else 0 end) as has_repro_verified,
+        max(case when l.label_name in ('has-repro', 'repro/verified', 'fidget-repro-complete') then 1 else 0 end) as has_repro_verified,
         max(case when l.label_name = 'hard-blocker' then 1 else 0 end) as has_hard_blocker,
         max(case when l.label_name = 'release/awaiting-release' then 1 else 0 end) as has_awaiting_release,
         max(case when l.label_name = 'cleanup/stale' then 1 else 0 end) as has_stale_label
