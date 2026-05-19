@@ -63,11 +63,12 @@ def main():
         max_items=args.limit,
     ).with_resources("issues", "pull_requests")
 
-    # dlt's merge disposition generates a SQL file that fails against a fresh
-    # MotherDuck destination because it assumes child tables already exist.
-    # Replace is safe here — PR data is small and fully replaced each run.
+    # pull_requests uses replace so child tables never need _dlt_root_id.
+    # Drop stuck pending packages so retried merge jobs from prior failed runs
+    # don't resurface (the root cause of the MergeDispositionException).
     if args.motherduck:
         source.resources["pull_requests"].apply_hints(write_disposition="replace")
+        pipeline.drop_pending_packages()
 
     loader_kwargs = {}
     if not args.motherduck:
