@@ -354,3 +354,39 @@ models:
       - name: age_days
         tests:
           - not_null
+
+  - name: metric_avg_time_to_close
+    description: >
+      MetricFlow metric: avg_time_to_close. Weekly grain, split by issue_category.
+      Powers the DuckDB-WASM MetricFlow dashboard.
+    columns:
+      - name: metric_time
+        tests:
+          - not_null
+      - name: issue_category
+        tests:
+          - not_null
+      - name: issue_count
+        tests:
+          - not_null
+      - name: avg_hours_to_close
+        tests:
+          - not_null
+      - name: median_hours_to_close
+        tests:
+          - not_null
+
+  - name: metric_open_issue_count
+    description: >
+      MetricFlow metric: open_issue_count. Sliced by issue_category and milestone_title.
+      Powers the DuckDB-WASM MetricFlow dashboard.
+    columns:
+      - name: issue_category
+        tests:
+          - not_null
+      - name: milestone_title
+        tests:
+          - not_null
+      - name: open_issue_count
+        tests:
+          - not_null

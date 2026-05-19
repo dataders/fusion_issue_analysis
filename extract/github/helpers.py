@@ -174,7 +174,7 @@ def _run_graphql_query(
         )
         time.sleep(delay)
 
-    def _request() -> raw_requests.Response:
+    def _request() -> dict:
         for attempt in range(MAX_RETRIES + 1):
             try:
                 r = raw_requests.post(
@@ -183,22 +183,19 @@ def _run_graphql_query(
                     headers=_get_auth_header(access_token),
                     timeout=REQUEST_TIMEOUT_SECONDS,
                 )
+                if r.status_code in RETRY_STATUS_CODES and attempt < MAX_RETRIES:
+                    _sleep_before_retry(f"HTTP {r.status_code}", attempt + 1)
+                    continue
+                r.raise_for_status()
+                return r.json()  # inside try so ChunkedEncodingError during body streaming is retried
             except retryable_errors:
                 if attempt == MAX_RETRIES:
                     raise
                 _sleep_before_retry("network response ended early", attempt + 1)
-                continue
-
-            if r.status_code in RETRY_STATUS_CODES and attempt < MAX_RETRIES:
-                _sleep_before_retry(f"HTTP {r.status_code}", attempt + 1)
-                continue
-
-            r.raise_for_status()
-            return r
 
         raise RuntimeError("GitHub GraphQL request retry loop exhausted")
 
-    data = _request().json()
+    data = _request()
     if "errors" in data:
         raise ValueError(data)
     data = data["data"]

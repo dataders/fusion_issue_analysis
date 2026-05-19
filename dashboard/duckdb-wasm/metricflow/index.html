@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>dbt Semantic Layer · MetricFlow Metrics</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px 24px 48px; max-width: 980px; }
+    h1 { font-size: 1.1rem; font-weight: 600; margin: 0 0 2px; }
+    h2 { font-size: 0.76rem; font-weight: 600; text-transform: uppercase; letter-spacing: .07em; color: #7f849c; margin: 28px 0 10px; }
+    #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
+    .error { color: #f38ba8 !important; }
+
+    /* ── Metric registry cards ─────────────────────────────────── */
+    .registry { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 6px; }
+    .metric-card { background: #181825; border: 1px solid #313244; border-radius: 8px; padding: 12px 14px; }
+    .metric-card.active { border-color: #89b4fa; }
+    .metric-name { font-size: 0.78rem; font-weight: 700; color: #89b4fa; font-family: 'SF Mono', 'Menlo', monospace; margin: 0 0 4px; }
+    .metric-type { display: inline-block; font-size: 0.62rem; font-weight: 600; letter-spacing: .05em; text-transform: uppercase; background: #313244; color: #a6e3a1; border-radius: 3px; padding: 1px 5px; margin-bottom: 6px; }
+    .metric-desc { font-size: 0.74rem; color: #a6adc8; line-height: 1.4; margin: 0 0 8px; }
+    .metric-meta { font-size: 0.68rem; color: #6c7086; }
+    .metric-meta span { color: #cba6f7; font-family: 'SF Mono', 'Menlo', monospace; }
+
+    /* ── Charts ────────────────────────────────────────────────── */
+    .chart-wrap { overflow-x: auto; margin-bottom: 4px; }
+    .chart-wrap svg { max-width: 100%; display: block; }
+    .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+    /* ── KPI row ───────────────────────────────────────────────── */
+    .kpi-grid { display: grid; gap: 10px; margin-bottom: 8px; }
+    .kpi-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
+    .kpi-card { background: #313244; border-radius: 8px; padding: 14px 12px 12px; text-align: center; }
+    .kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1; }
+    .kpi-label { color: #a6adc8; font-size: 0.67rem; margin-top: 6px; }
+    .kpi-sub { color: #6c7086; font-size: 0.62rem; margin-top: 3px; font-family: 'SF Mono', 'Menlo', monospace; }
+
+    /* ── Dimension pill filter ─────────────────────────────────── */
+    .dim-bar { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 10px; }
+    .dim-pill { font-size: 0.72rem; padding: 3px 10px; border: 1px solid #313244; border-radius: 20px; background: #181825; color: #a6adc8; cursor: pointer; transition: all .12s; }
+    .dim-pill:hover { border-color: #89b4fa; color: #cdd6f4; }
+    .dim-pill.active { background: #89b4fa; color: #1e1e2e; border-color: #89b4fa; font-weight: 600; }
+
+    /* ── SQL fragment ──────────────────────────────────────────── */
+    .sql-block { background: #181825; border: 1px solid #313244; border-radius: 6px; padding: 10px 14px; font-family: 'SF Mono', 'Menlo', monospace; font-size: 0.72rem; color: #a6e3a1; white-space: pre; overflow-x: auto; margin-bottom: 4px; }
+    .sql-label { font-size: 0.65rem; color: #6c7086; text-transform: uppercase; letter-spacing: .06em; margin-bottom: 4px; }
+
+    @media (max-width: 720px) {
+      .registry { grid-template-columns: repeat(2, 1fr); }
+      .kpi-grid.cols-4 { grid-template-columns: repeat(2, 1fr); }
+      .cols-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <h1>dbt Semantic Layer · MetricFlow Metrics</h1>
+  <p id="status">Connecting to MotherDuck…</p>
+  <div id="root"></div>
+
+  <script type="module">
+    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
+    import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
+
+    const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
+    const status = document.getElementById('status');
+    const root   = document.getElementById('root');
+
+    if (!TOKEN || TOKEN.startsWith('__')) {
+      status.textContent = 'Token not injected — run the deploy workflow to embed MOTHERDUCK_READ_TOKEN.';
+      status.className = 'error';
+    } else {
+      main().catch(err => { status.textContent = `Error: ${err.message}`; status.className = 'error'; console.error(err); });
+    }
+
+    const TTL = 60 * 60 * 1000;
+    async function q(conn, sql) {
+      const key = `md:mf:${btoa(sql).slice(0, 40)}`;
+      const hit = sessionStorage.getItem(key);
+      if (hit) { const {rows, ts} = JSON.parse(hit); if (Date.now() - ts < TTL) return rows; }
+      const result = await conn.evaluateQuery(sql);
+      const rows = result.data.toRows();
+      sessionStorage.setItem(key, JSON.stringify({rows, ts: Date.now()}, (_, v) => typeof v === 'bigint' ? Number(v) : v));
+      return rows;
+    }
+
+    const S = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
+
+    function section(title) {
+      const h = document.createElement('h2'); h.textContent = title; root.append(h);
+    }
+    function chart(plot) {
+      const d = document.createElement('div'); d.className = 'chart-wrap'; d.append(plot); root.append(d);
+    }
+    function cols2(left, right) {
+      const g = document.createElement('div'); g.className = 'cols-2';
+      const l = document.createElement('div'); l.append(left);
+      const r = document.createElement('div'); r.append(right);
+      g.append(l, r); root.append(g);
+    }
+    function toDate(v) { return v instanceof Date ? v : new Date(v); }
+
+    // ── Metric registry definitions ─────────────────────────────────────────────
+    const METRICS = [
+      {
+        name: 'open_issue_count',
+        type: 'simple',
+        label: 'Open issue count',
+        desc: 'Number of currently open non-epic issues.',
+        measure: 'issue_count',
+        filter: "state = 'OPEN' AND issue_category != 'epic'",
+        dims: ['issue_category', 'milestone_title'],
+        color: '#cba6f7',
+      },
+      {
+        name: 'avg_time_to_close',
+        type: 'simple',
+        label: 'Avg time to close',
+        desc: 'Average hours from open to close across non-epic issues.',
+        measure: 'avg_hours_to_close',
+        filter: null,
+        dims: ['issue_category', 'metric_time__week'],
+        color: '#89dceb',
+      },
+      {
+        name: 'issues_opened_per_week',
+        type: 'simple',
+        label: 'Issues opened per week',
+        desc: 'Count of all issues opened, at weekly granularity.',
+        measure: 'issue_count',
+        filter: null,
+        dims: ['metric_time__week'],
+        color: '#a6e3a1',
+      },
+      {
+        name: 'bug_fix_velocity',
+        type: 'simple',
+        label: 'Bug fix velocity',
+        desc: "Median hours to close bug issues. Tracks fix throughput over time.",
+        measure: 'median_hours_to_close',
+        filter: "issue_category = 'bug'",
+        dims: ['metric_time__week'],
+        color: '#f38ba8',
+      },
+    ];
+
+    function renderRegistry() {
+      section('Metric registry');
+      const grid = document.createElement('div'); grid.className = 'registry';
+      METRICS.forEach(m => {
+        const card = document.createElement('div'); card.className = 'metric-card';
+        card.innerHTML = `
+          <div class="metric-name">${m.name}</div>
+          <div><span class="metric-type">${m.type}</span></div>
+          <div class="metric-desc">${m.desc}</div>
+          <div class="metric-meta">
+            measure: <span>${m.measure}</span><br>
+            dimensions: <span>${m.dims.join(', ')}</span>
+            ${m.filter ? `<br>filter: <span style="color:#fab387">${m.filter}</span>` : ''}
+          </div>`;
+        grid.append(card);
+      });
+      root.append(grid);
+    }
+
+    async function main() {
+      const conn = MDConnection.create({mdToken: TOKEN});
+      await conn.isInitialized();
+      status.textContent = 'Loading metrics…';
+
+      const [openCount, avgClose, openedWeekly, bugVel] = await Promise.all([
+        q(conn, 'SELECT * FROM fusion_issues.main.metric_open_issue_count'),
+        q(conn, 'SELECT * FROM fusion_issues.main.metric_avg_time_to_close ORDER BY metric_time'),
+        q(conn, 'SELECT * FROM fusion_issues.main.issues_opened_per_week ORDER BY week'),
+        q(conn, 'SELECT * FROM fusion_issues.main.bug_velocity ORDER BY week'),
+      ]);
+
+      status.textContent = '';
+
+      // ── Metric registry ──────────────────────────────────────────────────────
+      renderRegistry();
+
+      // ── KPI snapshot ────────────────────────────────────────────────────────
+      section('Metric snapshot');
+      const totalOpen = openCount.reduce((s, r) => s + Number(r.open_issue_count), 0);
+
+      const recentClose = avgClose.filter(r => {
+        const d = toDate(r.metric_time);
+        return d >= new Date(Date.now() - 28 * 86400 * 1000);
+      });
+      const avgCloseDays = recentClose.length
+        ? (recentClose.reduce((s, r) => s + Number(r.avg_days_to_close ?? 0), 0) / recentClose.length).toFixed(1)
+        : '—';
+
+      const lastWeekOpened = openedWeekly.length ? openedWeekly[openedWeekly.length - 1].issues_opened : '—';
+
+      const recentBug = bugVel.slice(-4);
+      const avgBugDays = recentBug.length
+        ? (recentBug.reduce((s, r) => s + Number(r.median_days), 0) / recentBug.length).toFixed(1)
+        : '—';
+
+      const kpiGrid = document.createElement('div'); kpiGrid.className = 'kpi-grid cols-4';
+      kpiGrid.innerHTML = [
+        [totalOpen, '#cba6f7', 'Open issues', 'open_issue_count'],
+        [avgCloseDays + 'd', '#89dceb', 'Avg days to close (4 wk)', 'avg_time_to_close'],
+        [lastWeekOpened, '#a6e3a1', 'Issues opened last week', 'issues_opened_per_week'],
+        [avgBugDays + 'd', '#f38ba8', 'Median bug fix (4 wk)', 'bug_fix_velocity'],
+      ].map(([v, color, label, metric]) => `
+        <div class="kpi-card">
+          <div class="kpi-value" style="color:${color}">${v ?? '—'}</div>
+          <div class="kpi-label">${label}</div>
+          <div class="kpi-sub">${metric}</div>
+        </div>`).join('');
+      root.append(kpiGrid);
+
+      // ── open_issue_count by category & milestone ─────────────────────────────
+      section('open_issue_count · by dimension');
+
+      const byCat = {};
+      openCount.forEach(r => {
+        byCat[r.issue_category] = (byCat[r.issue_category] ?? 0) + Number(r.open_issue_count);
+      });
+      const catData = Object.entries(byCat)
+        .map(([issue_category, open_issue_count]) => ({issue_category, open_issue_count}))
+        .sort((a, b) => b.open_issue_count - a.open_issue_count);
+
+      const byMilestone = {};
+      openCount.forEach(r => {
+        byMilestone[r.milestone_title] = (byMilestone[r.milestone_title] ?? 0) + Number(r.open_issue_count);
+      });
+      const msData = Object.entries(byMilestone)
+        .map(([milestone_title, open_issue_count]) => ({milestone_title, open_issue_count}))
+        .sort((a, b) => b.open_issue_count - a.open_issue_count)
+        .slice(0, 12);
+
+      const catChart = Plot.plot({
+        style: S, width: 440, height: 220, marginLeft: 110,
+        x: {label: 'Open issues', grid: true, gridColor: '#313244'},
+        y: {label: null},
+        marks: [
+          Plot.barX(catData, {
+            x: 'open_issue_count', y: 'issue_category',
+            fill: '#cba6f7', tip: true,
+            sort: {y: '-x'},
+          }),
+          Plot.text(catData, {
+            x: 'open_issue_count', y: 'issue_category',
+            text: d => String(d.open_issue_count),
+            dx: 4, fontSize: 10, fill: '#cdd6f4', textAnchor: 'start',
+          }),
+        ],
+      });
+
+      const msChart = Plot.plot({
+        style: S, width: 440, height: 220, marginLeft: 130,
+        x: {label: 'Open issues', grid: true, gridColor: '#313244'},
+        y: {label: null},
+        marks: [
+          Plot.barX(msData, {
+            x: 'open_issue_count', y: 'milestone_title',
+            fill: '#89b4fa', tip: true,
+            sort: {y: '-x'},
+          }),
+        ],
+      });
+
+      cols2(catChart, msChart);
+
+      const sqlLabel1 = document.createElement('div'); sqlLabel1.className = 'sql-label'; sqlLabel1.textContent = 'compiled metric query';
+      const sqlBlock1 = document.createElement('div'); sqlBlock1.className = 'sql-block';
+      sqlBlock1.textContent = `-- dbtf sl query --metrics open_issue_count --group-by issue__issue_category,issue__milestone_title
+SELECT issue_category, milestone_title, COUNT(issue_dlt_id) AS open_issue_count
+FROM fct_issues
+WHERE state = 'OPEN' AND issue_category != 'epic'
+GROUP BY 1, 2`;
+      root.append(sqlLabel1, sqlBlock1);
+
+      // ── avg_time_to_close trend ──────────────────────────────────────────────
+      section('avg_time_to_close · weekly trend by category');
+
+      const avgCloseTyped = avgClose.map(r => ({...r, metric_time: toDate(r.metric_time)}));
+
+      const avgCloseChart = Plot.plot({
+        style: S, width: 880, height: 240, marginBottom: 36,
+        x: {type: 'utc', label: null, tickRotate: -30},
+        y: {label: 'Avg days to close', grid: true, gridColor: '#313244'},
+        color: {
+          legend: true,
+          domain: ['bug', 'enhancement', 'task', 'other'],
+          range: ['#f38ba8', '#89b4fa', '#a6e3a1', '#a6adc8'],
+        },
+        marks: [
+          ...['bug', 'enhancement', 'task', 'other'].map((cat, i) => {
+            const color = ['#f38ba8', '#89b4fa', '#a6e3a1', '#a6adc8'][i];
+            return Plot.lineY(
+              avgCloseTyped.filter(d => d.issue_category === cat && d.avg_days_to_close != null),
+              {x: 'metric_time', y: 'avg_days_to_close', stroke: color, strokeWidth: 2, tip: true}
+            );
+          }),
+        ],
+      });
+      chart(avgCloseChart);
+
+      const sqlLabel2 = document.createElement('div'); sqlLabel2.className = 'sql-label'; sqlLabel2.textContent = 'compiled metric query';
+      const sqlBlock2 = document.createElement('div'); sqlBlock2.className = 'sql-block';
+      sqlBlock2.textContent = `-- dbtf sl query --metrics avg_time_to_close --group-by metric_time__week,issue__issue_category
+SELECT DATE_TRUNC('week', closed_at) AS metric_time, issue_category,
+       AVG(hours_to_close) AS avg_hours_to_close
+FROM fct_issues WHERE closed_at IS NOT NULL
+GROUP BY 1, 2 ORDER BY 1, 2`;
+      root.append(sqlLabel2, sqlBlock2);
+
+      // ── issues_opened_per_week ───────────────────────────────────────────────
+      section('issues_opened_per_week & bug_fix_velocity');
+
+      const openedTyped = openedWeekly.map(r => ({...r, week: toDate(r.week)}));
+      const bugVelTyped = bugVel.map(r => ({...r, week: toDate(r.week)}));
+
+      const openedChart = Plot.plot({
+        style: S, width: 440, height: 220, marginBottom: 36,
+        x: {type: 'utc', label: null, tickRotate: -30},
+        y: {label: 'Issues opened', grid: true, gridColor: '#313244'},
+        marks: [
+          Plot.areaY(openedTyped, {x: 'week', y: 'issues_opened', fill: '#a6e3a1', fillOpacity: 0.25, tip: true}),
+          Plot.lineY(openedTyped, {x: 'week', y: 'issues_opened', stroke: '#a6e3a1', strokeWidth: 2}),
+        ],
+      });
+
+      const bugChart = Plot.plot({
+        style: S, width: 440, height: 220, marginBottom: 36,
+        x: {type: 'utc', label: null, tickRotate: -30},
+        y: {label: 'Median days to close', grid: true, gridColor: '#313244'},
+        marks: [
+          Plot.areaY(bugVelTyped, {x: 'week', y: 'median_days', fill: '#f38ba8', fillOpacity: 0.2, tip: true}),
+          Plot.lineY(bugVelTyped, {x: 'week', y: 'median_days', stroke: '#f38ba8', strokeWidth: 2}),
+          Plot.ruleY([0]),
+        ],
+      });
+
+      cols2(openedChart, bugChart);
+
+      const sqlLabel3 = document.createElement('div'); sqlLabel3.className = 'sql-label'; sqlLabel3.textContent = 'compiled metric queries';
+      const sqlBlock3 = document.createElement('div'); sqlBlock3.className = 'sql-block';
+      sqlBlock3.textContent = `-- dbtf sl query --metrics issues_opened_per_week --group-by metric_time__week
+SELECT DATE_TRUNC('week', created_at) AS week, COUNT(issue_dlt_id) AS issues_opened
+FROM fct_issues GROUP BY 1 ORDER BY 1
+
+-- dbtf sl query --metrics bug_fix_velocity --group-by metric_time__week
+SELECT DATE_TRUNC('week', closed_at) AS week, MEDIAN(hours_to_close)/24 AS median_days
+FROM fct_issues WHERE issue_category = 'bug' AND closed_at IS NOT NULL
+GROUP BY 1 HAVING COUNT(*) >= 3 ORDER BY 1`;
+      root.append(sqlLabel3, sqlBlock3);
+
+      status.textContent = '';
+    }
+  </script>
+</body>
+</html>

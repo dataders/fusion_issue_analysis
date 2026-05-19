@@ -251,6 +251,7 @@
       <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
       <button data-src="dac/build/" data-tab="dac" onclick="switchTab(this)">DAC</button>
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
+      <button data-src="dataface/index.html" data-tab="dataface" onclick="switchTab(this)">Dataface</button>
       <span class="tab-divider">live</span>
       <button data-src="duckdb-wasm/index.html" data-tab="duckdb-wasm" onclick="switchTab(this)">DuckDB WASM</button>
       <button data-src="mosaic/index.html" data-tab="mosaic" onclick="switchTab(this)">Mosaic</button>
@@ -263,6 +264,10 @@
       <button data-src="prefab/app_myspace.html" data-theme="myspace" onclick="switchPrefabTheme(this)">MySpace</button>
       <button data-src="prefab/app_windows_2000.html" data-theme="windows-2000" onclick="switchPrefabTheme(this)">Windows 2000</button>
     </div>
+    <div class="subnav" id="duckdb-wasm-views" hidden aria-label="DuckDB WASM view">
+      <button class="active" data-src="duckdb-wasm/index.html" data-view="health" onclick="switchDuckDBView(this)">Health</button>
+      <button data-src="duckdb-wasm/metricflow/index.html" data-view="metricflow" onclick="switchDuckDBView(this)">MetricFlow</button>
+    </div>
   </header>
   <iframe id="frame" src="prefab/app.html" title="Dashboard"></iframe>
 
@@ -270,6 +275,8 @@
     const tabs = Array.from(document.querySelectorAll('.main-tabs button'));
     const prefabThemes = Array.from(document.querySelectorAll('#prefab-themes button'));
     const prefabThemeBar = document.getElementById('prefab-themes');
+    const duckdbWasmViews = Array.from(document.querySelectorAll('#duckdb-wasm-views button'));
+    const duckdbWasmBar = document.getElementById('duckdb-wasm-views');
     const frame = document.getElementById('frame');
     const dataRefreshed = document.getElementById('data-refreshed');
     const legacyPrefabThemeAliases = {
@@ -322,11 +329,17 @@
       return prefabThemes.find(button => button.classList.contains('active')) || prefabThemes[0];
     }
 
+    function activeDuckDBView() {
+      return duckdbWasmViews.find(b => b.classList.contains('active')) || duckdbWasmViews[0];
+    }
+
     function switchTab(btn, options = {}) {
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const isPrefab = btn.dataset.tab === "prefab";
+      const isDuckDBWasm = btn.dataset.tab === "duckdb-wasm";
       prefabThemeBar.hidden = !isPrefab;
+      duckdbWasmBar.hidden = !isDuckDBWasm;
 
       if (isPrefab) {
         const themeName = options.theme || activePrefabTheme().dataset.theme || "vanilla";
@@ -335,6 +348,13 @@
         frame.src = theme.dataset.src;
         frame.title = `Prefab ${theme.textContent.trim()}`;
         updateUrl("prefab", theme.dataset.theme);
+      } else if (isDuckDBWasm) {
+        const viewName = options.view || activeDuckDBView().dataset.view || "health";
+        const view = duckdbWasmViews.find(b => b.dataset.view === viewName) || duckdbWasmViews[0];
+        setActive(duckdbWasmViews, view);
+        frame.src = view.dataset.src;
+        frame.title = `DuckDB WASM · ${view.textContent.trim()}`;
+        updateUrl("duckdb-wasm", null, viewName === "health" ? null : viewName);
       } else {
         frame.src = btn.dataset.src;
         frame.title = btn.textContent.trim();
@@ -347,13 +367,23 @@
       switchTab(prefabTab, { theme: btn.dataset.theme });
     }
 
-    function updateUrl(tab, theme) {
+    function switchDuckDBView(btn) {
+      const duckdbTab = tabs.find(button => button.dataset.tab === "duckdb-wasm");
+      switchTab(duckdbTab, { view: btn.dataset.view });
+    }
+
+    function updateUrl(tab, theme, view) {
       const url = new URL(window.location);
       url.searchParams.set("tab", tab);
       if (theme && theme !== "vanilla") {
         url.searchParams.set("theme", theme);
       } else {
         url.searchParams.delete("theme");
+      }
+      if (view) {
+        url.searchParams.set("view", view);
+      } else {
+        url.searchParams.delete("view");
       }
       url.hash = tab;
       if (window.location.search !== url.search || window.location.hash !== url.hash) {
@@ -365,6 +395,7 @@
       const params = new URLSearchParams(window.location.search);
       let tab = params.get("tab") || window.location.hash.replace(/^#/, "");
       let theme = params.get("theme");
+      let view = params.get("view");
       if (!tab) return;
 
       if (legacyPrefabThemeAliases[tab]) {
@@ -376,7 +407,7 @@
       }
 
       const match = tabs.find(btn => btn.dataset.tab === tab);
-      if (match) switchTab(match, { theme });
+      if (match) switchTab(match, { theme, view });
     }
 
     loadTabFromHash();
