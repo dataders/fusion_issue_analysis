@@ -50,6 +50,8 @@ coverage.xml
 .hypothesis/
 .pytest_cache/
 cover/
+playwright-report/
+test-results/
 
 # Translations
 *.mo
@@ -165,9 +167,12 @@ dashboard/evidence/node_modules/
 dashboard/observable/node_modules/
 
 # Dashboard build artifacts (index.html is the bakeoff wrapper, tracked in git)
+dashboard/about.html
+dashboard/data_freshness.json
 dashboard/app.html
 dashboard/app_myspace.html
 dashboard/prefab/app.html
+dashboard/prefab/app_reactive.html
 dashboard/prefab/app_myspace.html
 dashboard/prefab/app_windows_2000.html
 dashboard/mviz/index.html
@@ -189,10 +194,12 @@ dashboard/quarto/.quarto/
 dashboard/quarto/index.html
 dashboard/quarto/index_files/
 dashboard/dac/build/
+dashboard/mcp-app/data/issue-health.json
+dashboard/mcp-app/dist/
 logs/queries
 
 # Claude Code session state
-.claude/scheduled_tasks.lock
+.claude/
 
 # Git worktrees
 .worktrees/
@@ -212,3 +219,4 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
+.env.local

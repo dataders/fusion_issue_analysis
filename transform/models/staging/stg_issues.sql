@@ -14,6 +14,7 @@ renamed as (
         author__login as author_login,
         author__avatar_url as author_avatar_url,
         author_association,
+        issue_type__name as issue_type,
         milestone__number as milestone_number,
         milestone__title as milestone_title,
         milestone__description as milestone_description,
@@ -25,7 +26,11 @@ renamed as (
         comments_total_count,
         created_at,
         updated_at,
-        closed_at
+        closed_at,
+        issue_type__name as issue_type,
+        parent__number as parent_number,
+        parent__title as parent_title,
+        parent__issue_type__name as parent_issue_type
     from source
 )
 

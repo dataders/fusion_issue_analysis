@@ -7,10 +7,19 @@ RATE_LIMIT = """
   }
 """
 
+ISSUE_ONLY_FIELDS = """
+        issueType { name }
+        parent {
+          number
+          title
+          issueType { name }
+        }
+"""
+
 ISSUES_QUERY = """
-query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions: Int!, $first_comments: Int!, $page_after: String) {
+query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions: Int!, $first_comments: Int!, $first_timeline_items: Int!, $page_after: String%s) {
   repository(owner: $owner, name: $name) {
-    %s(first: $issues_per_page, orderBy: {field: CREATED_AT, direction: DESC}, after: $page_after) {
+    %s(first: $issues_per_page%s, orderBy: {field: UPDATED_AT, direction: DESC}, after: $page_after) {
       totalCount
       pageInfo {
         endCursor
@@ -29,6 +38,7 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
         createdAt
         state
         updatedAt
+        %s
         labels(first: 25) {
           nodes {
             name
@@ -59,6 +69,22 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
             user {login avatarUrl url}
             content
             createdAt
+          }
+        }
+        timelineItems(first: $first_timeline_items, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]) {
+          totalCount
+          nodes {
+            __typename
+            ... on LabeledEvent {
+              createdAt
+              actor {login avatarUrl url}
+              label {name color}
+            }
+            ... on UnlabeledEvent {
+              createdAt
+              actor {login avatarUrl url}
+              label {name color}
+            }
           }
         }
         comments(first: $first_comments) {

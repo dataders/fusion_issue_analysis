@@ -5,6 +5,18 @@ sources:
     description: >
       Raw GitHub issue data extracted via dlt from dbt-labs/dbt-fusion.
       Parquet files in data/raw/fusion_issues/. Gitignored — run extract/run.py to populate.
+    tables:
+      - name: issues
+        description: Raw issues from dlt GraphQL extract (flattened nested fields use double-underscore separators).
+        columns:
+          - name: issue_type__name
+            description: GitHub native Issue Type (Bug | Feature | Task | Epic | null)
+          - name: parent__number
+            description: Parent issue number via GitHub sub-issues
+          - name: parent__title
+            description: Parent issue title
+          - name: parent__issue_type__name
+            description: Parent issue's native Issue Type
 models:
   - name: stg_issues
     description: Cleaned issues from dbt-labs/dbt-fusion
@@ -26,6 +38,10 @@ models:
           - accepted_values:
               arguments:
                 values: ['OPEN', 'CLOSED']
+      - name: issue_type
+        description: >
+          Native GitHub Issue Type name (e.g., 'Bug', 'Feature', 'Task', 'Epic').
+          NULL when no Issue Type is set on the issue.
       - name: created_at
         tests:
           - not_null
@@ -81,6 +97,35 @@ models:
               arguments:
                 to: ref('stg_issues')
                 field: issue_dlt_id
+
+  - name: stg_issue_label_events
+    description: >
+      LABELED_EVENT / UNLABELED_EVENT timeline entries for issues. Sourced from
+      GitHub GraphQL `timelineItems` and used for accurate label-application timestamps.
+    columns:
+      - name: event_dlt_id
+        tests:
+          - unique
+          - not_null
+      - name: issue_dlt_id
+        tests:
+          - not_null
+          - relationships:
+              arguments:
+                to: ref('stg_issues')
+                field: issue_dlt_id
+      - name: event_type
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['LabeledEvent', 'UnlabeledEvent']
+      - name: event_at
+        tests:
+          - not_null
+      - name: label_name
+        tests:
+          - not_null
 
   - name: stg_pull_requests
     description: Cleaned pull requests from dbt-labs/dbt-fusion

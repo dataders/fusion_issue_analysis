@@ -27,7 +27,7 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-dashboard-npm-
 
@@ -53,30 +53,47 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
+      - name: Write data freshness metadata
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run python dashboard/write_data_freshness.py
+
       # Data comes from MotherDuck — no extract or dbt build needed.
 
       - name: Export Prefab dashboards
+        id: prefab
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
           cp dashboard/about.html preview/about.html
+          cp dashboard/data_freshness.json preview/data_freshness.json
           mkdir -p preview/shaper
           cp dashboard/shaper/index.html preview/shaper/index.html
           cp dashboard/shaper/fusion-issue-health.dashboard.sql preview/shaper/fusion-issue-health.dashboard.sql
           cp dashboard/shaper/shaper.json preview/shaper/shaper.json
           uv run prefab export dashboard/prefab/app.py -o preview/prefab/app.html
+          uv run prefab export dashboard/prefab/app_reactive.py -o preview/prefab/app_reactive.html
           uv run prefab export dashboard/prefab/app_myspace.py -o preview/prefab/app_myspace.html
           uv run prefab export dashboard/prefab/app_windows_2000.py -o preview/prefab/app_windows_2000.html
 
       - name: Build npm dashboard previews
+        id: npm
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           EVIDENCE_BASE_PATH: /evidence/build
         run: npm run build:npm-dashboards:preview
 
       - name: Build MDV dashboard
+        id: mdv
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           MDV_CACHE_DIR: ${{ runner.temp }}/fusion-mdv-cache/mdv-${{ env.MDV_SHA }}
@@ -86,6 +103,9 @@ jobs:
           cp dashboard/mdv/index.html preview/mdv/index.html
 
       - name: Build ggsql dashboard
+        id: ggsql
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           FUSION_DB: md:fusion_issues
@@ -95,6 +115,9 @@ jobs:
           cp dashboard/ggsql/index.html preview/ggsql/index.html
 
       - name: Export Marimo dashboard
+        id: marimo
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run marimo export html --no-include-code dashboard/marimo/app.py -o preview/marimo.html
@@ -103,6 +126,9 @@ jobs:
         uses: quarto-dev/quarto-actions/setup@v2
 
       - name: Render Quarto dashboard
+        id: quarto
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           QUARTO_PYTHON: ${{ github.workspace }}/.venv/bin/python3
@@ -114,6 +140,9 @@ jobs:
           cp -r index_files ../../preview/quarto/ 2>/dev/null || true
 
       - name: Build DAC dashboard
+        id: dac
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
           DAC_ENVIRONMENT: prod
@@ -123,6 +152,7 @@ jobs:
           ! grep -q 'bruin query failed' preview/dac/index.html
 
       - name: Upload preview artifact
+        if: github.actor != 'dependabot[bot]'
         uses: actions/upload-artifact@v4
         with:
           name: dashboard-preview
@@ -130,30 +160,33 @@ jobs:
           retention-days: 7
 
       - name: Comment preview link on PR
+        if: github.actor != 'dependabot[bot]'
         uses: actions/github-script@v9
         with:
           script: |
             const runUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/actions/runs/${context.runId}`;
+            const fmt = o => o === 'success' ? '✅' : o === 'failure' ? '❌' : o === 'skipped' ? '⏭️' : `⚠️ ${o}`;
             const body = [
               '## Dashboard Preview',
               '',
               `Download the preview artifact from [this workflow run](${runUrl}#artifacts) and open \`index.html\`.`,
               '',
-              '| Framework | File |',
-              '|-----------|------|',
-              '| Prefab | `prefab/app.html` |',
-              '| Prefab MySpace | `prefab/app_myspace.html` |',
-              '| Prefab Windows 2000 | `prefab/app_windows_2000.html` |',
-              '| ggsql + Vega-Lite | `ggsql/index.html` |',
-              '| mviz | `mviz/index.html` |',
-              '| MDV | `mdv/index.html` |',
-              '| Observable | `observable/index.html` |',
-              '| Evidence.dev | `evidence/index.html` |',
-              '| Marimo | `marimo.html` |',
-              '| Quarto | `quarto/index.html` |',
-              '| DAC | `dac/index.html` |',
-              '| Shaper | `shaper/index.html` |',
-              '| About | `about.html` |',
+              '| Framework | File | Status |',
+              '|-----------|------|--------|',
+              `| Prefab | \`prefab/app.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| Prefab (reactive) | \`prefab/app_reactive.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| Prefab MySpace | \`prefab/app_myspace.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| Prefab Windows 2000 | \`prefab/app_windows_2000.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| ggsql + Vega-Lite | \`ggsql/index.html\` | ${fmt('${{ steps.ggsql.outcome }}')} |`,
+              `| mviz | \`mviz/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
+              `| MDV | \`mdv/index.html\` | ${fmt('${{ steps.mdv.outcome }}')} |`,
+              `| Observable | \`observable/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
+              `| Evidence.dev | \`evidence/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
+              `| Marimo | \`marimo.html\` | ${fmt('${{ steps.marimo.outcome }}')} |`,
+              `| Quarto | \`quarto/index.html\` | ${fmt('${{ steps.quarto.outcome }}')} |`,
+              `| DAC | \`dac/index.html\` | ${fmt('${{ steps.dac.outcome }}')} |`,
+              `| Shaper | \`shaper/index.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
+              `| About | \`about.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               '',
               `_[Workflow run](${runUrl})_`,
             ].join('\n');
@@ -182,3 +215,34 @@ jobs:
                 body,
               });
             }
+
+      - name: Framework build summary
+        if: always() && github.actor != 'dependabot[bot]'
+        run: |
+          {
+            echo "## Framework build results"
+            echo ""
+            echo "| Framework | Result |"
+            echo "|-----------|--------|"
+            icon() { case $1 in success) echo "✅";; failure) echo "❌ **failed**";; *) echo "⚠️ $1";; esac; }
+            echo "| Prefab | $(icon '${{ steps.prefab.outcome }}') |"
+            echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
+            echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
+            echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
+            echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
+            echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          for outcome in \
+            '${{ steps.prefab.outcome }}' \
+            '${{ steps.npm.outcome }}' \
+            '${{ steps.mdv.outcome }}' \
+            '${{ steps.ggsql.outcome }}' \
+            '${{ steps.marimo.outcome }}' \
+            '${{ steps.quarto.outcome }}' \
+            '${{ steps.dac.outcome }}'; do
+            if [ "$outcome" = "failure" ]; then
+              echo "One or more framework builds failed — see table above." >&2
+              exit 1
+            fi
+          done

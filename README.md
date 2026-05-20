@@ -7,7 +7,7 @@ Static dashboard bakeoff for [dbt-labs/dbt-fusion](https://github.com/dbt-labs/d
 Start here:
 
 - Live dashboard: [dashboard-bakeoff.anders.omg.lol](https://dashboard-bakeoff.anders.omg.lol/)
-- About, context, findings, and decision guide: [dashboard-bakeoff.anders.omg.lol/?tab=about](https://dashboard-bakeoff.anders.omg.lol/?tab=about)
+- About, context, and findings: [dashboard-bakeoff.anders.omg.lol/?tab=about](https://dashboard-bakeoff.anders.omg.lol/?tab=about)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
 ## Local Development
@@ -31,7 +31,9 @@ Common commands:
 make extract
 make dbt
 make build
+make ui-test
 make serve
+make mcp-app
 ```
 
 What they do:
@@ -39,9 +41,11 @@ What they do:
 - `make extract`: pull GitHub issue data with dlt
 - `make dbt`: build shared models in DuckDB
 - `make build`: export all dashboard variants
+- `make ui-test`: run Playwright checks against the generated dashboard exports
 - `make serve`: build and open local static wrapper
+- `make mcp-app`: build a local MCP Apps proof of concept for agent-hosted dashboard consumption
 
-Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, and DAC.
+Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, DAC, and Shaper. The MCP Apps spike is local-only for now.
 
 ## Repo Shape
 

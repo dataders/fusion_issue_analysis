@@ -1,0 +1,103 @@
+title: "dbt-fusion Issue Health"
+description: >
+  Issue health dashboard for the dbt-fusion GitHub repository.
+  Queries the dbt Semantic Layer for KPIs, cumulative flow,
+  age distribution, and response-time trends.
+
+# Requires MetricFlow Semantic Layer configured in the dbt project.
+# Run locally: dft serve fusion-issue-health.board.yml
+# Export static HTML: dft render fusion-issue-health.board.yml --format html
+
+queries:
+  kpis:
+    metrics: [open_issues, net_flow_4w, rolling_median_close_days, pct_responded_48h]
+
+  weekly_flow:
+    metrics: [cumulative_opened, cumulative_closed]
+    dimensions: [week]
+    order_by: [week]
+
+  age_dist:
+    metrics: [issue_count]
+    dimensions: [age_bucket, issue_category]
+    order_by: [age_bucket]
+
+  response_pctiles:
+    metrics: [p50_hours]
+    dimensions: [week]
+    order_by: [week]
+
+rows:
+  - title: "Summary"
+    grid:
+      columns: 12
+      items:
+        - item: open_issues_kpi
+          width: 3
+        - item: net_flow_kpi
+          width: 3
+        - item: median_close_kpi
+          width: 3
+        - item: response_sla_kpi
+          width: 3
+    charts:
+      open_issues_kpi:
+        title: "Open Issues"
+        query: queries.kpis
+        type: kpi
+        metric: open_issues
+      net_flow_kpi:
+        title: "Net Flow (4wk)"
+        query: queries.kpis
+        type: kpi
+        metric: net_flow_4w
+      median_close_kpi:
+        title: "Median Close (days)"
+        query: queries.kpis
+        type: kpi
+        metric: rolling_median_close_days
+      response_sla_kpi:
+        title: "48h Response SLA"
+        query: queries.kpis
+        type: kpi
+        metric: pct_responded_48h
+
+  - title: "Trends"
+    grid:
+      columns: 12
+      items:
+        - item: cumulative_chart
+          width: 6
+        - item: age_chart
+          width: 6
+    charts:
+      cumulative_chart:
+        title: "Cumulative issue flow"
+        query: queries.weekly_flow
+        type: line
+        x: week
+        y:
+          - cumulative_opened
+          - cumulative_closed
+      age_chart:
+        title: "Open issue age by category"
+        query: queries.age_dist
+        type: bar
+        x: age_bucket
+        y: issue_count
+        color: issue_category
+        stacked: true
+
+  - title: "Response time"
+    grid:
+      columns: 12
+      items:
+        - item: response_chart
+          width: 12
+    charts:
+      response_chart:
+        title: "Median response time (hours)"
+        query: queries.response_pctiles
+        type: line
+        x: week
+        y: p50_hours

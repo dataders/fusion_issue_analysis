@@ -177,7 +177,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['bug', 'enhancement', 'other']
+                values: ['bug', 'enhancement', 'other', 'task']
       - name: age_days
         tests:
           - not_null
@@ -252,7 +252,7 @@ models:
           - not_null
           - accepted_values:
               arguments:
-                values: ['bug', 'enhancement', 'other', 'epic']
+                values: ['bug', 'enhancement', 'other', 'epic', 'task']
 
   - name: open_by_category
     description: Open issue count per category
@@ -300,5 +300,93 @@ models:
           - not_null
           - unique
       - name: issues_opened
+        tests:
+          - not_null
+
+  - name: issue_triage_health
+    description: Single-row counts of open non-EPIC issues across the triage taxonomy (slipped-through bugs, queue, needs-repro, repro-verified, awaiting-release, hard-blocker, stale). `slipped_through_count` is scoped to `issue_category = 'bug'` since bugs are the only category that legitimately go through the triage queue.
+    columns:
+      - name: total_open
+        tests:
+          - not_null
+      - name: slipped_through_count
+        tests:
+          - not_null
+      - name: triage_queue_count
+        tests:
+          - not_null
+      - name: needs_repro_count
+        tests:
+          - not_null
+      - name: repro_verified_count
+        tests:
+          - not_null
+      - name: awaiting_release_count
+        tests:
+          - not_null
+      - name: hard_blocker_count
+        tests:
+          - not_null
+      - name: stale_count
+        tests:
+          - not_null
+
+  - name: issue_triage_lag
+    description: >
+      Rolling 7-day median triage SLA metrics (1-row aggregate).
+      Approximates first-triage as first non-author comment and
+      triage-to-repro-verified as updated_at minus first_response_at.
+    columns:
+      - name: median_days_to_first_triage_bugs
+        tests:
+          - not_null
+      - name: median_days_triage_to_repro_verified
+        tests:
+          - not_null
+
+  - name: oldest_untriaged
+    description: Top 25 oldest open bugs with zero triage signal — the daily action queue
+    columns:
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
+      - name: age_days
+        tests:
+          - not_null
+
+  - name: metric_avg_time_to_close
+    description: >
+      MetricFlow metric: avg_time_to_close. Weekly grain, split by issue_category.
+      Powers the DuckDB-WASM MetricFlow dashboard.
+    columns:
+      - name: metric_time
+        tests:
+          - not_null
+      - name: issue_category
+        tests:
+          - not_null
+      - name: issue_count
+        tests:
+          - not_null
+      - name: avg_hours_to_close
+        tests:
+          - not_null
+      - name: median_hours_to_close
+        tests:
+          - not_null
+
+  - name: metric_open_issue_count
+    description: >
+      MetricFlow metric: open_issue_count. Sliced by issue_category and milestone_title.
+      Powers the DuckDB-WASM MetricFlow dashboard.
+    columns:
+      - name: issue_category
+        tests:
+          - not_null
+      - name: milestone_title
+        tests:
+          - not_null
+      - name: open_issue_count
         tests:
           - not_null

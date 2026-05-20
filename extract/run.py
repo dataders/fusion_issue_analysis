@@ -20,6 +20,12 @@ def main():
         action="store_true",
         help="Write directly to MotherDuck instead of local parquet",
     )
+    parser.add_argument(
+        "--limit",
+        type=int,
+        default=None,
+        help="Cap the number of issues/PRs fetched (for quick testing).",
+    )
     args = parser.parse_args()
 
     # GitHub token
@@ -51,8 +57,18 @@ def main():
         owner="dbt-labs",
         name="dbt-fusion",
         access_token=access_token,
-        items_per_page=100,
+        # 50 keeps combined cost (issue + comments + reactions + timelineItems)
+        # under GitHub's GraphQL resource-limits ceiling.
+        items_per_page=50 if args.limit is None else min(50, args.limit),
+        max_items=args.limit,
     ).with_resources("issues", "pull_requests")
+
+    # pull_requests uses replace so child tables never need _dlt_root_id.
+    # Drop stuck pending packages so retried merge jobs from prior failed runs
+    # don't resurface (the root cause of the MergeDispositionException).
+    if args.motherduck:
+        source.resources["pull_requests"].apply_hints(write_disposition="replace")
+        pipeline.drop_pending_packages()
 
     loader_kwargs = {}
     if not args.motherduck:

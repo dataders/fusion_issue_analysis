@@ -3,6 +3,6 @@
     {% if target.name == 'prod' %}
         raw_github.{{ table_name }}
     {% else %}
-        read_parquet('../data/raw/fusion_issues/{{ table_name }}/*.parquet')
+        read_parquet('../data/raw/fusion_issues/{{ table_name }}/*.parquet', union_by_name=true)
     {% endif %}
 {% endmacro %}

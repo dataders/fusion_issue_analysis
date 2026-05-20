@@ -1,6 +1,22 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!-- Service worker adds COOP + COEP (credentialless) so DuckDB-WASM works on GitHub Pages -->
+  <script>
+    if ("serviceWorker" in navigator) {
+      navigator.serviceWorker.register("/sw-coep.js").then((reg) => {
+        if (!crossOriginIsolated) {
+          if (reg.installing) {
+            reg.installing.addEventListener("statechange", (e) => {
+              if (e.target.state === "activated") location.reload();
+            });
+          } else {
+            location.reload();
+          }
+        }
+      });
+    }
+  </script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>dbt-fusion Issue Analysis — Framework Bakeoff</title>
@@ -23,13 +39,59 @@
       border-bottom: 1px solid #333;
     }
 
+    .chrome-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 10px;
+      min-width: 0;
+    }
+
     .header-title {
       font-size: 0.78rem;
       font-weight: 400;
       color: #666;
       letter-spacing: 0.04em;
       text-transform: uppercase;
-      margin-bottom: 10px;
+      min-width: 0;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .chrome-meta {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex: 0 0 auto;
+      color: #777;
+      font-size: 0.76rem;
+      white-space: nowrap;
+    }
+
+    .repo-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 22px;
+      height: 22px;
+      border: 1px solid #2d2d2d;
+      border-radius: 4px;
+      background: #1a1a1a;
+      opacity: 0.76;
+      transition: opacity 0.1s, border-color 0.1s;
+    }
+
+    .repo-link:hover,
+    .repo-link:focus-visible {
+      border-color: #666;
+      opacity: 1;
+    }
+
+    .repo-link img {
+      width: 16px;
+      height: 16px;
     }
 
     nav {
@@ -58,6 +120,29 @@
       border-radius: 5px 5px 0 0;
       position: relative;
       bottom: -1px;
+    }
+
+    .tab-divider {
+      display: flex;
+      align-items: center;
+      padding: 0 6px;
+      color: #444;
+      font-size: 0.65rem;
+      font-weight: 600;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      white-space: nowrap;
+      flex: 0 0 auto;
+      gap: 5px;
+      position: relative;
+      bottom: -1px;
+    }
+    .tab-divider::before {
+      content: '';
+      display: block;
+      width: 1px;
+      height: 14px;
+      background: #333;
     }
 
     nav button:hover {
@@ -109,12 +194,52 @@
       border: none;
       background: #fff;
     }
+
+    @media (max-width: 720px) {
+      header {
+        padding-right: 12px;
+        padding-left: 12px;
+      }
+
+      .chrome-bar {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: 6px;
+      }
+
+      .header-title {
+        white-space: normal;
+      }
+
+      .chrome-meta {
+        font-size: 0.72rem;
+      }
+    }
   </style>
 </head>
 <body>
   <!-- Deploy smoke test: keep dashboard/** path change behaviorless. -->
   <header>
-    <p class="header-title">dbt-fusion Issue Analysis — Visualization Framework Bakeoff</p>
+    <div class="chrome-bar">
+      <p class="header-title">dbt-fusion Issue Analysis — Visualization Framework Bakeoff</p>
+      <div class="chrome-meta" aria-label="Dashboard metadata">
+        <span id="data-refreshed">Data refreshed: unavailable</span>
+        <a
+          class="repo-link"
+          href="https://github.com/dataders/fusion_issue_analysis"
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label="Open source repository"
+          title="Open source repository"
+        >
+          <img
+            src="https://github.githubassets.com/favicons/favicon.svg"
+            alt=""
+            aria-hidden="true"
+          >
+        </a>
+      </div>
+    </div>
     <nav class="main-tabs" aria-label="Dashboard framework">
       <button class="active" data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
       <button data-src="ggsql/index.html" data-tab="ggsql" onclick="switchTab(this)">ggsql + Vega-Lite</button>
@@ -126,12 +251,22 @@
       <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
       <button data-src="dac/build/" data-tab="dac" onclick="switchTab(this)">DAC</button>
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
+      <button data-src="dataface/index.html" data-tab="dataface" onclick="switchTab(this)">Dataface</button>
+      <span class="tab-divider">live</span>
+      <button data-src="duckdb-wasm/index.html" data-tab="duckdb-wasm" onclick="switchTab(this)">DuckDB WASM</button>
+      <button data-src="mosaic/index.html" data-tab="mosaic" onclick="switchTab(this)">Mosaic</button>
+      <button data-src="observable/dist/live.html" data-tab="observable-live" onclick="switchTab(this)">Observable (live)</button>
       <button data-src="about.html" data-tab="about" onclick="switchTab(this)">About</button>
     </nav>
     <div class="subnav" id="prefab-themes" aria-label="Prefab theme">
       <button class="active" data-src="prefab/app.html" data-theme="vanilla" onclick="switchPrefabTheme(this)">Vanilla</button>
+      <button data-src="prefab/app_reactive.html" data-theme="reactive" onclick="switchPrefabTheme(this)">Reactive</button>
       <button data-src="prefab/app_myspace.html" data-theme="myspace" onclick="switchPrefabTheme(this)">MySpace</button>
       <button data-src="prefab/app_windows_2000.html" data-theme="windows-2000" onclick="switchPrefabTheme(this)">Windows 2000</button>
+    </div>
+    <div class="subnav" id="duckdb-wasm-views" hidden aria-label="DuckDB WASM view">
+      <button class="active" data-src="duckdb-wasm/index.html" data-view="health" onclick="switchDuckDBView(this)">Health</button>
+      <button data-src="duckdb-wasm/metricflow/index.html" data-view="metricflow" onclick="switchDuckDBView(this)">MetricFlow</button>
     </div>
   </header>
   <iframe id="frame" src="prefab/app.html" title="Dashboard"></iframe>
@@ -140,11 +275,51 @@
     const tabs = Array.from(document.querySelectorAll('.main-tabs button'));
     const prefabThemes = Array.from(document.querySelectorAll('#prefab-themes button'));
     const prefabThemeBar = document.getElementById('prefab-themes');
+    const duckdbWasmViews = Array.from(document.querySelectorAll('#duckdb-wasm-views button'));
+    const duckdbWasmBar = document.getElementById('duckdb-wasm-views');
     const frame = document.getElementById('frame');
+    const dataRefreshed = document.getElementById('data-refreshed');
     const legacyPrefabThemeAliases = {
+      "prefab-reactive": "reactive",
       "prefab-myspace": "myspace",
       "prefab-windows-2000": "windows-2000",
     };
+
+    function formatTimestamp(value) {
+      if (!value) return null;
+      const timestamp = new Date(value);
+      if (Number.isNaN(timestamp.getTime())) return null;
+      return timestamp.toLocaleString(undefined, {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "numeric",
+        minute: "2-digit",
+        timeZoneName: "short",
+      });
+    }
+
+    async function loadDataFreshness() {
+      try {
+        const response = await fetch("data_freshness.json", { cache: "no-store" });
+        if (!response.ok) throw new Error("missing data freshness metadata");
+        const metadata = await response.json();
+        const latestLoad = formatTimestamp(metadata.latest_load_at);
+        if (!latestLoad) throw new Error("invalid data freshness timestamp");
+
+        dataRefreshed.textContent = `Data refreshed: ${latestLoad}`;
+
+        const details = [];
+        if (metadata.source) details.push(`Source: ${metadata.source}`);
+        if (metadata.issue_rows) details.push(`Issues loaded: ${metadata.issue_rows}`);
+        const latestSourceUpdate = formatTimestamp(metadata.latest_source_updated_at);
+        if (latestSourceUpdate) details.push(`Latest GitHub update in data: ${latestSourceUpdate}`);
+        dataRefreshed.title = details.join("\n");
+      } catch {
+        dataRefreshed.textContent = "Data refreshed: unavailable";
+        dataRefreshed.title = "Run `make data-freshness` to generate dashboard/data_freshness.json.";
+      }
+    }
 
     function setActive(buttons, active) {
       buttons.forEach(button => button.classList.toggle('active', button === active));
@@ -154,11 +329,17 @@
       return prefabThemes.find(button => button.classList.contains('active')) || prefabThemes[0];
     }
 
+    function activeDuckDBView() {
+      return duckdbWasmViews.find(b => b.classList.contains('active')) || duckdbWasmViews[0];
+    }
+
     function switchTab(btn, options = {}) {
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       const isPrefab = btn.dataset.tab === "prefab";
+      const isDuckDBWasm = btn.dataset.tab === "duckdb-wasm";
       prefabThemeBar.hidden = !isPrefab;
+      duckdbWasmBar.hidden = !isDuckDBWasm;
 
       if (isPrefab) {
         const themeName = options.theme || activePrefabTheme().dataset.theme || "vanilla";
@@ -167,6 +348,13 @@
         frame.src = theme.dataset.src;
         frame.title = `Prefab ${theme.textContent.trim()}`;
         updateUrl("prefab", theme.dataset.theme);
+      } else if (isDuckDBWasm) {
+        const viewName = options.view || activeDuckDBView().dataset.view || "health";
+        const view = duckdbWasmViews.find(b => b.dataset.view === viewName) || duckdbWasmViews[0];
+        setActive(duckdbWasmViews, view);
+        frame.src = view.dataset.src;
+        frame.title = `DuckDB WASM · ${view.textContent.trim()}`;
+        updateUrl("duckdb-wasm", null, viewName === "health" ? null : viewName);
       } else {
         frame.src = btn.dataset.src;
         frame.title = btn.textContent.trim();
@@ -179,13 +367,23 @@
       switchTab(prefabTab, { theme: btn.dataset.theme });
     }
 
-    function updateUrl(tab, theme) {
+    function switchDuckDBView(btn) {
+      const duckdbTab = tabs.find(button => button.dataset.tab === "duckdb-wasm");
+      switchTab(duckdbTab, { view: btn.dataset.view });
+    }
+
+    function updateUrl(tab, theme, view) {
       const url = new URL(window.location);
       url.searchParams.set("tab", tab);
       if (theme && theme !== "vanilla") {
         url.searchParams.set("theme", theme);
       } else {
         url.searchParams.delete("theme");
+      }
+      if (view) {
+        url.searchParams.set("view", view);
+      } else {
+        url.searchParams.delete("view");
       }
       url.hash = tab;
       if (window.location.search !== url.search || window.location.hash !== url.hash) {
@@ -197,6 +395,7 @@
       const params = new URLSearchParams(window.location.search);
       let tab = params.get("tab") || window.location.hash.replace(/^#/, "");
       let theme = params.get("theme");
+      let view = params.get("view");
       if (!tab) return;
 
       if (legacyPrefabThemeAliases[tab]) {
@@ -208,10 +407,11 @@
       }
 
       const match = tabs.find(btn => btn.dataset.tab === tab);
-      if (match) switchTab(match, { theme });
+      if (match) switchTab(match, { theme, view });
     }
 
     loadTabFromHash();
+    loadDataFreshness();
     window.addEventListener("popstate", loadTabFromHash);
     window.addEventListener("hashchange", loadTabFromHash);
   </script>

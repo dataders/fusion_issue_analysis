@@ -1,11 +1,46 @@
 ---
 title: dbt-fusion Issue Health
+description: Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 ---
 
-
-# dbt-fusion Issue Health · Evidence.dev
-
 Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
+
+## Daily Triage Snapshot
+
+```sql operational_triage
+select
+    slipped_through_count,
+    triage_queue_count,
+    hard_blocker_count,
+    needs_repro_count,
+    repro_verified_count,
+    stale_count
+from issue_triage_health
+```
+
+<BigValue data={operational_triage} value="slipped_through_count" title="Slipped through (bugs)"/>
+<BigValue data={operational_triage} value="triage_queue_count" title="In Triage Queue"/>
+<BigValue data={operational_triage} value="hard_blocker_count" title="Hard Blockers"/>
+<BigValue data={operational_triage} value="needs_repro_count" title="Needs Repro"/>
+<BigValue data={operational_triage} value="repro_verified_count" title="Repro Verified"/>
+<BigValue data={operational_triage} value="stale_count" title="Stale"/>
+
+```sql oldest_untriaged
+select
+    issue_number,
+    title,
+    age_days,
+    issue_url
+from oldest_untriaged
+order by age_days desc
+```
+
+<DataTable data={oldest_untriaged} rows=25 title="Oldest Untriaged Bugs">
+  <Column id="issue_number" title="#"/>
+  <Column id="title" title="Title"/>
+  <Column id="age_days" title="Age (days)"/>
+  <Column id="issue_url" title="URL" contentType=link linkLabel="open"/>
+</DataTable>
 
 ## Key Metrics
 
@@ -28,7 +63,7 @@ from summary_kpis
 ## Cumulative Issue Flow
 
 ```sql cumulative_flow
-select week, cumulative_opened, cumulative_closed from cumulative_flow order by week
+select CAST(week AS DATE) as week, cumulative_opened, cumulative_closed from cumulative_flow order by week
 ```
 
 <AreaChart
@@ -42,7 +77,7 @@ select week, cumulative_opened, cumulative_closed from cumulative_flow order by 
 ## Velocity & Response
 
 ```sql velocity
-select week, issue_category, median_days from velocity order by week
+select CAST(week AS DATE) as week, issue_category, median_days from velocity order by week
 ```
 
 <LineChart
@@ -54,7 +89,7 @@ select week, issue_category, median_days from velocity order by week
 />
 
 ```sql response_pctiles
-select week, p25, p50, p75 from response_pctiles order by week
+select CAST(week AS DATE) as week, p25, p50, p75 from response_pctiles order by week
 ```
 
 <LineChart

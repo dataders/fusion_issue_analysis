@@ -52,6 +52,14 @@ select
     i.author_association,
     i.milestone_number,
     i.milestone_title,
+    i.issue_type,
+    i.milestone_state,
+    i.milestone_due_on,
+    i.milestone_created_at,
+    i.milestone_closed_at,
+    i.parent_number,
+    i.parent_title,
+    i.parent_issue_type,
     i.reactions_total_count,
     i.comments_total_count,
     i.created_at,
@@ -79,9 +87,10 @@ select
 
     -- classification
     case
-        when il.has_epic = 1 then 'epic'
-        when il.has_bug = 1 then 'bug'
-        when il.has_enhancement = 1 then 'enhancement'
+        when il.has_epic = 1 or i.issue_type = 'Epic' then 'epic'
+        when il.has_bug = 1 or i.issue_type = 'Bug' then 'bug'
+        when il.has_enhancement = 1 or i.issue_type in ('Feature', 'Enhancement') then 'enhancement'
+        when i.issue_type = 'Task' then 'task'
         else 'other'
     end as issue_category,
 
@@ -94,6 +103,20 @@ select
     case when coalesce(il.label_count, 0) > 0 then true else false end as is_labeled,
     case when coalesce(ti.assignee_count, 0) > 0 then true else false end as is_assigned,
     case when i.milestone_number is not null then true else false end as has_milestone
+    ,case
+        when i.issue_type = 'Task' and lower(i.title) like '%epic%'
+        then true else false
+    end as is_epic
+    ,case
+        when i.parent_issue_type = 'Task' and lower(i.parent_title) like '%epic%'
+        then true else false
+    end as has_epic_parent
+    ,case
+        when i.state = 'OPEN'
+            and not coalesce(i.issue_type = 'Task' and lower(i.title) like '%epic%', false)
+            and not coalesce(i.parent_issue_type = 'Task' and lower(i.parent_title) like '%epic%', false)
+        then true else false
+    end as is_orphan
 
 from issues i
 left join first_comments fc

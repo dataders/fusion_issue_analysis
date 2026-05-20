@@ -30,6 +30,8 @@ if not DB_PATH.startswith("md:"):
 SQL_BY_NAME = {
     "summary": "SELECT * FROM summary_kpis",
     "triage": "SELECT * FROM triage_health",
+    "triage_health": "SELECT * FROM issue_triage_health",
+    "oldest_untriaged": "SELECT * FROM oldest_untriaged",
     "cumulative_flow": "SELECT * FROM cumulative_flow ORDER BY week",
     "response_pctiles": "SELECT * FROM response_pctiles ORDER BY week",
     "close_by_label": "SELECT * FROM close_by_label ORDER BY median_days_to_close DESC",

@@ -8,6 +8,10 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@observablehq/framework": "^1"
+    "@observablehq/framework": "^1",
+    "apache-arrow": "^17"
+  },
+  "devDependencies": {
+    "@motherduck/wasm-client": "^0.8"
   }
 }

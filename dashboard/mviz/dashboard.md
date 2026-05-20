@@ -8,6 +8,32 @@ continuous: true
 
 Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 
+## Daily Triage Queue
+
+```big_value size=[3,2] file=data/kpi_slipped_through.json
+```
+```big_value size=[3,2] file=data/kpi_triage_queue.json
+```
+```big_value size=[3,2] file=data/kpi_hard_blocker.json
+```
+```big_value size=[3,2] file=data/kpi_op_stale.json
+```
+```big_value size=[2,2] file=data/kpi_needs_repro.json
+```
+```big_value size=[2,2] file=data/kpi_repro_verified.json
+```
+
+```table size=[16,8] file=data/oldest_untriaged.json
+{
+  "title": "Oldest Untriaged Issues — Zero-Signal Action Queue",
+  "columns": [
+    {"id": "issue_number", "title": "#", "bold": true},
+    {"id": "title", "title": "Title"},
+    {"id": "age_days", "title": "Age (days)", "bold": true}
+  ]
+}
+```
+
 ## Key Metrics
 
 ```big_value size=[3,2] file=data/kpi_net_flow.json

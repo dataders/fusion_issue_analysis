@@ -1,0 +1,30 @@
+{
+  "name": "fusion-issue-analysis-mcp-app",
+  "version": "0.0.1",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && tsc -p tsconfig.server.json && cross-env INPUT=issue-health.html vite build",
+    "smoke": "node smoke.mjs",
+    "start": "tsx main.ts",
+    "start:stdio": "tsx main.ts --stdio",
+    "dev": "concurrently \"cross-env NODE_ENV=development INPUT=issue-health.html vite build --watch\" \"tsx watch main.ts\""
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.1.2",
+    "@modelcontextprotocol/sdk": "^1.24.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0"
+  },
+  "devDependencies": {
+    "@types/cors": "^2.8.19",
+    "@types/express": "^5.0.5",
+    "@types/node": "^24.10.2",
+    "concurrently": "^9.2.1",
+    "cross-env": "^10.1.0",
+    "tsx": "^4.20.6",
+    "typescript": "^5.9.3",
+    "vite": "^7.2.4",
+    "vite-plugin-singlefile": "^2.3.0"
+  }
+}

@@ -5,7 +5,13 @@ from dlt.common.typing import DictStrAny, StrAny
 from dlt.common.utils import chunks
 from dlt.sources.helpers import requests
 
-from .queries import COMMENT_REACTIONS_QUERY, ISSUES_QUERY, STARGAZERS_QUERY, RATE_LIMIT
+from .queries import (
+    COMMENT_REACTIONS_QUERY,
+    ISSUE_ONLY_FIELDS,
+    ISSUES_QUERY,
+    STARGAZERS_QUERY,
+    RATE_LIMIT,
+)
 from .settings import GRAPHQL_API_BASE_URL, REST_API_BASE_URL
 
 MAX_RETRIES = 5
@@ -75,6 +81,7 @@ def get_reactions_data(
     access_token: str,
     items_per_page: int,
     max_items: Optional[int],
+    since: Optional[str] = None,
 ) -> Iterator[Iterator[StrAny]]:
     variables = {
         "owner": owner,
@@ -82,10 +89,23 @@ def get_reactions_data(
         "issues_per_page": items_per_page,
         "first_reactions": 100,
         "first_comments": 100,
+        "first_timeline_items": 50,
         "node_type": node_type,
     }
+    # `issueType` and `parent` are only valid on the Issue type; they would
+    # cause a GraphQL validation error if included in the pullRequests body.
+    # `filterBy: {since}` is also only valid on issues, not pullRequests.
+    issue_only_fields = ISSUE_ONLY_FIELDS if node_type == "issues" else ""
+    if node_type == "issues":
+        since_var_decl = ", $since: DateTime"
+        filterby_clause = ", filterBy: {since: $since}"
+        variables["since"] = since
+    else:
+        since_var_decl = ""
+        filterby_clause = ""
+    query = ISSUES_QUERY % (since_var_decl, node_type, filterby_clause, issue_only_fields)
     for page_items in _get_graphql_pages(
-        access_token, ISSUES_QUERY % node_type, variables, node_type, max_items
+        access_token, query, variables, node_type, max_items
     ):
         # use reactionGroups to query for reactions to comments that have any reactions. reduces cost by 10-50x
         reacted_comment_ids = {}
@@ -127,6 +147,11 @@ def _extract_nested_nodes(item: DictStrAny) -> DictStrAny:
             comment["reactions_totalCount"] = comment["reactions"].get("totalCount", 0)
             comment["reactions"] = comment["reactions"]["nodes"]
     item["comments"] = comments["nodes"]
+    if "timelineItems" in item:
+        timeline = item["timelineItems"]
+        item["timeline_items_totalCount"] = timeline.get("totalCount", 0)
+        item["timeline_items"] = timeline["nodes"]
+        item.pop("timelineItems", None)
     return item
 
 
@@ -149,7 +174,7 @@ def _run_graphql_query(
         )
         time.sleep(delay)
 
-    def _request() -> raw_requests.Response:
+    def _request() -> dict:
         for attempt in range(MAX_RETRIES + 1):
             try:
                 r = raw_requests.post(
@@ -158,22 +183,19 @@ def _run_graphql_query(
                     headers=_get_auth_header(access_token),
                     timeout=REQUEST_TIMEOUT_SECONDS,
                 )
+                if r.status_code in RETRY_STATUS_CODES and attempt < MAX_RETRIES:
+                    _sleep_before_retry(f"HTTP {r.status_code}", attempt + 1)
+                    continue
+                r.raise_for_status()
+                return r.json()  # inside try so ChunkedEncodingError during body streaming is retried
             except retryable_errors:
                 if attempt == MAX_RETRIES:
                     raise
                 _sleep_before_retry("network response ended early", attempt + 1)
-                continue
-
-            if r.status_code in RETRY_STATUS_CODES and attempt < MAX_RETRIES:
-                _sleep_before_retry(f"HTTP {r.status_code}", attempt + 1)
-                continue
-
-            r.raise_for_status()
-            return r
 
         raise RuntimeError("GitHub GraphQL request retry loop exhausted")
 
-    data = _request().json()
+    data = _request()
     if "errors" in data:
         raise ValueError(data)
     data = data["data"]
