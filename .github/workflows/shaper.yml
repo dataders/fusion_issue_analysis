@@ -1,0 +1,37 @@
+name: Shaper Dashboard CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'dashboard/shaper/**'
+  pull_request:
+    branches: [main]
+    paths:
+      - 'dashboard/shaper/**'
+
+jobs:
+  validate:
+    name: Validate Shaper Dashboard
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate Shaper Dashboards
+        uses: taleshape-com/shaper-deploy-action@v1
+        with:
+          validate-only: true
+          api-key: ${{ secrets.SHAPER_DEPLOY_API_KEY }}
+          working-directory: dashboard/shaper
+
+  deploy:
+    name: Deploy Shaper Dashboard
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Deploy Shaper Dashboards
+        uses: taleshape-com/shaper-deploy-action@v3
+        with:
+          api-key: ${{ secrets.SHAPER_DEPLOY_API_KEY }}
+          working-directory: dashboard/shaper
