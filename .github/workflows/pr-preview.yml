@@ -148,7 +148,7 @@ jobs:
           DAC_ENVIRONMENT: prod
           DAC_OUTPUT: preview/dac
         run: |
-          uv run python3 dashboard/dac/render.py
+          uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' preview/dac/index.html
 
       - name: Upload preview artifact

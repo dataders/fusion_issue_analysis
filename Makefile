@@ -80,7 +80,7 @@ quarto:
 
 ## dac          Build DAC dashboard to static HTML
 dac:
-	uv run python3 dashboard/dac/render.py
+	uv run python dashboard/dac/render.py
 	! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
 ## shaper       Build Shaper source-preview tab

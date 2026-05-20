@@ -1,3 +1,4 @@
+import json
 import os
 import shutil
 import subprocess
@@ -11,7 +12,6 @@ ROOT = Path(__file__).resolve().parents[2]
 DAC_DIR = ROOT / "dashboard" / "dac"
 SOURCE_DASHBOARDS = DAC_DIR / "dashboards"
 CONFIG = DAC_DIR / "bruin.yml"
-PLACEHOLDER = "set file_search_path='transform';"
 DASHBOARD_NAME = "Fusion Issue Analysis"
 ERROR_MARKERS = (
     "bruin query failed",
@@ -20,11 +20,8 @@ ERROR_MARKERS = (
 )
 
 
-def render_dashboard_sources(destination: Path, transform_dir: str) -> None:
+def render_dashboard_sources(destination: Path) -> None:
     shutil.copytree(SOURCE_DASHBOARDS, destination)
-    dashboard = destination / "fusion-issues.yml"
-    content = dashboard.read_text()
-    dashboard.write_text(content.replace(PLACEHOLDER, f"set file_search_path='{transform_dir}';"))
 
 
 def warm_bruin_query_runtime(config: Path, env: dict[str, str], env_name: str) -> None:
@@ -42,7 +39,28 @@ def warm_bruin_query_runtime(config: Path, env: dict[str, str], env_name: str) -
         "--output",
         "json",
     ]
-    subprocess.run(command, check=True, env=env, stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT)
+    subprocess.run(
+        command,
+        check=True,
+        env=env,
+        cwd=ROOT / "transform",
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.STDOUT,
+    )
+
+
+def extract_static_payload(content: str) -> dict:
+    marker = "window.__DAC_STATIC__="
+    start = content.find(marker)
+    if start == -1:
+        raise SystemExit("DAC static build is missing window.__DAC_STATIC__")
+
+    start += len(marker)
+    end = content.find(";</script>", start)
+    if end == -1:
+        raise SystemExit("DAC static build payload is not terminated")
+
+    return json.loads(content[start:end])
 
 
 def validate_static_output(path: Path) -> None:
@@ -51,22 +69,48 @@ def validate_static_output(path: Path) -> None:
     if matches:
         raise SystemExit(f"DAC static build contains query errors: {', '.join(matches)}")
 
+    payload = extract_static_payload(content)
+    widget_data = payload.get("widgetData") or {}
+    if not widget_data:
+        raise SystemExit("DAC static build does not contain widget data")
+
+    invalid = []
+    for widget_id, result in widget_data.items():
+        if result.get("error"):
+            invalid.append(f"{widget_id}: {result['error']}")
+        elif not result.get("columns"):
+            invalid.append(f"{widget_id}: missing columns")
+        elif result.get("rows") is None:
+            invalid.append(f"{widget_id}: missing rows")
+
+    if invalid:
+        raise SystemExit("DAC static build contains invalid widget data: " + "; ".join(invalid[:5]))
+
+
+def resolve_output_path(raw_output: str | Path) -> Path:
+    output = Path(raw_output)
+    if output.is_absolute():
+        return output
+    return ROOT / output
+
 
 def main() -> None:
-    output = Path(os.environ.get("DAC_OUTPUT", DAC_DIR / "build"))
-    transform_dir = os.environ.get("FUSION_TRANSFORM_DIR", str(ROOT / "transform"))
+    output = resolve_output_path(os.environ.get("DAC_OUTPUT", DAC_DIR / "build"))
     env = os.environ.copy()
-    env.setdefault("FUSION_DB", "../../data/fusion_issues.duckdb")
+    env.setdefault("FUSION_DB", str(ROOT / "data" / "fusion_issues.duckdb"))
     env_name = env.get("DAC_ENVIRONMENT")
 
     with tempfile.TemporaryDirectory(prefix="fusion-dac-") as tmp:
         tmp_path = Path(tmp)
         dashboards = tmp_path / "dashboards"
-        render_dashboard_sources(dashboards, transform_dir)
-        config = CONFIG
+        render_dashboard_sources(dashboards)
+        config = tmp_path / "bruin.yml"
+        config_text = CONFIG.read_text()
         if env_name:
-            config = tmp_path / "bruin.yml"
-            config.write_text(CONFIG.read_text().replace("default_environment: local", f"default_environment: {env_name}"))
+            config_text = config_text.replace("default_environment: local", f"default_environment: {env_name}")
+        config.write_text(config_text)
+
+        if env_name:
             warm_bruin_query_runtime(config, env, env_name)
 
         command = ["dac", "--config", str(config)]
@@ -79,7 +123,7 @@ def main() -> None:
             "--output",
             str(output),
         ])
-        subprocess.run(command, check=True, env=env)
+        subprocess.run(command, check=True, env=env, cwd=ROOT / "transform")
 
     fix_asset_paths(output / "index.html")
     validate_static_output(output / "index.html")
