@@ -39,14 +39,17 @@ def warm_bruin_query_runtime(config: Path, env: dict[str, str], env_name: str) -
         "--output",
         "json",
     ]
-    subprocess.run(
+    result = subprocess.run(
         command,
-        check=True,
         env=env,
         cwd=ROOT / "transform",
-        stdout=subprocess.DEVNULL,
-        stderr=subprocess.STDOUT,
+        capture_output=True,
+        text=True,
     )
+    if result.returncode != 0:
+        print(f"bruin stderr: {result.stderr}", flush=True)
+        print(f"bruin stdout: {result.stdout}", flush=True)
+        raise subprocess.CalledProcessError(result.returncode, command)
 
 
 def extract_static_payload(content: str) -> dict:

@@ -1,4 +1,5 @@
 import importlib.util
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -46,12 +47,12 @@ class DacDashboardTests(unittest.TestCase):
     def test_dac_project_uses_fusion_issue_marts(self) -> None:
         config = DAC_CONFIG.read_text()
         dashboard = DAC_DASHBOARD.read_text()
+        render = DAC_RENDER.read_text()
 
         self.assertIn("path: ${FUSION_DB}", config)
         self.assertIn("motherduck:", config)
         self.assertIn("token: ${MOTHERDUCK_TOKEN}", config)
         self.assertIn("database: fusion_issues", config)
-        render = DAC_RENDER.read_text()
         self.assertIn('env.setdefault("FUSION_DB", str(ROOT / "data" / "fusion_issues.duckdb"))', render)
         self.assertIn("name: Fusion Issue Analysis", dashboard)
         self.assertIn("connection: fusion", dashboard)
@@ -104,6 +105,30 @@ class DacDashboardTests(unittest.TestCase):
         with TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "index.html"
             path.write_text('<script>window.__DAC_STATIC__={"widgetData":{"Open Issues":{"columns":null,"rows":[]}}};</script>')
+
+            with self.assertRaises(SystemExit):
+                module.validate_static_output(path)
+
+    def test_dac_static_output_validation_rejects_widget_errors(self) -> None:
+        spec = importlib.util.spec_from_file_location("render", DAC_RENDER)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "index.html"
+            payload = {
+                "widgetData": {
+                    "r0-w0": {
+                        "columns": None,
+                        "rows": None,
+                        "query": "select 1",
+                        "error": "bruin query failed",
+                    }
+                }
+            }
+            path.write_text(f"<script>window.__DAC_STATIC__={json.dumps(payload)};</script>")
 
             with self.assertRaises(SystemExit):
                 module.validate_static_output(path)
