@@ -8,7 +8,6 @@ rows:
         type: metric
         col: 2
         sql: |
-          set file_search_path='transform';
           select open_issues as value from summary_kpis
         column: value
         format: number
@@ -16,7 +15,6 @@ rows:
         type: metric
         col: 2
         sql: |
-          set file_search_path='transform';
           select closed_4w - opened_4w as value from summary_kpis
         column: value
         format: number
@@ -24,7 +22,6 @@ rows:
         type: metric
         col: 2
         sql: |
-          set file_search_path='transform';
           select rolling_median_close_days as value from summary_kpis
         column: value
         format: number
@@ -32,7 +29,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select pct_responded_48h / 100.0 as value from summary_kpis
         column: value
         format: percentage
@@ -40,7 +36,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select stale_count as value from summary_kpis
         column: value
         format: number
@@ -51,7 +46,6 @@ rows:
         chart: line
         col: 12
         sql: |
-          set file_search_path='transform';
           select week, cumulative_opened, cumulative_closed
           from cumulative_flow
           order by week
@@ -64,7 +58,6 @@ rows:
         chart: line
         col: 6
         sql: |
-          set file_search_path='transform';
           select
             week,
             max(case when issue_category = 'bug' then median_days end) as bugs,
@@ -79,7 +72,6 @@ rows:
         chart: line
         col: 6
         sql: |
-          set file_search_path='transform';
           select week, p25, p50, p75
           from response_pctiles
           order by week
@@ -93,7 +85,6 @@ rows:
         stacked: true
         col: 6
         sql: |
-          set file_search_path='transform';
           select
             age_bucket,
             sum(case when issue_category = 'bug' then issue_count else 0 end) as bug,
@@ -115,7 +106,6 @@ rows:
         chart: bar
         col: 6
         sql: |
-          set file_search_path='transform';
           select label_name, median_days_to_close
           from close_by_label
           order by median_days_to_close desc
@@ -127,7 +117,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select slipped_through_count as value from issue_triage_health
         column: value
         format: number
@@ -135,7 +124,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select triage_queue_count as value from issue_triage_health
         column: value
         format: number
@@ -143,7 +131,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select hard_blocker_count as value from issue_triage_health
         column: value
         format: number
@@ -151,7 +138,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select needs_repro_count as value from issue_triage_health
         column: value
         format: number
@@ -161,7 +147,6 @@ rows:
         type: metric
         col: 4
         sql: |
-          set file_search_path='transform';
           select repro_verified_count as value from issue_triage_health
         column: value
         format: number
@@ -169,7 +154,6 @@ rows:
         type: metric
         col: 4
         sql: |
-          set file_search_path='transform';
           select stale_count as value from issue_triage_health
         column: value
         format: number
@@ -177,7 +161,6 @@ rows:
         type: metric
         col: 4
         sql: |
-          set file_search_path='transform';
           select total_open as value from issue_triage_health
         column: value
         format: number
@@ -187,7 +170,6 @@ rows:
         type: table
         col: 12
         sql: |
-          set file_search_path='transform';
           select issue_number, title, age_days, issue_url
           from oldest_untriaged
           order by age_days desc
@@ -209,7 +191,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select pct_labeled / 100.0 as value from triage_health
         column: value
         format: percentage
@@ -217,7 +198,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select pct_typed / 100.0 as value from triage_health
         column: value
         format: percentage
@@ -225,7 +205,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select pct_assigned / 100.0 as value from triage_health
         column: value
         format: percentage
@@ -233,7 +212,6 @@ rows:
         type: metric
         col: 3
         sql: |
-          set file_search_path='transform';
           select pct_milestoned / 100.0 as value from triage_health
         column: value
         format: percentage
@@ -245,7 +223,6 @@ rows:
         stacked: true
         col: 6
         sql: |
-          set file_search_path='transform';
           select assignee_login, bugs, enhancements
           from assignee_workload
           order by open_issues desc
@@ -255,7 +232,6 @@ rows:
         type: table
         col: 6
         sql: |
-          set file_search_path='transform';
           select issue_number, title, issue_category, reactions_total_count, age_days
           from community_priorities
           order by reactions_total_count desc

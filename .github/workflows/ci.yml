@@ -155,7 +155,7 @@ jobs:
           DAC_ENVIRONMENT: prod
           DAC_OUTPUT: dashboard/dac/build
         run: |
-          uv run python3 dashboard/dac/render.py
+          uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
       - name: Smoke-test MCP App

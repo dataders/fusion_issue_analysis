@@ -25,8 +25,8 @@ class DacDashboardTests(unittest.TestCase):
 
     def test_makefile_builds_and_cleans_dac(self) -> None:
         content = MAKEFILE.read_text()
-        self.assertIn("build: about prefab ggsql mviz mdv marimo observable evidence quarto dac", content)
-        self.assertIn("uv run python3 dashboard/dac/render.py", content)
+        self.assertIn("build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper", content)
+        self.assertIn("uv run python dashboard/dac/render.py", content)
         self.assertIn("dashboard/dac/build", content)
 
     def test_ci_and_preview_workflows_build_dac(self) -> None:
@@ -37,10 +37,10 @@ class DacDashboardTests(unittest.TestCase):
         for content in (preview, ci, deploy):
             self.assertIn("Install DAC", content)
             self.assertIn("DAC_ENVIRONMENT: prod", content)
-            self.assertIn("uv run python3 dashboard/dac/render.py", content)
+            self.assertIn("uv run python dashboard/dac/render.py", content)
 
         self.assertIn("preview/dac", preview)
-        self.assertIn("| DAC | `dac/index.html` |", preview)
+        self.assertIn("DAC | \\`dac/index.html\\`", preview)
         self.assertIn("dashboard/dac/build", deploy)
 
     def test_dac_project_uses_fusion_issue_marts(self) -> None:
@@ -51,15 +51,16 @@ class DacDashboardTests(unittest.TestCase):
         self.assertIn("motherduck:", config)
         self.assertIn("token: ${MOTHERDUCK_TOKEN}", config)
         self.assertIn("database: fusion_issues", config)
-        self.assertIn('env.setdefault("FUSION_DB", "../../data/fusion_issues.duckdb")', DAC_RENDER.read_text())
+        render = DAC_RENDER.read_text()
+        self.assertIn('env.setdefault("FUSION_DB", str(ROOT / "data" / "fusion_issues.duckdb"))', render)
         self.assertIn("name: Fusion Issue Analysis", dashboard)
         self.assertIn("connection: fusion", dashboard)
-        self.assertIn("from fct_issues", dashboard)
+        self.assertIn("from summary_kpis", dashboard)
         self.assertIn("cumulative_flow", dashboard)
         self.assertIn("open_issues", dashboard)
-        self.assertIn("FUSION_TRANSFORM_DIR", DAC_RENDER.read_text())
-        self.assertIn("default_environment: {env_name}", DAC_RENDER.read_text())
-        self.assertIn("warm_bruin_query_runtime(config, env, env_name)", DAC_RENDER.read_text())
+        self.assertNotIn("set file_search_path", dashboard)
+        self.assertIn("default_environment: {env_name}", render)
+        self.assertIn("warm_bruin_query_runtime(config, env, env_name)", render)
 
     def test_dac_asset_rewrite_makes_nested_static_build_portable(self) -> None:
         spec = importlib.util.spec_from_file_location("fix_asset_paths", DAC_ASSET_FIX)
@@ -92,6 +93,29 @@ class DacDashboardTests(unittest.TestCase):
 
             with self.assertRaises(SystemExit):
                 module.validate_static_output(path)
+
+    def test_dac_static_output_validation_rejects_empty_widget_results(self) -> None:
+        spec = importlib.util.spec_from_file_location("render", DAC_RENDER)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        with TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "index.html"
+            path.write_text('<script>window.__DAC_STATIC__={"widgetData":{"Open Issues":{"columns":null,"rows":[]}}};</script>')
+
+            with self.assertRaises(SystemExit):
+                module.validate_static_output(path)
+
+    def test_dac_render_resolves_relative_outputs_from_repo_root(self) -> None:
+        spec = importlib.util.spec_from_file_location("render", DAC_RENDER)
+        self.assertIsNotNone(spec)
+        module = importlib.util.module_from_spec(spec)
+        assert spec.loader is not None
+        spec.loader.exec_module(module)
+
+        self.assertEqual(module.resolve_output_path("dashboard/dac/build"), REPO_ROOT / "dashboard" / "dac" / "build")
 
 
 if __name__ == "__main__":
