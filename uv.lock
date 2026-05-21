@@ -13,7 +13,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-05-06T01:08:54.448817Z"
+exclude-newer = "2026-05-14T03:36:33.899254Z"
 exclude-newer-span = "P1W"
 
 [[package]]
@@ -1155,7 +1155,7 @@ dev = [
 requires-dist = [
     { name = "dbt-duckdb", specifier = ">=1.10.1" },
     { name = "dlt", extras = ["filesystem", "parquet"], specifier = ">=1.24.0" },
-    { name = "duckdb", specifier = ">=1.5.2" },
+    { name = "duckdb", specifier = "==1.5.2" },
     { name = "fastmcp", specifier = ">=2.0" },
     { name = "marimo", specifier = ">=0.23.2" },
     { name = "markdown", specifier = ">=3.10.2" },
