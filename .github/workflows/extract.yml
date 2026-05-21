@@ -45,7 +45,7 @@ jobs:
       - name: Install DuckDB ADBC driver (dbt-fusion#1574 workaround)
         run: |
           curl -LsSf https://dbc.columnar.tech/install.sh | sh
-          dbc install duckdb
+          dbc install "duckdb=1.5.2"
 
       - name: Refresh dbt models in MotherDuck
         env:

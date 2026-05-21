@@ -72,7 +72,7 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         run: |
           curl -LsSf https://dbc.columnar.tech/install.sh | sh
-          dbc install duckdb
+          dbc install "duckdb=1.5.2"
 
       - name: Compile dbt models
         if: github.actor != 'dependabot[bot]'
