@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "duckdb>=1",
+#     "duckdb>=1,<1.5.3",
 #     "ggsql>=0.2.7",
 #     "polars>=1",
 #     "pyarrow>=15",
