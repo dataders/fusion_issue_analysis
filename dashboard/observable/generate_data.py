@@ -99,6 +99,13 @@ def main():
     # -- Community priorities --
     write_json("community_priorities.json", query(con, load_sql("community_priorities")))
 
+    # -- EPIC burndown --
+    write_json("epic_list.json", query(con, load_sql("epic_list")))
+    write_json("epic_open_weekly.json", query(con, load_sql("epic_open_weekly")))
+
+    # -- Adapter issues --
+    write_json("adapter_issues.json", query(con, load_sql("adapter_issues")))
+
     con.close()
     print("\nDone. All data files written to observable/src/data/")
 

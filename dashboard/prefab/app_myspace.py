@@ -57,6 +57,10 @@ community_priorities = query("SELECT * FROM community_priorities")
 
 assignee_workload = query("SELECT * FROM assignee_workload")
 
+epic_list = query("SELECT * FROM epic_list WHERE state = 'OPEN' ORDER BY days_open DESC")
+epic_open_weekly = query("SELECT * FROM epic_open_weekly")
+adapter_issues = query("SELECT * FROM adapter_issues")
+
 GUESTBOOK = [
     ("xX_d4ta_qu33n_Xx", "2003-07-14", "omg ur dashboard is SO cool!! add me 2 ur top 8 plzzz"),
     ("~*SQLboy2002*~", "2003-08-02", "nice analytics bro. check out MY dashboard at geocities.com/sqlboy2002"),
@@ -229,6 +233,49 @@ with PrefabApp(
                 series=[ChartSeries(data_key="open_issues", label="Open Issues", color="#ff69b4")],
                 x_axis="assignee_login", horizontal=True, show_legend=False, height=300,
             )
+
+    # ── EPIC Burndown ──────────────────────────────────────────────
+    H3("🔥 ~*~ EPIC Burndown ~*~ 🔥", css_class="mt-6")
+    Muted(f"omg {len(epic_list)} epics r still open lol")
+
+    if epic_open_weekly:
+        with Card(css_class="mt-3 neon-card"):
+            with CardContent():
+                LineChart(
+                    data=epic_open_weekly,
+                    series=[ChartSeries(data_key="open_epics", label="Open EPICs", color="#0ff")],
+                    x_axis="week", show_legend=False, height=200,
+                )
+
+    with Card(css_class="mt-3 neon-pink"):
+        with CardContent():
+            for epic in epic_list[:10]:
+                with Row(gap=2, css_class="py-1 border-b"):
+                    Badge(f"#{epic['issue_number']}", variant="outline")
+                    Text(
+                        epic["title"][:60] + ("..." if len(epic["title"]) > 60 else ""),
+                        css_class="flex-1 text-sm", style={"color": "#0ff"},
+                    )
+                    Badge(f"{int(epic['days_open'])}d", variant="secondary")
+
+    # ── Adapter Issues ─────────────────────────────────────────────
+    H3("🔌 ~*~ Adapter Issues ~*~ 🔌", css_class="mt-6")
+    Muted(f"{len(adapter_issues)} open issues tagged 'adapter' owo")
+
+    with Card(css_class="mt-3 neon-green"):
+        with CardContent():
+            if adapter_issues:
+                for issue in adapter_issues:
+                    with Row(gap=2, css_class="py-1 border-b"):
+                        Badge(f"#{issue['issue_number']}", variant="outline")
+                        Text(
+                            issue["title"][:60] + ("..." if len(issue["title"]) > 60 else ""),
+                            css_class="flex-1 text-sm", style={"color": "#39ff14"},
+                        )
+                        Badge(issue["type"], variant="secondary")
+                        Badge(f"{int(issue['days_open'])}d", variant="outline")
+            else:
+                Muted("no adapter issues rn!! :)")
 
     # ── Guestbook ──────────────────────────────────────────────────
     H3("📝 ~*~ Guestbook ~*~ 📝", css_class="mt-6")

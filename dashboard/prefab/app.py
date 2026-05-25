@@ -97,6 +97,11 @@ triage = query("SELECT * FROM triage_health")[0]
 # ── EPIC burndown ──────────────────────────────────────────────────
 
 epic_list = query("SELECT * FROM epic_list")
+epic_open_weekly = query("SELECT * FROM epic_open_weekly")
+
+# ── Adapter issues ─────────────────────────────────────────────────
+
+adapter_issues = query("SELECT * FROM adapter_issues")
 
 # ── Assignee workload ──────────────────────────────────────────────
 
@@ -330,22 +335,64 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                     height=300,
                 )
 
-    # ── EPICs ──────────────────────────────────────────────────────
+    # ── EPIC Burndown ──────────────────────────────────────────────
+    open_epics = [e for e in epic_list if e["state"] == "OPEN"]
     with Card(css_class="mt-6"):
         with CardHeader():
-            CardTitle("EPICs")
-            Muted(f"{sum(1 for e in epic_list if e['state'] == 'OPEN')} open / {len(epic_list)} total")
+            CardTitle("EPIC Burndown")
+            Muted(f"{len(open_epics)} open / {len(epic_list)} total — sorted by age")
         with CardContent():
-            for epic in epic_list:
-                if epic["state"] == "OPEN":
-                    with Row(gap=2, css_class="py-1 border-b"):
-                        Badge(f"#{epic['issue_number']}", variant="outline")
-                        Text(
-                            epic["title"][:70] + ("..." if len(epic["title"]) > 70 else ""),
-                            css_class="flex-1 text-sm",
-                        )
-                        Badge(f"{epic['reactions_total_count']} reactions", variant="secondary")
-                        Badge(f"{epic['comments_total_count']} comments", variant="secondary")
+            if epic_open_weekly:
+                LineChart(
+                    data=epic_open_weekly,
+                    series=[ChartSeries(data_key="open_epics", label="Open EPICs", color="hsl(260, 70%, 60%)")],
+                    x_axis="week",
+                    show_legend=False,
+                    height=220,
+                )
+            DataTable(
+                data=[
+                    {
+                        "#": e["issue_number"],
+                        "title": e["title"][:80] + ("…" if len(e["title"]) > 80 else ""),
+                        "days_open": int(e["days_open"]),
+                        "milestone": e["milestone_title"] or "—",
+                        "reactions": e["reactions_total_count"],
+                    }
+                    for e in open_epics
+                ],
+                columns=[
+                    DataTableColumn(key="#", header="#", sortable=True),
+                    DataTableColumn(key="title", header="Title"),
+                    DataTableColumn(key="days_open", header="Days Open", sortable=True),
+                    DataTableColumn(key="milestone", header="Milestone", sortable=True),
+                    DataTableColumn(key="reactions", header="Reactions", sortable=True),
+                ],
+                pagination=15,
+            )
+
+    # ── Adapter Issues ─────────────────────────────────────────────
+    with Card(css_class="mt-6"):
+        with CardHeader():
+            CardTitle("Adapter Issues")
+            Muted(f"{len(adapter_issues)} open issues tagged 'adapter'")
+        with CardContent():
+            if adapter_issues:
+                DataTable(
+                    data=adapter_issues,
+                    columns=[
+                        DataTableColumn(key="issue_number", header="#", sortable=True),
+                        DataTableColumn(key="title", header="Title"),
+                        DataTableColumn(key="type", header="Type", sortable=True),
+                        DataTableColumn(key="days_open", header="Days Open", sortable=True),
+                        DataTableColumn(key="reactions", header="Reactions", sortable=True),
+                        DataTableColumn(key="milestone", header="Milestone", sortable=True),
+                    ],
+                    search=True,
+                    pagination=15,
+                )
+            else:
+                Muted("No open issues with the 'adapter' label.")
 
     # ── Assignee workload + community priorities ───────────────────
     with Row(gap=4, css_class="mt-6"):

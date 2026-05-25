@@ -83,6 +83,7 @@
       <button data-src="evidence/build/" onclick="switchTab(this)">Evidence.dev</button>
       <button data-src="marimo.html" onclick="switchTab(this)">Marimo</button>
       <button data-src="quarto/index.html" onclick="switchTab(this)">Quarto</button>
+      <button onclick="switchRandom()" style="margin-left:auto">🎲 Random</button>
     </nav>
   </header>
   <iframe id="frame" src="prefab/app.html" title="Dashboard"></iframe>
@@ -92,6 +93,11 @@
       document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
       document.getElementById('frame').src = btn.dataset.src;
+    }
+
+    function switchRandom() {
+      const tabs = [...document.querySelectorAll('nav button[data-src]')];
+      switchTab(tabs[Math.floor(Math.random() * tabs.length)]);
     }
   </script>
 </body>

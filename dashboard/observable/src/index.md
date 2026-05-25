@@ -16,6 +16,9 @@ const closeByLabel = await FileAttachment("data/close_by_label.json").json();
 const triage = await FileAttachment("data/triage.json").json();
 const assigneeWorkload = await FileAttachment("data/assignee_workload.json").json();
 const communityPriorities = await FileAttachment("data/community_priorities.json").json();
+const epicList = await FileAttachment("data/epic_list.json").json();
+const epicOpenWeekly = await FileAttachment("data/epic_open_weekly.json").json();
+const adapterIssues = await FileAttachment("data/adapter_issues.json").json();
 ```
 
 ## Key Metrics
@@ -199,4 +202,41 @@ Plot.plot({
     })
   ]
 })
+```
+
+## EPIC Burndown
+
+```js
+Plot.plot({
+  title: "Open EPICs Over Time",
+  height: 250,
+  x: {type: "utc", label: "Week"},
+  y: {label: "Open EPICs", grid: true},
+  marks: [
+    Plot.lineY(epicOpenWeekly, {x: d => new Date(d.week), y: "open_epics", stroke: "#cba6f7", strokeWidth: 2, tip: true}),
+    Plot.areaY(epicOpenWeekly, {x: d => new Date(d.week), y: "open_epics", fill: "#cba6f7", fillOpacity: 0.15}),
+  ]
+})
+```
+
+```js
+Inputs.table(epicList, {
+  columns: ["issue_number", "title", "days_open", "milestone_title", "reactions_total_count"],
+  header: {"issue_number": "#", "title": "Title", "days_open": "Days Open", "milestone_title": "Milestone", "reactions_total_count": "Reactions"},
+  sort: "days_open",
+  reverse: true,
+})
+```
+
+## Adapter Issues
+
+```js
+adapterIssues.length > 0
+  ? Inputs.table(adapterIssues, {
+      columns: ["issue_number", "title", "type", "days_open", "reactions", "milestone"],
+      header: {"issue_number": "#", "title": "Title", "type": "Type", "days_open": "Days Open", "reactions": "Reactions", "milestone": "Milestone"},
+      sort: "reactions",
+      reverse: true,
+    })
+  : html`<p style="color:#a6adc8">No open issues tagged 'adapter'.</p>`
 ```

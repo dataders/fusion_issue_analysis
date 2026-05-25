@@ -135,3 +135,35 @@ limit 15
 ```
 
 <DataTable data={community_priorities} search=true rows=15 title="Community Priorities"/>
+
+## EPIC Burndown
+
+```sql epic_open_weekly
+select week, open_epics from epic_open_weekly order by week
+```
+
+<LineChart
+  data={epic_open_weekly}
+  x="week"
+  y="open_epics"
+  title="Open EPICs Over Time"
+/>
+
+```sql epic_list
+select issue_number, title, days_open, milestone_title, reactions_total_count
+from epic_list
+where state = 'OPEN'
+order by days_open desc
+```
+
+<DataTable data={epic_list} search=true rows=15 title="Open EPICs by Age"/>
+
+## Adapter Issues
+
+```sql adapter_issues
+select issue_number, title, type, days_open, reactions, milestone
+from adapter_issues
+order by days_open desc
+```
+
+<DataTable data={adapter_issues} search=true rows=20 title="Open Issues Tagged 'adapter'"/>

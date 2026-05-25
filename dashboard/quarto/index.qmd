@@ -43,6 +43,9 @@ lbl        = query("SELECT * FROM close_by_label ORDER BY median_days_to_close")
 triage     = query("SELECT * FROM triage_health").iloc[0]
 workload   = query("SELECT * FROM assignee_workload")
 priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC LIMIT 15")
+epic_weekly   = query("SELECT * FROM epic_open_weekly")
+epic_list     = query("SELECT issue_number, title, days_open, milestone_title, reactions_total_count FROM epic_list WHERE state = 'OPEN' ORDER BY days_open DESC")
+adapter_issues = query("SELECT * FROM adapter_issues")
 
 net = int(summary["closed_4w"]) - int(summary["opened_4w"])
 ```
@@ -215,4 +218,44 @@ priorities[["issue_number", "title", "issue_category", "reactions_total_count", 
         "age_days": "Age (days)",
     }
 )
+```
+
+## EPIC Burndown
+```{python}
+fig_epic = px.line(
+    epic_weekly, x="week", y="open_epics",
+    labels={"open_epics": "Open EPICs", "week": "Week"},
+    title="Open EPICs Over Time",
+    markers=True,
+)
+fig_epic.update_layout(template="plotly_dark", height=250, margin=dict(t=40, b=20))
+fig_epic
+```
+
+```{python}
+#| title: "Open EPICs by Age"
+epic_list.rename(columns={
+    "issue_number": "#",
+    "title": "Title",
+    "days_open": "Days Open",
+    "milestone_title": "Milestone",
+    "reactions_total_count": "Reactions",
+})
+```
+
+## Adapter Issues
+```{python}
+#| title: "Open Issues Tagged 'adapter'"
+if len(adapter_issues) > 0:
+    adapter_issues.rename(columns={
+        "issue_number": "#",
+        "title": "Title",
+        "type": "Type",
+        "days_open": "Days Open",
+        "reactions": "Reactions",
+        "milestone": "Milestone",
+    })
+else:
+    import pandas as pd
+    pd.DataFrame({"message": ["No open issues tagged 'adapter'."]})
 ```

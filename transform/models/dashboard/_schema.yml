@@ -153,7 +153,7 @@ models:
           - not_null
 
   - name: epic_list
-    description: All EPIC issues with metadata
+    description: All EPIC issues with metadata, ordered by days open descending
     columns:
       - name: issue_number
         tests:
@@ -165,6 +165,28 @@ models:
           - accepted_values:
               arguments:
                 values: ['OPEN', 'CLOSED']
+      - name: days_open
+        tests:
+          - not_null
+
+  - name: epic_open_weekly
+    description: Weekly count of open EPICs for burndown trend chart
+    columns:
+      - name: week
+        tests:
+          - not_null
+          - unique
+      - name: open_epics
+        tests:
+          - not_null
+
+  - name: adapter_issues
+    description: Open issues tagged with the adapter label
+    columns:
+      - name: issue_number
+        tests:
+          - not_null
+          - unique
 
   - name: open_issues_table
     description: Top 50 oldest open non-EPIC issues

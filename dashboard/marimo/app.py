@@ -233,5 +233,67 @@ def _(px, query):
     return
 
 
+# ── EPIC Burndown ──────────────────────────────────────────────────
+
+
+@app.cell
+def _(mo):
+    mo.md("## EPIC Burndown")
+    return
+
+
+@app.cell
+def _(px, query):
+    epic_weekly = query("SELECT * FROM epic_open_weekly")
+    fig_epic_trend = px.line(
+        epic_weekly, x="week", y="open_epics",
+        labels={"open_epics": "Open EPICs", "week": "Week"},
+        title="Open EPICs Over Time",
+        markers=True,
+    )
+    fig_epic_trend.update_layout(template="plotly_dark", height=250)
+    fig_epic_trend
+    return
+
+
+@app.cell
+def _(mo, query):
+    epics = query("SELECT issue_number, title, days_open, milestone_title, reactions_total_count FROM epic_list WHERE state = 'OPEN' ORDER BY days_open DESC")
+    mo.ui.table(epics.rename(columns={
+        "issue_number": "#",
+        "title": "Title",
+        "days_open": "Days Open",
+        "milestone_title": "Milestone",
+        "reactions_total_count": "Reactions",
+    }))
+    return
+
+
+# ── Adapter Issues ─────────────────────────────────────────────────
+
+
+@app.cell
+def _(mo):
+    mo.md("## Adapter Issues")
+    return
+
+
+@app.cell
+def _(mo, query):
+    adapter = query("SELECT * FROM adapter_issues")
+    if len(adapter) == 0:
+        mo.md("_No open issues tagged 'adapter'._")
+    else:
+        mo.ui.table(adapter.rename(columns={
+            "issue_number": "#",
+            "title": "Title",
+            "type": "Type",
+            "days_open": "Days Open",
+            "reactions": "Reactions",
+            "milestone": "Milestone",
+        }))
+    return
+
+
 if __name__ == "__main__":
     app.run()
