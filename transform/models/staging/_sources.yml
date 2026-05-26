@@ -6,6 +6,8 @@ sources:
       Raw GitHub issue data extracted via dlt from dbt-labs/dbt-fusion.
       Parquet files in data/raw/fusion_issues/. Gitignored — run extract/run.py to populate.
     tables:
+      - name: milestones
+        description: Raw milestones extracted directly from GitHub GraphQL (all states, one row per milestone).
       - name: issues
         description: Raw issues from dlt GraphQL extract (flattened nested fields use double-underscore separators).
         columns:
@@ -18,6 +20,20 @@ sources:
           - name: parent__issue_type__name
             description: Parent issue's native Issue Type
 models:
+  - name: stg_milestones
+    description: One row per milestone from the direct GitHub milestones extract.
+    columns:
+      - name: milestone_number
+        tests:
+          - unique
+          - not_null
+      - name: milestone_state
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['OPEN', 'CLOSED']
+
   - name: stg_issues
     description: Cleaned issues from dbt-labs/dbt-fusion
     columns:

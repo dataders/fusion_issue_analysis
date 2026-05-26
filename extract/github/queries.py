@@ -136,6 +136,34 @@ node_%s: node(id:"%s") {
   }
 """
 
+MILESTONES_QUERY = """
+query($owner: String!, $name: String!, $items_per_page: Int!, $page_after: String) {
+  repository(owner: $owner, name: $name) {
+    milestones(first: $items_per_page, after: $page_after, states: [OPEN, CLOSED], orderBy: {field: UPDATED_AT, direction: DESC}) {
+      pageInfo {
+        endCursor
+      }
+      nodes {
+        number
+        title
+        description
+        state
+        dueOn
+        createdAt
+        updatedAt
+        closedAt
+      }
+    }
+  }
+  rateLimit {
+    limit
+    cost
+    remaining
+    resetAt
+  }
+}
+"""
+
 STARGAZERS_QUERY = """
 query($owner: String!, $name: String!, $items_per_page: Int!, $page_after: String) {
   repository(owner: $owner, name: $name) {
