@@ -40,7 +40,7 @@ jobs:
           cache-dependency-glob: uv.lock
 
       - name: Cache npm packages
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ~/.npm
           key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
@@ -48,7 +48,7 @@ jobs:
             ${{ runner.os }}-dashboard-npm-
 
       - name: Cache MDV build
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: ${{ runner.temp }}/fusion-mdv-cache
           key: ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-${{ hashFiles('dashboard/mdv/build.sh') }}
