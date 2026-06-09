@@ -53,8 +53,9 @@ def main():
     median_close = summary["rolling_median_close_days"]
     sla_pct = summary["pct_responded_48h"]
 
-    net_flow_display = f"{'+' if net_flow > 0 else ''}{net_flow}"
-    write_json("kpi_net_flow.json", {"value": net_flow_display, "label": "Net Flow (4wk)"})
+    # mviz big_value requires a numeric value (a "+5"-style string fails lint),
+    # so positive net flow renders unsigned — a framework limitation.
+    write_json("kpi_net_flow.json", {"value": int(net_flow), "label": "Net Flow (4wk)"})
     write_json("kpi_open_issues.json", {"value": summary["open_issues"], "label": "Open Issues"})
     write_json("kpi_median_close.json", {
         "value": float(median_close) if median_close else 0,
@@ -73,13 +74,20 @@ def main():
     # -- Velocity: pivot velocity model (bugs vs enhancements) --
     velocity_rows = query(con, "SELECT week, issue_category, median_days FROM velocity ORDER BY week, issue_category")
     velocity_map = {}
+    velocity_cats = sorted({r["issue_category"] for r in velocity_rows})
     for r in velocity_rows:
         week = r["week"]
         cat = r["issue_category"]
         if week not in velocity_map:
             velocity_map[week] = {"week": week}
         velocity_map[week][cat] = r["median_days"]
-    write_json("velocity.json", sorted(velocity_map.values(), key=lambda x: x["week"]))
+    # mviz lint requires every y-field present in every row; weeks where a
+    # category missed the >=2-closure threshold get an explicit null (gap).
+    velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
+    for row in velocity_data:
+        for cat in velocity_cats:
+            row.setdefault(cat, None)
+    write_json("velocity.json", velocity_data)
 
     # -- Response time percentiles --
     write_json("response_pctiles.json", query(con, "SELECT * FROM response_pctiles"))
