@@ -46,7 +46,7 @@ models:
           - not_null
 
   - name: bug_velocity
-    description: Median days to close bugs by week (weeks with >= 3 closures)
+    description: Median days to close bugs by week (weeks with >= 2 closures) — thin filter of velocity
     columns:
       - name: week
         tests:
@@ -57,7 +57,7 @@ models:
           - not_null
 
   - name: enh_velocity
-    description: Median days to close enhancements by week (weeks with >= 2 closures)
+    description: Median days to close enhancements by week (weeks with >= 2 closures) — thin filter of velocity
     columns:
       - name: week
         tests:
