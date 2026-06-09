@@ -82,13 +82,20 @@ def _(mo):
 @app.cell
 def _(mo, query):
     untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged")
-    mo.ui.table(untriaged, selection=None, page_size=25)
+    mo.ui.table(
+        untriaged,
+        selection=None,
+        page_size=25,
+        format_mapping={
+            "issue_url": lambda url: mo.Html(f'<a href="{url}" target="_blank">{url}</a>') if url else "",
+        },
+    )
     return
 
 
 @app.cell
 def _(mo, summary):
-    net = int(summary['closed_4w']) - int(summary['opened_4w'])
+    net = int(summary['net_flow_4w'])
     sla = summary.get('pct_responded_48h')
     mo.hstack([
         mo.stat(label="Open Issues", value=str(int(summary['open_issues'])), bordered=True),
@@ -173,12 +180,13 @@ def _(mo):
 
 @app.cell
 def _(px, query):
-    age_df = query("SELECT * FROM age_distribution")
+    age_df = query("SELECT * FROM age_distribution ORDER BY bucket_sort_order")
+    bucket_order = age_df[['age_bucket', 'bucket_sort_order']].drop_duplicates().sort_values('bucket_sort_order')['age_bucket'].tolist()
     fig_age = px.bar(
         age_df,
         x='age_bucket', y='issue_count', color='issue_category',
-        color_discrete_map={'bug': '#f38ba8', 'enhancement': '#89b4fa', 'other': '#a6adc8'},
-        category_orders={'age_bucket': ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']},
+        color_discrete_map={'bug': '#f38ba8', 'enhancement': '#89b4fa', 'task': '#cba6f7', 'other': '#a6adc8'},
+        category_orders={'age_bucket': bucket_order},
         labels={'issue_category': 'Type', 'issue_count': 'Issues', 'age_bucket': 'Age'},
         title='Open Issue Age by Type',
         barmode='stack',

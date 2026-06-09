@@ -47,7 +47,7 @@ order by age_days desc
 ```sql kpis
 select
     open_issues,
-    closed_4w - opened_4w as net_flow,
+    net_flow_4w,
     stale_count,
     pct_responded_48h,
     rolling_median_close_days as median_close_days
@@ -55,7 +55,7 @@ from summary_kpis
 ```
 
 <BigValue data={kpis} value="open_issues" title="Open Issues"/>
-<BigValue data={kpis} value="net_flow" title="Net Flow (4 wk)"/>
+<BigValue data={kpis} value="net_flow_4w" title="Net Flow (4 wk)" fmt="+0;-0"/>
 <BigValue data={kpis} value="median_close_days" title="Median Close (4 wk)"/>
 <BigValue data={kpis} value="pct_responded_48h" title="48h Response SLA" fmt="0"/>
 <BigValue data={kpis} value="stale_count" title="Stale Issues (30d+)"/>
@@ -102,7 +102,9 @@ select CAST(week AS DATE) as week, p25, p50, p75 from response_pctiles order by 
 ## Issue Distribution
 
 ```sql age_distribution
-select age_bucket, issue_category, issue_count from age_distribution
+select age_bucket, bucket_sort_order, issue_category, issue_count
+from age_distribution
+order by bucket_sort_order
 ```
 
 <BarChart
@@ -157,10 +159,17 @@ order by bugs + enhancements desc
 />
 
 ```sql community_priorities
-select issue_number, title, issue_category, reactions_total_count, age_days
+select issue_number, title, issue_category, reactions_total_count, age_days, issue_url
 from community_priorities
 order by reactions_total_count desc
 limit 15
 ```
 
-<DataTable data={community_priorities} search=true rows=15 title="Community Priorities"/>
+<DataTable data={community_priorities} search=true rows=15 title="Community Priorities">
+  <Column id="issue_number" title="#"/>
+  <Column id="title" title="Title"/>
+  <Column id="issue_category" title="Type"/>
+  <Column id="reactions_total_count" title="Reactions"/>
+  <Column id="age_days" title="Age (days)"/>
+  <Column id="issue_url" title="Link" contentType=link linkLabel="open"/>
+</DataTable>

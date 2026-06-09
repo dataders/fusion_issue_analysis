@@ -190,7 +190,7 @@
       <div>
         <div class="eyebrow">YAML-first analytics platform</div>
         <h1>Dataface</h1>
-        <p class="hero-text">Dataface enters the bakeoff as a dbt-native, YAML-first BI tool. Boards are defined as version-controlled YAML files that query the dbt Semantic Layer (MetricFlow), then rendered to interactive HTML via <code>dft render</code>. The tracked board source below is ready to wire up once MetricFlow metrics are configured in the dbt Fusion project.</p>
+        <p class="hero-text">Dataface enters the bakeoff as a dbt-native, YAML-first BI tool. Boards are defined as version-controlled YAML files that query dbt dashboard models directly via SQL, then rendered to interactive HTML via <code>dft render</code>. The board below covers all CORE-22 canonical tiles: operational triage, key metrics, trends, triage health, and people sections.</p>
         <div class="actions">
           <a href="fusion-issue-health.board.yml">Board YAML</a>
           <a href="https://play.dataface.com/" target="_blank" rel="noreferrer">Playground</a>
@@ -203,115 +203,120 @@
     </header>
 
     <section class="grid" aria-label="Dataface tab facts">
-      <div class="metric"><strong>YAML</strong><span>Boards are plain YAML files, committed alongside dbt models.</span></div>
-      <div class="metric"><strong>MetricFlow</strong><span>Queries the dbt Semantic Layer — metrics + dimensions, not raw SQL.</span></div>
+      <div class="metric"><strong>YAML</strong><span>Boards are plain YAML files in <code>transform/faces/</code>, committed alongside dbt models.</span></div>
+      <div class="metric"><strong>Direct SQL</strong><span>Queries the dbt dashboard models directly — no MetricFlow needed.</span></div>
       <div class="metric"><strong>dbt-native</strong><span>Lives in the dbt project; inherits model lineage and governance.</span></div>
-      <div class="metric"><strong>No static export yet</strong><span><code>dft build</code> is planned. GitHub Pages tab tracks board source for now.</span></div>
+      <div class="metric"><strong>23 tiles</strong><span>All CORE-22 canonical tiles covered across 5 sections.</span></div>
     </section>
 
     <section class="body-grid">
       <div class="panel">
         <h2>Bakeoff fit</h2>
         <ul>
-          <li>Board is authored as <code>fusion-issue-health.board.yml</code> alongside dbt models.</li>
-          <li>Queries target MetricFlow metrics: <code>open_issues</code>, <code>net_flow_4w</code>, <code>rolling_median_close_days</code>, and <code>pct_responded_48h</code>.</li>
-          <li>Chart types used: <code>kpi</code>, <code>line</code>, and stacked <code>bar</code>.</li>
-          <li>Local preview: <code>dft serve fusion-issue-health.board.yml</code>.</li>
-          <li>Static export (when available): <code>dft render fusion-issue-health.board.yml --format html</code>.</li>
-          <li>Requires MetricFlow Semantic Layer metrics defined in <code>transform/models/metrics/</code>.</li>
+          <li>Canonical face: <code>transform/faces/fusion-issue-health.yml</code>; this directory mirrors it.</li>
+          <li>Queries dbt dashboard models directly via SQL — <code>summary_kpis</code>, <code>issue_triage_health</code>, <code>velocity</code>, <code>age_distribution</code>, <code>community_priorities</code>, and more.</li>
+          <li>New upstream columns wired: <code>net_flow_4w</code>, <code>bucket_sort_order</code>, <code>issue_url</code> for links.</li>
+          <li>Chart types: <code>kpi</code>, <code>area</code>, <code>line</code>, stacked <code>bar</code>, and <code>table</code> with <code>href</code> links.</li>
+          <li>Age distribution derives bucket order from data (<code>ORDER BY bucket_sort_order</code>) — no hardcoded label list.</li>
+          <li>Local preview: <code>cd transform &amp;&amp; dft serve faces/fusion-issue-health.yml</code></li>
+          <li>Validate: <code>cd transform &amp;&amp; dft validate faces/fusion-issue-health.yml</code> — passes.</li>
         </ul>
-        <p class="small" style="margin-top:12px">Generated from <code>fusion-issue-health.board.yml</code>.</p>
+        <p class="small" style="margin-top:12px">Canonical source: <code>transform/faces/fusion-issue-health.yml</code></p>
       </div>
       <div class="panel">
-        <h2>Board source</h2>
+        <h2>Board source (abridged)</h2>
         <pre><code>title: "dbt-fusion Issue Health"
+source: fusion_issues
 
 queries:
-  kpis:
-    metrics: [open_issues, net_flow_4w,
-              rolling_median_close_days,
-              pct_responded_48h]
+  triage_health_kpis:
+    sql: &gt;
+      SELECT slipped_through_count, triage_queue_count,
+             hard_blocker_count, hard_blocker_unreleased,
+             stale_count AS triage_stale_count,
+             needs_repro_count, repro_verified_count, total_open
+      FROM fusion_issues.main.issue_triage_health
 
-  weekly_flow:
-    metrics: [cumulative_opened, cumulative_closed]
-    dimensions: [week]
-    order_by: [week]
+  summary_kpis:
+    sql: &gt;
+      SELECT open_issues, net_flow_4w,
+             rolling_median_close_days, pct_responded_48h,
+             stale_count AS summary_stale_count
+      FROM fusion_issues.main.summary_kpis
 
-  age_dist:
-    metrics: [issue_count]
-    dimensions: [age_bucket, issue_category]
+  velocity:
+    sql: &gt;
+      SELECT week, issue_category, median_days
+      FROM fusion_issues.main.velocity
+      ORDER BY week, issue_category
 
-  response_pctiles:
-    metrics: [p50_hours]
-    dimensions: [week]
+  age_distribution:
+    sql: &gt;
+      SELECT age_bucket, bucket_sort_order,
+             issue_category, issue_count
+      FROM fusion_issues.main.age_distribution
+      ORDER BY bucket_sort_order, issue_category
+
+  community_priorities:
+    sql: &gt;
+      SELECT issue_number, title, issue_category,
+             reactions_total_count, age_days, issue_url
+      FROM fusion_issues.main.community_priorities
+      ORDER BY reactions_total_count DESC
+
+  # ... (oldest_untriaged, cumulative_flow, response_pctiles,
+  #      close_by_label, assignee_workload, label_health_kpis)
+
+charts:
+  net_flow_kpi:
+    query: summary_kpis
+    type: kpi
+    value: net_flow_4w
+    label: "Net Flow (4 wk)"
+
+  velocity_chart:
+    query: velocity
+    type: line
+    x: week
+    y: median_days
+    color: issue_category
+    title: "Median Days to Close: Bugs vs Enhancements"
+
+  age_distribution_chart:
+    query: age_distribution
+    type: bar
+    x: age_bucket
+    y: issue_count
+    color: issue_category
+    stack: true
+    sort: { by: bucket_sort_order, order: asc }
+    title: "Open Issue Age by Type"
+
+  community_priorities_table:
+    query: community_priorities
+    type: table
+    href: issue_url   # links from issue_url column — never hardcoded
+    # ... column labels omitted for brevity
 
 rows:
-  - title: "Summary"
-    grid:
-      columns: 12
-      items:
-        - item: open_issues_kpi
-          width: 3
-        - item: net_flow_kpi
-          width: 3
-        - item: median_close_kpi
-          width: 3
-        - item: response_sla_kpi
-          width: 3
-    charts:
-      open_issues_kpi:
-        title: "Open Issues"
-        query: queries.kpis
-        type: kpi
-        metric: open_issues
-      net_flow_kpi:
-        title: "Net Flow (4wk)"
-        query: queries.kpis
-        type: kpi
-        metric: net_flow_4w
-      median_close_kpi:
-        title: "Median Close (days)"
-        query: queries.kpis
-        type: kpi
-        metric: rolling_median_close_days
-      response_sla_kpi:
-        title: "48h Response SLA"
-        query: queries.kpis
-        type: kpi
-        metric: pct_responded_48h
-
+  - title: "Operational Triage"
+    cols: [slipped_through_kpi, triage_queue_kpi, hard_blockers_kpi,
+           triage_stale_kpi, needs_repro_kpi, repro_verified_kpi, total_open_kpi]
+  - oldest_untriaged_table
+  - title: "Key Metrics"
+    cols: [open_issues_kpi, net_flow_kpi, median_close_kpi,
+           response_sla_kpi, summary_stale_kpi]
   - title: "Trends"
-    grid:
-      columns: 12
-      items:
-        - item: cumulative_chart
-          width: 6
-        - item: age_chart
-          width: 6
-    charts:
-      cumulative_chart:
-        title: "Cumulative issue flow"
-        query: queries.weekly_flow
-        type: line
-        x: week
-        y: [cumulative_opened, cumulative_closed]
-      age_chart:
-        title: "Open issue age by category"
-        query: queries.age_dist
-        type: bar
-        x: age_bucket
-        y: issue_count
-        color: issue_category
-        stacked: true
+    rows:
+      - cols: [cumulative_flow_chart, velocity_chart]
+      - cols: [response_pctiles_chart, age_distribution_chart]
+      - close_by_label_chart
+  - title: "Triage Health"
+    cols: [pct_labeled_kpi, pct_typed_kpi, pct_assigned_kpi, pct_milestoned_kpi]
+  - title: "People"
+    rows: [assignee_workload_chart, community_priorities_table]
 
-  - title: "Response time"
-    charts:
-      response_chart:
-        title: "Median response time (hours)"
-        query: queries.response_pctiles
-        type: line
-        x: week
-        y: p50_hours</code></pre>
+# Full source: transform/faces/fusion-issue-health.yml</code></pre>
       </div>
     </section>
   </main>

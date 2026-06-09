@@ -27,8 +27,8 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 {
   "title": "Oldest Untriaged Issues — Zero-Signal Action Queue",
   "columns": [
-    {"id": "issue_number", "title": "#", "bold": true},
-    {"id": "title", "title": "Title"},
+    {"id": "issue_number", "title": "#", "bold": true, "href": "issue_url"},
+    {"id": "title", "title": "Title", "href": "issue_url"},
     {"id": "age_days", "title": "Age (days)", "bold": true}
   ]
 }
@@ -63,7 +63,7 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 {
   "title": "Median Days to Close: Bugs vs Enhancements",
   "x": "week",
-  "y": ["bugs", "enhancements"]
+  "y": ["bug", "enhancement"]
 }
 ```
 ```line size=[8,6] file=data/response_pctiles.json
@@ -80,7 +80,7 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 {
   "title": "Open Issue Age by Type",
   "x": "age_bucket",
-  "y": ["bug", "enhancement", "other"]
+  "y": ["bug", "enhancement", "task", "other"]
 }
 ```
 ```bar size=[8,6] file=data/close_by_label.json
@@ -116,11 +116,11 @@ Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
 {
   "title": "Community Priorities — Most-Reacted Open Issues",
   "columns": [
-    {"id": "issue_number", "title": "#", "bold": true},
-    {"id": "title", "title": "Title"},
+    {"id": "issue_number", "title": "#", "bold": true, "href": "issue_url"},
+    {"id": "title", "title": "Title", "href": "issue_url"},
     {"id": "issue_category", "title": "Type"},
-    {"id": "reactions", "title": "Reactions", "bold": true},
-    {"id": "comments", "title": "Comments"},
+    {"id": "reactions_total_count", "title": "Reactions", "bold": true},
+    {"id": "comments_total_count", "title": "Comments"},
     {"id": "age_days", "title": "Age (days)"}
   ]
 }

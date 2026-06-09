@@ -1,13 +1,12 @@
 -- title: Community Priorities
 -- blurb: Most-reacted open issues — a proxy for user-facing importance.
+-- type: table
 SELECT
     issue_number,
+    issue_url,
     title,
     issue_category,
     reactions_total_count
 FROM community_priorities
 ORDER BY reactions_total_count DESC
 LIMIT 15
-VISUALISE title AS y, reactions_total_count AS x, issue_category AS fill
-DRAW bar
-LABEL title => 'Community Priorities'

@@ -46,40 +46,38 @@ def query(sql: str) -> list[dict]:
 
 summary = query("SELECT * FROM summary_kpis")[0]
 triage = query("SELECT * FROM triage_health")[0]
+triage_health = query("SELECT * FROM issue_triage_health")[0]
+oldest_untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged ORDER BY age_days DESC")
 cumulative_flow = query("SELECT * FROM cumulative_flow")
 response_pctiles = query("SELECT * FROM response_pctiles")
-bug_velocity = query("SELECT * FROM bug_velocity")
-enh_velocity = query("SELECT * FROM enh_velocity")
-age_dist = query("SELECT * FROM age_distribution")
+velocity_raw = query("SELECT * FROM velocity ORDER BY week")
+age_dist_wide = query("SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
 close_by_label = query("SELECT * FROM close_by_label")
 assignee_workload = query("SELECT * FROM assignee_workload")
 community_priorities = query("SELECT * FROM community_priorities")
 open_issues_table = query("SELECT * FROM open_issues_table")
 
-net_flow = summary["closed_4w"] - summary["opened_4w"]
+# (1) net_flow_4w comes directly from summary_kpis
+net_flow = summary["net_flow_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
 
+# (2) Velocity: pivot the unified velocity model by issue_category
 velocity_map: dict[str, dict] = {}
-for row in bug_velocity:
-    velocity_map[row["week"]] = {"week": row["week"], "bugs": row["median_days"], "enhancements": None}
-for row in enh_velocity:
-    if row["week"] in velocity_map:
-        velocity_map[row["week"]]["enhancements"] = row["median_days"]
-    else:
-        velocity_map[row["week"]] = {"week": row["week"], "bugs": None, "enhancements": row["median_days"]}
-velocity_data = sorted(velocity_map.values(), key=lambda row: row["week"])
+for row in velocity_raw:
+    week = row["week"]
+    if week not in velocity_map:
+        velocity_map[week] = {"week": week}
+    velocity_map[week][row["issue_category"]] = row["median_days"]
+velocity_data = sorted(velocity_map.values(), key=lambda r: r["week"])
 
-age_buckets = ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
-age_chart_data = []
-for bucket in age_buckets:
-    chart_row = {"age_bucket": bucket}
-    for issue_type in ["bug", "enhancement", "other"]:
-        chart_row[issue_type] = sum(
-            row["issue_count"]
-            for row in age_dist
-            if row["age_bucket"] == bucket and row["issue_category"] == issue_type
-        )
-    age_chart_data.append(chart_row)
+# (3) Age distribution: derive categories from data; order by bucket_sort_order (already sorted)
+age_categories = sorted(
+    {col for row in age_dist_wide for col in row if col not in ("age_bucket", "bucket_sort_order")},
+)
+age_chart_data = [
+    {**{"age_bucket": row["age_bucket"]}, **{cat: row.get(cat, 0) or 0 for cat in age_categories}}
+    for row in age_dist_wide
+]
 
 WIN2K_CSS = """
 body {
@@ -191,21 +189,93 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
             H2("Fusion Issue Explorer", css_class="shell-title")
             Text("dbt-fusion backlog shell over shared dbt dashboard marts", css_class="shell-subtitle")
 
-            with Row(gap=3, css_class="mt-3"):
-                kpi_card("Open Issues", str(summary["open_issues"]), "Current queue depth")
-                kpi_card("Net Flow", f"{net_flow_sign}{net_flow}", f"{summary['opened_4w']} opened / {summary['closed_4w']} closed")
+            # ── Operational Triage ───────────────────────────────────────────
+            with Card(css_class="win-panel mt-3"):
+                with CardHeader():
+                    CardTitle("[Operational Triage]", css_class="group-caption")
+
+            with Row(gap=3, css_class="mt-2"):
                 kpi_card(
-                    "Median Close",
+                    "Slipped Through (bugs)",
+                    str(triage_health["slipped_through_count"]),
+                    "Bugs closed without triage",
+                )
+                kpi_card(
+                    "Triage Queue",
+                    str(triage_health["triage_queue_count"]),
+                    "Awaiting initial triage",
+                )
+                kpi_card(
+                    "Hard Blockers",
+                    str(triage_health["hard_blocker_count"]),
+                    f"{triage_health['hard_blocker_unreleased']} unreleased",
+                )
+                kpi_card(
+                    "Stale (90d+)",
+                    str(triage_health["stale_count"]),
+                    "No activity 90+ days",
+                )
+                kpi_card(
+                    "Needs Repro",
+                    str(triage_health["needs_repro_count"]),
+                    "Waiting for reproduction",
+                )
+                kpi_card(
+                    "Repro Verified",
+                    str(triage_health["repro_verified_count"]),
+                    "Reproduction confirmed",
+                )
+
+            with Card(css_class="win-panel mt-3"):
+                with CardHeader():
+                    CardTitle("Oldest Untriaged Bugs", css_class="group-caption")
+                    Muted("Bugs that have never been triaged, oldest first")
+                with CardContent():
+                    with Div(css_class="win-inset"):
+                        DataTable(
+                            data=[
+                                {
+                                    "#": row["issue_number"],
+                                    "title": row["title"],
+                                    "age_days": row["age_days"],
+                                    "issue_url": row["issue_url"],
+                                }
+                                for row in oldest_untriaged[:25]
+                            ],
+                            columns=[
+                                DataTableColumn(key="#", header="#", sortable=True),
+                                DataTableColumn(key="title", header="Title", url_key="issue_url"),
+                                DataTableColumn(key="age_days", header="Age (days)", sortable=True),
+                            ],
+                            search=True,
+                            pagination=10,
+                        )
+
+            # ── Key Metrics ──────────────────────────────────────────────────
+            with Card(css_class="win-panel mt-3"):
+                with CardHeader():
+                    CardTitle("[Key Metrics]", css_class="group-caption")
+
+            with Row(gap=3, css_class="mt-2"):
+                kpi_card("Open Issues", str(summary["open_issues"]), "Current queue depth")
+                kpi_card(
+                    "Net Flow (4 wk)",
+                    f"{net_flow_sign}{net_flow}",
+                    "Positive = backlog shrinking",
+                )
+                kpi_card(
+                    "Median Close (4 wk)",
                     f"{summary['rolling_median_close_days']}d" if summary["rolling_median_close_days"] is not None else "N/A",
                     "Rolling 4 week median",
                 )
                 kpi_card(
-                    "48h Response",
+                    "48h Response SLA",
                     f"{int(summary['pct_responded_48h'])}%" if summary["pct_responded_48h"] is not None else "N/A",
                     "First response SLA",
                 )
-                kpi_card("Stale Issues", str(summary["stale_count"]), "No activity 30+ days")
+                kpi_card("Stale Issues (30d+)", str(summary["stale_count"]), "No activity 30+ days")
 
+            # ── Trends ───────────────────────────────────────────────────────
             with Row(gap=3, css_class="mt-3"):
                 with Card(css_class="win-panel flex-1"):
                     with CardHeader():
@@ -226,15 +296,15 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
 
                 with Card(css_class="win-panel flex-1"):
                     with CardHeader():
-                        CardTitle("Median Days to Close", css_class="group-caption")
-                        Muted("Bugs vs enhancements")
+                        CardTitle("Median Days to Close: Bugs vs Enhancements", css_class="group-caption")
+                        Muted("From unified velocity model")
                     with CardContent():
                         with Div(css_class="win-inset"):
                             LineChart(
                                 data=velocity_data,
                                 series=[
-                                    ChartSeries(data_key="bugs", label="Bugs", color="#b22222"),
-                                    ChartSeries(data_key="enhancements", label="Enhancements", color="#245edb"),
+                                    ChartSeries(data_key="bug", label="Bugs", color="#b22222"),
+                                    ChartSeries(data_key="enhancement", label="Enhancements", color="#245edb"),
                                 ],
                                 x_axis="week",
                                 show_legend=True,
@@ -245,7 +315,7 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
             with Row(gap=3, css_class="mt-3"):
                 with Card(css_class="win-panel flex-1"):
                     with CardHeader():
-                        CardTitle("Time to First Response", css_class="group-caption")
+                        CardTitle("Time to First Response (hours)", css_class="group-caption")
                         Muted("p25 / p50 / p75 hours")
                     with CardContent():
                         with Div(css_class="win-inset"):
@@ -270,9 +340,13 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
                             BarChart(
                                 data=age_chart_data,
                                 series=[
-                                    ChartSeries(data_key="bug", label="Bug", color="#b22222"),
-                                    ChartSeries(data_key="enhancement", label="Enhancement", color="#245edb"),
-                                    ChartSeries(data_key="other", label="Other", color="#707070"),
+                                    ChartSeries(data_key=cat, label=cat.capitalize(), color={
+                                        "bug": "#b22222",
+                                        "enhancement": "#245edb",
+                                        "task": "#e8a000",
+                                        "other": "#707070",
+                                    }.get(cat, "#707070"))
+                                    for cat in age_categories
                                 ],
                                 x_axis="age_bucket",
                                 stacked=True,
@@ -335,7 +409,11 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
                         with Div(css_class="win-inset"):
                             for issue in community_priorities[:8]:
                                 with Div(css_class="priority-row"):
-                                    Text(f"#{issue['issue_number']} {issue['title'][:58]}", style={"font-weight": "700"})
+                                    Text(
+                                        f"#{issue['issue_number']} {issue['title'][:58]}",
+                                        style={"font-weight": "700"},
+                                        url=issue.get("issue_url"),
+                                    )
                                     Text(
                                         f"{issue['issue_category']} | {issue['reactions_total_count']} reactions | {issue['age_days']} days old",
                                         css_class="priority-meta",
@@ -350,7 +428,7 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
                             data=open_issues_table[:25],
                             columns=[
                                 DataTableColumn(key="#", header="#", sortable=True),
-                                DataTableColumn(key="title", header="Title"),
+                                DataTableColumn(key="title", header="Title", url_key="issue_url"),
                                 DataTableColumn(key="type", header="Type", sortable=True),
                                 DataTableColumn(key="age_days", header="Age", sortable=True),
                                 DataTableColumn(key="reactions", header="Reactions", sortable=True),

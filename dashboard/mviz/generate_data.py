@@ -49,11 +49,12 @@ def main():
 
     # -- Summary stats --
     summary = query(con, "SELECT * FROM summary_kpis")[0]
-    net_flow = summary["closed_4w"] - summary["opened_4w"]
+    net_flow = summary["net_flow_4w"]
     median_close = summary["rolling_median_close_days"]
     sla_pct = summary["pct_responded_48h"]
 
-    write_json("kpi_net_flow.json", {"value": net_flow, "label": "Net Flow (4wk)"})
+    net_flow_display = f"{'+' if net_flow > 0 else ''}{net_flow}"
+    write_json("kpi_net_flow.json", {"value": net_flow_display, "label": "Net Flow (4wk)"})
     write_json("kpi_open_issues.json", {"value": summary["open_issues"], "label": "Open Issues"})
     write_json("kpi_median_close.json", {
         "value": float(median_close) if median_close else 0,
@@ -69,34 +70,33 @@ def main():
     # -- Cumulative flow --
     write_json("cumulative_flow.json", query(con, "SELECT * FROM cumulative_flow"))
 
-    # -- Bug + enhancement velocity (merged) --
-    bug_velocity = query(con, "SELECT * FROM bug_velocity")
-    enh_velocity = query(con, "SELECT * FROM enh_velocity")
+    # -- Velocity: pivot velocity model (bugs vs enhancements) --
+    velocity_rows = query(con, "SELECT week, issue_category, median_days FROM velocity ORDER BY week, issue_category")
     velocity_map = {}
-    for r in bug_velocity:
-        velocity_map[r["week"]] = {"week": r["week"], "bugs": r["median_days"], "enhancements": None}
-    for r in enh_velocity:
-        if r["week"] in velocity_map:
-            velocity_map[r["week"]]["enhancements"] = r["median_days"]
-        else:
-            velocity_map[r["week"]] = {"week": r["week"], "bugs": None, "enhancements": r["median_days"]}
+    for r in velocity_rows:
+        week = r["week"]
+        cat = r["issue_category"]
+        if week not in velocity_map:
+            velocity_map[week] = {"week": week}
+        velocity_map[week][cat] = r["median_days"]
     write_json("velocity.json", sorted(velocity_map.values(), key=lambda x: x["week"]))
 
     # -- Response time percentiles --
     write_json("response_pctiles.json", query(con, "SELECT * FROM response_pctiles"))
 
-    # -- Issue age distribution (pivoted) --
-    age_dist = query(con, "SELECT * FROM age_distribution")
-    age_buckets = ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
+    # -- Issue age distribution (pivoted via age_distribution_wide, ordered by bucket_sort_order) --
+    # Use age_distribution_wide which includes all categories (bug, enhancement, task, other).
+    # Category columns are derived from data, not hardcoded, so new categories appear automatically.
+    age_wide_rows = query(con, "SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
+    # Determine category columns from the first row, excluding non-category keys
+    non_cat_keys = {"age_bucket", "bucket_sort_order"}
+    cat_cols = [k for k in age_wide_rows[0].keys() if k not in non_cat_keys] if age_wide_rows else []
     age_chart_data = []
-    for bucket in age_buckets:
-        row = {"age_bucket": bucket}
-        for cat in ["bug", "enhancement", "other"]:
-            row[cat] = sum(
-                r["issue_count"] for r in age_dist
-                if r["age_bucket"] == bucket and r["issue_category"] == cat
-            )
-        age_chart_data.append(row)
+    for row in age_wide_rows:
+        out = {"age_bucket": row["age_bucket"]}
+        for cat in cat_cols:
+            out[cat] = row.get(cat, 0) or 0
+        age_chart_data.append(out)
     write_json("age_distribution.json", age_chart_data)
 
     # -- Close time by label --
@@ -123,7 +123,7 @@ def main():
     write_json("kpi_triage_assigned.json", {"value": pct0_value(triage["pct_assigned"]), "label": "% Assigned", "format": "pct0"})
     write_json("kpi_triage_milestoned.json", {"value": pct0_value(triage["pct_milestoned"]), "label": "% Milestoned", "format": "pct0"})
 
-    # -- Community priorities --
+    # -- Community priorities (include issue_url for links) --
     write_json("community_priorities.json", query(con, "SELECT * FROM community_priorities"))
 
     con.close()

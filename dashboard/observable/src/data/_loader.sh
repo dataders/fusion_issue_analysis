@@ -47,20 +47,9 @@ SQL_BY_NAME = {
         ORDER BY week
     """,
     "age_distribution": """
-        SELECT
-            age_bucket,
-            sum(CASE WHEN issue_category = 'bug' THEN issue_count ELSE 0 END) AS bug,
-            sum(CASE WHEN issue_category = 'enhancement' THEN issue_count ELSE 0 END) AS enhancement,
-            sum(CASE WHEN issue_category = 'other' THEN issue_count ELSE 0 END) AS other
-        FROM age_distribution
-        GROUP BY age_bucket
-        ORDER BY CASE age_bucket
-            WHEN '0-7d' THEN 1
-            WHEN '8-30d' THEN 2
-            WHEN '31-90d' THEN 3
-            WHEN '91-180d' THEN 4
-            ELSE 5
-        END
+        SELECT age_bucket, bucket_sort_order, bug, enhancement, task, other
+        FROM age_distribution_wide
+        ORDER BY bucket_sort_order
     """,
 }
 sql = SQL_BY_NAME[QUERY_NAME]

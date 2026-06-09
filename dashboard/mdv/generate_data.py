@@ -53,7 +53,7 @@ def fmt_pct(value: Any) -> str:
 
 
 def build_stats(summary: dict[str, Any]) -> list[dict[str, str]]:
-    net_flow = int(summary["closed_4w"]) - int(summary["opened_4w"])
+    net_flow = int(summary["net_flow_4w"])
     return [
         {"label": "Open issues", "value": fmt_int(summary["open_issues"]), "delta": ""},
         {"label": "Net flow (4wk)", "value": f"{net_flow:+,}", "delta": ""},
@@ -85,6 +85,16 @@ def build_triage_stats(triage: dict[str, Any]) -> list[dict[str, str]]:
     ]
 
 
+def build_triage_pct_stats(th: dict[str, Any]) -> list[dict[str, str]]:
+    """Canon tiles 18-21: triage quality percentages from triage_health."""
+    return [
+        {"label": "% Labeled", "value": fmt_pct(th["pct_labeled"]), "delta": ""},
+        {"label": "% Typed", "value": fmt_pct(th["pct_typed"]), "delta": ""},
+        {"label": "% Assigned", "value": fmt_pct(th["pct_assigned"]), "delta": ""},
+        {"label": "% Milestoned", "value": fmt_pct(th["pct_milestoned"]), "delta": ""},
+    ]
+
+
 def main() -> None:
     con = get_connection()
 
@@ -93,6 +103,9 @@ def main() -> None:
 
     triage = query(con, "SELECT * FROM issue_triage_health")[0]
     write_csv("triage_health.csv", build_triage_stats(triage), ["label", "value", "delta"])
+
+    th = query(con, "SELECT pct_labeled, pct_typed, pct_assigned, pct_milestoned FROM triage_health")[0]
+    write_csv("triage_pct_health.csv", build_triage_pct_stats(th), ["label", "value", "delta"])
 
     write_csv(
         "oldest_untriaged.csv",
@@ -128,9 +141,15 @@ def main() -> None:
         query(
             con,
             """
-            select week, 'Bugs' as type, median_days as days from bug_velocity
-            union all
-            select week, 'Enhancements' as type, median_days as days from enh_velocity
+            select
+                week,
+                case issue_category
+                    when 'bug' then 'Bugs'
+                    when 'enhancement' then 'Enhancements'
+                    else upper(left(issue_category, 1)) || lower(substr(issue_category, 2))
+                end as type,
+                median_days as days
+            from velocity
             order by week, type
             """,
         ),
@@ -151,7 +170,17 @@ def main() -> None:
         ),
     )
 
-    write_csv("age_distribution.csv", query(con, "SELECT age_bucket, issue_category, issue_count FROM age_distribution"))
+    write_csv(
+        "age_distribution.csv",
+        query(
+            con,
+            """
+            SELECT age_bucket, issue_category, issue_count
+            FROM age_distribution
+            ORDER BY bucket_sort_order, issue_category
+            """,
+        ),
+    )
     write_csv(
         "close_by_label.csv",
         query(con, "SELECT label_name, median_days_to_close FROM close_by_label ORDER BY median_days_to_close DESC LIMIT 12"),
@@ -179,7 +208,8 @@ def main() -> None:
                 issue_category as type,
                 reactions_total_count as reactions,
                 comments_total_count as comments,
-                age_days
+                age_days,
+                issue_url
             from community_priorities
             order by reactions desc, comments desc
             """,

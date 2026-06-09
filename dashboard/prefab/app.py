@@ -18,11 +18,13 @@ from prefab_ui.components import (
     H2,
     H3,
     H4,
+    Link,
     Muted,
     Row,
     Separator,
     Text,
 )
+from prefab_ui.actions import OpenLink
 from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
@@ -57,7 +59,7 @@ oldest_untriaged = query("SELECT * FROM oldest_untriaged")
 
 summary_cards = query("SELECT * FROM summary_kpis")[0]
 
-net_flow = summary_cards["closed_4w"] - summary_cards["opened_4w"]
+net_flow = summary_cards["net_flow_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
 
 # ── Cumulative flow: bugs vs enhancements ──────────────────────────
@@ -66,36 +68,26 @@ cumulative_flow = query("SELECT * FROM cumulative_flow")
 
 # ── Issue age distribution ─────────────────────────────────────────
 
-age_dist = query("SELECT * FROM age_distribution")
+age_dist_wide = query("SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
 
-# Pivot into chart format
-age_buckets = ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
-age_chart_data = []
-for bucket in age_buckets:
-    row = {"age_bucket": bucket}
-    for cat in ['bug', 'enhancement', 'other']:
-        row[cat] = sum(r["issue_count"] for r in age_dist if r["age_bucket"] == bucket and r["issue_category"] == cat)
-    age_chart_data.append(row)
+# Derive category columns dynamically from the data (excludes bucket_sort_order and age_bucket)
+age_categories = [k for k in age_dist_wide[0].keys() if k not in ("age_bucket", "bucket_sort_order")] if age_dist_wide else []
+age_chart_data = age_dist_wide
 
 # ── Response time percentile bands ─────────────────────────────────
 
 response_pctiles = query("SELECT * FROM response_pctiles")
 
-# ── Bug vs Enhancement velocity ───────────────────────────────────
+# ── Velocity: pivot long velocity model to wide by issue_category ─
 
-bug_velocity = query("SELECT * FROM bug_velocity")
+velocity_long = query("SELECT week, issue_category, median_days FROM velocity ORDER BY week, issue_category")
 
-enh_velocity = query("SELECT * FROM enh_velocity")
-
-# Merge bug/enhancement velocity into one dataset
-velocity_map = {}
-for r in bug_velocity:
-    velocity_map[r["week"]] = {"week": r["week"], "bugs": r["median_days"], "enhancements": None}
-for r in enh_velocity:
-    if r["week"] in velocity_map:
-        velocity_map[r["week"]]["enhancements"] = r["median_days"]
-    else:
-        velocity_map[r["week"]] = {"week": r["week"], "bugs": None, "enhancements": r["median_days"]}
+velocity_map: dict = {}
+for r in velocity_long:
+    wk = r["week"]
+    if wk not in velocity_map:
+        velocity_map[wk] = {"week": wk}
+    velocity_map[wk][r["issue_category"]] = r["median_days"]
 velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
 
 # ── Close time by label ────────────────────────────────────────────
@@ -194,7 +186,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 Muted("7-day rolling, proxy")
             with CardContent():
                 lag = triage_lag["median_days_to_first_triage_bugs"]
-                H3(f"{lag} d" if lag else "—")
+                H3(f"{lag} d" if lag is not None else "—")
                 Muted("Created → first maintainer reply")
 
         with Card(css_class="flex-1"):
@@ -203,7 +195,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 Muted("7-day rolling, proxy")
             with CardContent():
                 lag = triage_lag["median_days_triage_to_repro_verified"]
-                H3(f"{lag} d" if lag else "—")
+                H3(f"{lag} d" if lag is not None else "—")
                 Muted("Triage → repro/verified")
 
     # ── Oldest untriaged action queue ──────────────────────────────
@@ -227,6 +219,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 search=True,
                 paginated=True,
                 page_size=15,
+                on_row_click=OpenLink("{{ issue_url }}"),
             )
 
     Separator(css_class="my-8")
@@ -259,7 +252,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 CardTitle("48h Response SLA")
             with CardContent():
                 pct = summary_cards["pct_responded_48h"]
-                H3(f"{int(pct)}%" if pct else "N/A")
+                H3(f"{int(pct)}%" if pct is not None else "N/A")
 
         with Card(css_class="flex-1"):
             with CardHeader():
@@ -323,11 +316,23 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
             with CardHeader():
                 CardTitle("Median Days to Close: Bugs vs Enhancements")
             with CardContent():
+                # Build series dynamically from categories present in velocity data
+                _vel_colors = {
+                    "bug": "hsl(0, 70%, 55%)",
+                    "enhancement": "hsl(200, 70%, 50%)",
+                    "task": "hsl(45, 80%, 50%)",
+                    "other": "hsl(0, 0%, 60%)",
+                }
+                _vel_categories = sorted({k for row in velocity_data for k in row if k != "week"})
                 LineChart(
                     data=velocity_data,
                     series=[
-                        ChartSeries(data_key="bugs", label="Bugs", color="hsl(0, 70%, 55%)"),
-                        ChartSeries(data_key="enhancements", label="Enhancements", color="hsl(200, 70%, 50%)"),
+                        ChartSeries(
+                            data_key=cat,
+                            label=cat.capitalize(),
+                            color=_vel_colors.get(cat, "hsl(260, 70%, 60%)"),
+                        )
+                        for cat in _vel_categories
                     ],
                     x_axis="week",
                     show_legend=True,
@@ -359,12 +364,22 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
             with CardHeader():
                 CardTitle("Open Issue Age by Type")
             with CardContent():
+                # Build series dynamically from categories in age_distribution_wide
+                _age_colors = {
+                    "bug": "hsl(0, 70%, 55%)",
+                    "enhancement": "hsl(200, 70%, 50%)",
+                    "task": "hsl(45, 80%, 50%)",
+                    "other": "hsl(0, 0%, 60%)",
+                }
                 BarChart(
                     data=age_chart_data,
                     series=[
-                        ChartSeries(data_key="bug", label="Bug", color="hsl(0, 70%, 55%)"),
-                        ChartSeries(data_key="enhancement", label="Enhancement", color="hsl(200, 70%, 50%)"),
-                        ChartSeries(data_key="other", label="Other", color="hsl(0, 0%, 60%)"),
+                        ChartSeries(
+                            data_key=cat,
+                            label=cat.capitalize(),
+                            color=_age_colors.get(cat, "hsl(260, 70%, 60%)"),
+                        )
+                        for cat in age_categories
                     ],
                     x_axis="age_bucket",
                     stacked=True,
@@ -443,7 +458,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
             for epic in epic_list:
                 if epic["state"] == "OPEN":
                     with Row(gap=2, css_class="py-1 border-b"):
-                        Badge(f"#{epic['issue_number']}", variant="outline")
+                        Link(f"#{epic['issue_number']}", href=epic["issue_url"], target="_blank")
                         Text(
                             epic["title"][:70] + ("..." if len(epic["title"]) > 70 else ""),
                             css_class="flex-1 text-sm",
@@ -477,7 +492,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
             with CardContent():
                 for issue in community_priorities:
                     with Row(gap=2, css_class="py-1 border-b"):
-                        Badge(f"#{issue['issue_number']}", variant="outline")
+                        Link(f"#{issue['issue_number']}", href=issue["issue_url"], target="_blank")
                         Badge(issue["issue_category"], variant="secondary")
                         Text(
                             issue["title"][:55] + ("..." if len(issue["title"]) > 55 else ""),
@@ -505,6 +520,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 search=True,
                 paginated=True,
                 page_size=15,
+                on_row_click=OpenLink("{{ issue_url }}"),
             )
 
     # ── Contributor Leaderboard ────────────────────────────────────

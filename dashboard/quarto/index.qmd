@@ -94,7 +94,7 @@ untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_u
 workload = query("SELECT * FROM assignee_workload")
 priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC")
 
-net = int(summary["closed_4w"]) - int(summary["opened_4w"])
+net = int(summary["net_flow_4w"])
 ```
 
 ## Operational Triage {height="160"}
@@ -257,6 +257,12 @@ chart({
 
 ## Issue Distribution
 ```{python}
+age_bucket_order = (
+    age_dist[["age_bucket", "bucket_sort_order"]]
+    .drop_duplicates()
+    .sort_values("bucket_sort_order")["age_bucket"]
+    .tolist()
+)
 chart({
     "data": {"values": records(age_dist)},
     "mark": "bar",
@@ -265,13 +271,12 @@ chart({
             "field": "age_bucket",
             "type": "ordinal",
             "title": "Age",
-            "sort": ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"],
+            "sort": age_bucket_order,
         },
         "y": {"field": "issue_count", "type": "quantitative", "title": "Issues", "stack": True},
         "color": {
             "field": "issue_category",
             "type": "nominal",
-            "scale": {"domain": ["bug", "enhancement", "other"], "range": [PALETTE["bug"], PALETTE["enhancement"], PALETTE["other"]]},
             "title": "Type",
         },
         "tooltip": [{"field": "age_bucket"}, {"field": "issue_category"}, {"field": "issue_count"}],
@@ -346,13 +351,13 @@ chart({
 
 ```{python}
 #| title: "Community Priorities"
-priorities[["issue_number", "title", "issue_category", "reactions_total_count", "age_days"]].rename(
-    columns={
-        "issue_number": "#",
-        "title": "Title",
-        "issue_category": "Type",
-        "reactions_total_count": "Reactions",
-        "age_days": "Age (days)",
-    }
+_pri = priorities.copy()
+_pri["#"] = _pri.apply(
+    lambda r: f'<a href="{r["issue_url"]}" target="_blank">#{int(r["issue_number"])}</a>', axis=1
+)
+HTML(
+    _pri[["#", "title", "issue_category", "reactions_total_count", "age_days"]]
+    .rename(columns={"title": "Title", "issue_category": "Type", "reactions_total_count": "Reactions", "age_days": "Age (days)"})
+    .to_html(escape=False, index=False)
 )
 ```
