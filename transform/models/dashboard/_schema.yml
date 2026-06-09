@@ -125,6 +125,7 @@ models:
           - accepted_values:
               arguments:
                 values: [1, 2, 3, 4, 5]
+                quote: false
       - name: issue_count
         tests:
           - not_null
