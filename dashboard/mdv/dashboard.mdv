@@ -4,6 +4,7 @@ theme: minimal
 data:
   stats: ./data/stats.csv
   triage_health: ./data/triage_health.csv
+  triage_pct_health: ./data/triage_pct_health.csv
   oldest_untriaged: ./data/oldest_untriaged.csv
   cumulative_flow: ./data/cumulative_flow.csv
   velocity: ./data/velocity.csv
@@ -58,6 +59,11 @@ MDV keeps the page as Markdown with named CSV datasets. The rendered artifact is
 ```
 
 ```chart type=bar data=close_by_label x=label_name y=median_days_to_close title="Median Days to Close by Label"
+```
+
+## Triage Health
+
+```stat data=triage_pct_health
 ```
 
 ## Workload & Priorities

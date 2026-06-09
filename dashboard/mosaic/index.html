@@ -15,6 +15,26 @@
     #app svg { display: block; }
     .row { display: flex; gap: 20px; flex-wrap: wrap; }
     .row > * { flex: 1 1 300px; }
+
+    /* KPI stat rows */
+    .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
+    .kpi-card {
+      background: #313244; border-radius: 8px; padding: 12px 18px;
+      flex: 1 1 120px; min-width: 100px;
+    }
+    .kpi-label { font-size: 0.72rem; color: #7f849c; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+    .kpi-value { font-size: 1.6rem; font-weight: 700; color: #cdd6f4; }
+    .kpi-sub   { font-size: 0.72rem; color: #585b70; margin-top: 2px; }
+    .kpi-value.positive { color: #a6e3a1; }
+    .kpi-value.negative { color: #f38ba8; }
+
+    /* Oldest untriaged table */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
+    .data-table th { text-align: left; color: #7f849c; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid #313244; }
+    .data-table td { padding: 5px 8px; border-bottom: 1px solid #1e1e2e; }
+    .data-table tr:hover td { background: #313244; }
+    .data-table a { color: #89b4fa; text-decoration: none; }
+    .data-table a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
@@ -49,12 +69,66 @@
       };
     }
 
+    // Helper: append an <h2> section header
     function h2(text, hint) {
       const el = document.createElement('h2'); el.textContent = text; app.append(el);
       if (hint) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = hint; app.append(p); }
     }
+
+    // Helper: wrap elements in a flex row
     function row(...els) {
       const d = document.createElement('div'); d.className = 'row'; d.append(...els); app.append(d);
+    }
+
+    // Helper: render a KPI row from query results
+    // cols: array of {key, label, fmt?, sub?}  (sub is optional subtext key)
+    function kpiRow(data, cols) {
+      const wrap = document.createElement('div');
+      wrap.className = 'kpi-row';
+      const rec = data[0] || {};
+      for (const col of cols) {
+        const card = document.createElement('div');
+        card.className = 'kpi-card';
+        const lbl = document.createElement('div'); lbl.className = 'kpi-label'; lbl.textContent = col.label;
+        const val = document.createElement('div'); val.className = 'kpi-value';
+        const raw = rec[col.key];
+        val.textContent = col.fmt ? col.fmt(raw) : (raw == null ? '—' : raw);
+        if (col.sign) {
+          val.classList.add(raw > 0 ? 'positive' : raw < 0 ? 'negative' : '');
+        }
+        card.append(lbl, val);
+        if (col.sub && rec[col.sub] != null) {
+          const sub = document.createElement('div'); sub.className = 'kpi-sub';
+          sub.textContent = col.subFmt ? col.subFmt(rec[col.sub]) : rec[col.sub];
+          card.append(sub);
+        }
+        wrap.append(card);
+      }
+      app.append(wrap);
+    }
+
+    // Helper: render the Oldest Untriaged Bugs table
+    function untriagedTable(rows) {
+      const tbl = document.createElement('table'); tbl.className = 'data-table';
+      const thead = tbl.createTHead();
+      const hrow = thead.insertRow();
+      for (const h of ['#', 'Title', 'Age (days)']) {
+        const th = document.createElement('th'); th.textContent = h; hrow.append(th);
+      }
+      const tbody = tbl.createTBody();
+      for (const r of rows) {
+        const tr = tbody.insertRow();
+        const tdNum = tr.insertCell(); tdNum.textContent = r.issue_number;
+        const tdTitle = tr.insertCell();
+        const a = document.createElement('a');
+        a.href = r.issue_url;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        a.textContent = r.title;
+        tdTitle.append(a);
+        const tdAge = tr.insertCell(); tdAge.textContent = r.age_days;
+      }
+      app.append(tbl);
     }
 
     async function setup() {
@@ -64,12 +138,62 @@
       await vg.coordinator().exec("ATTACH IF NOT EXISTS 'md:fusion_issues' AS fusion_issues;");
       status.textContent = 'Connected. Rendering…';
 
+      // Fetch scalar KPI data via raw query (one-off, not crossfiltered)
+      async function sqlRows(sql) {
+        const result = await conn.evaluateQuery(sql);
+        return JSON.parse(JSON.stringify(result.data.toRows(),
+          (_, v) => typeof v === 'bigint' ? Number(v) : v));
+      }
+
       // ── Selection handles ────────────────────────────────────────────────────
       const timeSel = vg.Selection.intersect();   // time-range brush on cumulative flow
-      const ageSel  = vg.Selection.crossfilter(); // age-bucket click → workload
+      const ageSel  = vg.Selection.crossfilter(); // age-bucket click → no cross-table filter (same table only)
 
-      // ── 1. Cumulative flow + velocity (time brush links them) ────────────────
-      h2('Cumulative issue flow', 'Brush the time axis to filter the velocity chart below.');
+      // ════════════════════════════════════════════════════════════════════════
+      // SECTION: Operational Triage
+      // ════════════════════════════════════════════════════════════════════════
+      h2('Operational Triage');
+
+      const triageData = await sqlRows(
+        'SELECT slipped_through_count, triage_queue_count, hard_blocker_count, hard_blocker_unreleased, stale_count, needs_repro_count, repro_verified_count, total_open FROM fusion_issues.main.issue_triage_health'
+      );
+      kpiRow(triageData, [
+        {key: 'slipped_through_count', label: 'Slipped Through (bugs)'},
+        {key: 'triage_queue_count',    label: 'Triage Queue'},
+        {key: 'hard_blocker_count',    label: 'Hard Blockers', sub: 'hard_blocker_unreleased', subFmt: v => `${v} unreleased`},
+        {key: 'stale_count',           label: 'Stale (90d+)'},
+        {key: 'needs_repro_count',     label: 'Needs Repro'},
+        {key: 'repro_verified_count',  label: 'Repro Verified'},
+        {key: 'total_open',            label: 'Total Open'},
+      ]);
+
+      h2('Oldest Untriaged Bugs');
+      const untriagedRows = await sqlRows(
+        'SELECT issue_number, title, age_days, issue_url FROM fusion_issues.main.oldest_untriaged ORDER BY age_days DESC'
+      );
+      untriagedTable(untriagedRows);
+
+      // ════════════════════════════════════════════════════════════════════════
+      // SECTION: Key Metrics
+      // ════════════════════════════════════════════════════════════════════════
+      h2('Key Metrics');
+
+      const kpiData = await sqlRows(
+        'SELECT open_issues, net_flow_4w, rolling_median_close_days, pct_responded_48h, stale_count FROM fusion_issues.main.summary_kpis'
+      );
+      kpiRow(kpiData, [
+        {key: 'open_issues',               label: 'Open Issues'},
+        {key: 'net_flow_4w',               label: 'Net Flow (4 wk)',       sign: true,
+          fmt: v => v == null ? '—' : (v > 0 ? `+${v}` : `${v}`)},
+        {key: 'rolling_median_close_days', label: 'Median Close (4 wk)',   fmt: v => v == null ? '—' : `${v}d`},
+        {key: 'pct_responded_48h',         label: '48h Response SLA',      fmt: v => v == null ? '—' : `${v}%`},
+        {key: 'stale_count',               label: 'Stale Issues (30d+)'},
+      ]);
+
+      // ════════════════════════════════════════════════════════════════════════
+      // SECTION: Trends
+      // ════════════════════════════════════════════════════════════════════════
+      h2('Cumulative Issue Flow', 'Brush the time axis to filter the velocity chart below.');
 
       const cumChart = vg.plot(
         vg.areaY(vg.from('fusion_issues.main.cumulative_flow'), {
@@ -96,7 +220,7 @@
       );
       app.append(cumChart);
 
-      h2('Velocity (filtered by time brush)');
+      h2('Median Days to Close: Bugs vs Enhancements', 'Filtered by time brush above.');
       const velBugs = vg.plot(
         vg.lineY(vg.from('fusion_issues.main.velocity', {filterBy: timeSel}), {
           filter: vg.sql`issue_category = 'bug'`,
@@ -119,8 +243,34 @@
       );
       row(velBugs, velEnh);
 
-      // ── 2. Age distribution + assignee workload (crossfilter) ────────────────
-      h2('Open issues by age', 'Click an age bucket to filter the assignee workload chart.');
+      h2('Time to First Response (hours)');
+      const responseChart = vg.plot(
+        vg.lineY(vg.from('fusion_issues.main.response_pctiles'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'p25', stroke: '#a6e3a1', strokeWidth: 2, tip: true,
+        }),
+        vg.lineY(vg.from('fusion_issues.main.response_pctiles'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'p50', stroke: '#89b4fa', strokeWidth: 2, tip: true,
+        }),
+        vg.lineY(vg.from('fusion_issues.main.response_pctiles'), {
+          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
+          y: 'p75', stroke: '#f38ba8', strokeWidth: 2, tip: true,
+        }),
+        vg.xLabel('Week'), vg.yLabel('Hours to first response'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(880), vg.height(200),
+      );
+      app.append(responseChart);
+
+      // Age distribution — order by bucket_sort_order from the data, not hardcoded labels
+      h2('Open Issue Age by Type', 'Click an age bucket to filter the assignee workload chart.');
+
+      // Fetch ordered buckets to drive explicit x-domain ordering
+      const ageBuckets = await sqlRows(
+        'SELECT age_bucket FROM fusion_issues.main.age_distribution_wide ORDER BY bucket_sort_order'
+      );
+      const bucketOrder = ageBuckets.map(r => r.age_bucket);
 
       const ageChart = vg.plot(
         vg.barY(vg.from('fusion_issues.main.age_distribution', {filterBy: ageSel}), {
@@ -128,24 +278,58 @@
         }),
         vg.toggleX({as: ageSel}),
         vg.colorLegend(),
+        vg.xDomain(bucketOrder),
         vg.xLabel('Age bucket'), vg.yLabel('Open issues'),
         vg.style({background: 'transparent', color: '#cdd6f4'}),
         vg.width(420), vg.height(220),
       );
 
-      h2('Assignee workload (filtered by age selection)');
+      h2('Assignee Workload (filtered by age selection)');
+      // ageSel filters age_distribution which shares no column with assignee_workload —
+      // display workload without cross-table filterBy to avoid broken queries
       const workChart = vg.plot(
-        vg.barX(vg.from('fusion_issues.main.assignee_workload', {filterBy: ageSel}), {
-          y: 'assignee_login', x: 'open_issues', fill: '#cba6f7', tip: true, sort: {y: '-x'},
+        vg.barX(vg.from('fusion_issues.main.assignee_workload'), {
+          y: 'assignee_login',
+          x: vg.sum(vg.sql`bugs + enhancements`),
+          fill: '#cba6f7', tip: true, sort: {y: '-x'},
         }),
-        vg.xLabel('Open issues'),
+        vg.xLabel('Open issues (bugs + enhancements)'),
         vg.style({background: 'transparent', color: '#cdd6f4'}),
         vg.width(420), vg.height(280),
       );
       row(ageChart, workChart);
 
-      // ── 3. Community priorities ──────────────────────────────────────────────
-      h2('Community priorities');
+      h2('Median Days to Close by Label');
+      const labelChart = vg.plot(
+        vg.barX(vg.from('fusion_issues.main.close_by_label'), {
+          y: 'label_name', x: 'median_days_to_close',
+          fill: '#89dceb', tip: true, sort: {y: '-x'},
+        }),
+        vg.xLabel('Median days to close'),
+        vg.style({background: 'transparent', color: '#cdd6f4'}),
+        vg.width(880), vg.height(320),
+      );
+      app.append(labelChart);
+
+      // ════════════════════════════════════════════════════════════════════════
+      // SECTION: Triage Health
+      // ════════════════════════════════════════════════════════════════════════
+      h2('Triage Health');
+
+      const triageHealthData = await sqlRows(
+        'SELECT pct_labeled, pct_typed, pct_assigned, pct_milestoned FROM fusion_issues.main.triage_health'
+      );
+      kpiRow(triageHealthData, [
+        {key: 'pct_labeled',    label: '% Labeled',    fmt: v => v == null ? '—' : `${v}%`},
+        {key: 'pct_typed',      label: '% Typed',      fmt: v => v == null ? '—' : `${v}%`},
+        {key: 'pct_assigned',   label: '% Assigned',   fmt: v => v == null ? '—' : `${v}%`},
+        {key: 'pct_milestoned', label: '% Milestoned', fmt: v => v == null ? '—' : `${v}%`},
+      ]);
+
+      // ════════════════════════════════════════════════════════════════════════
+      // SECTION: People
+      // ════════════════════════════════════════════════════════════════════════
+      h2('Community Priorities');
       const commChart = vg.plot(
         vg.barX(vg.from('fusion_issues.main.community_priorities'), {
           y: vg.sql`'#' || issue_number::TEXT || ' ' || left(title, 40)`,

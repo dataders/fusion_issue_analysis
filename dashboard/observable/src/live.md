@@ -49,7 +49,7 @@ const [triageHealth, summary, triage, oldestUntriaged, cumFlow, velocity,
     queryRows(conn, "SELECT * FROM fusion_issues.main.cumulative_flow ORDER BY week"),
     queryRows(conn, `SELECT week, max(CASE WHEN issue_category='bug' THEN median_days END) AS bugs, max(CASE WHEN issue_category='enhancement' THEN median_days END) AS enhancements FROM fusion_issues.main.velocity GROUP BY week ORDER BY week`),
     queryRows(conn, "SELECT * FROM fusion_issues.main.response_pctiles ORDER BY week"),
-    queryRows(conn, "SELECT age_bucket, issue_category, issue_count FROM fusion_issues.main.age_distribution ORDER BY CASE age_bucket WHEN '0-7d' THEN 1 WHEN '8-30d' THEN 2 WHEN '31-90d' THEN 3 WHEN '91-180d' THEN 4 ELSE 5 END"),
+    queryRows(conn, "SELECT age_bucket, issue_category, issue_count FROM fusion_issues.main.age_distribution ORDER BY bucket_sort_order"),
     queryRows(conn, "SELECT * FROM fusion_issues.main.close_by_label ORDER BY median_days_to_close DESC"),
     queryRows(conn, "SELECT * FROM fusion_issues.main.assignee_workload ORDER BY open_issues DESC"),
     queryRows(conn, "SELECT * FROM fusion_issues.main.community_priorities ORDER BY reactions_total_count DESC"),
@@ -112,7 +112,7 @@ ${conn == null ? html`<p style="color:#f38ba8;font-style:italic">Token not injec
   <div style="color:#a6adc8;font-size:13px">Open issues</div>
 </div>
 <div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
-  <div style="font-size:32px;font-weight:bold;color:#a6e3a1">${summary.closed_4w != null && summary.opened_4w != null ? (summary.closed_4w - summary.opened_4w > 0 ? "+" : "") + (summary.closed_4w - summary.opened_4w) : "—"}</div>
+  <div style="font-size:32px;font-weight:bold;color:#a6e3a1">${summary.net_flow_4w != null ? (summary.net_flow_4w > 0 ? "+" : "") + summary.net_flow_4w : "—"}</div>
   <div style="color:#a6adc8;font-size:13px">Net flow (4 wk)</div>
 </div>
 <div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">

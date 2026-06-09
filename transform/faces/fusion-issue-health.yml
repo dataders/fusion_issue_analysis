@@ -1,11 +1,3 @@
-# Canonical face source lives in transform/faces/fusion-issue-health.yml
-# (that is the dft-authoritative copy — run `dft validate` / `dft render` from transform/).
-# This file is kept in sync so the dashboard/dataface/ directory is not stale.
-#
-# To preview:  cd transform && dft serve faces/fusion-issue-health.yml
-# To validate: cd transform && dft validate faces/fusion-issue-health.yml
-# To render:   cd transform && dft render faces/fusion-issue-health.yml -o ../dashboard/dataface/
-
 title: "dbt-fusion Issue Health"
 description: >
   CORE-22 canonical dashboard for the dbt-fusion GitHub repository.

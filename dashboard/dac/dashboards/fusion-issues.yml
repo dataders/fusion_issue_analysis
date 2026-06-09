@@ -11,11 +11,11 @@ rows:
           select open_issues as value from summary_kpis
         column: value
         format: number
-      - name: Net Flow
+      - name: Net Flow (4 wk)
         type: metric
         col: 2
         sql: |
-          select closed_4w - opened_4w as value from summary_kpis
+          select net_flow_4w as value from summary_kpis
         column: value
         format: number
       - name: Median Close
@@ -85,22 +85,11 @@ rows:
         stacked: true
         col: 6
         sql: |
-          select
-            age_bucket,
-            sum(case when issue_category = 'bug' then issue_count else 0 end) as bug,
-            sum(case when issue_category = 'enhancement' then issue_count else 0 end) as enhancement,
-            sum(case when issue_category = 'other' then issue_count else 0 end) as other
-          from age_distribution
-          group by age_bucket
-          order by case age_bucket
-            when '0-7d' then 1
-            when '8-30d' then 2
-            when '31-90d' then 3
-            when '91-180d' then 4
-            else 5
-          end
+          select age_bucket, bug, enhancement, task, other
+          from age_distribution_wide
+          order by bucket_sort_order
         x: age_bucket
-        y: [bug, enhancement, other]
+        y: [bug, enhancement, task, other]
       - name: Median Days to Close by Label
         type: chart
         chart: bar
@@ -232,7 +221,7 @@ rows:
         type: table
         col: 6
         sql: |
-          select issue_number, title, issue_category, reactions_total_count, age_days
+          select issue_number, title, issue_category, reactions_total_count, age_days, issue_url
           from community_priorities
           order by reactions_total_count desc
         columns:
@@ -249,4 +238,6 @@ rows:
           - name: age_days
             label: Age Days
             format: number
+          - name: issue_url
+            label: URL
 
