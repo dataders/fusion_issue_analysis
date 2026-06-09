@@ -104,7 +104,7 @@ models:
           - not_null
 
   - name: age_distribution
-    description: Open issue counts by age bucket and category
+    description: Open issue counts by age bucket and category (includes bucket_sort_order for deterministic ordering)
     columns:
       - name: issue_category
         tests:
@@ -115,7 +115,24 @@ models:
           - accepted_values:
               arguments:
                 values: ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
+      - name: bucket_sort_order
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
       - name: issue_count
+        tests:
+          - not_null
+
+  - name: age_distribution_wide
+    description: Open issue age distribution pivoted wide — one row per bucket, one column per category
+    columns:
+      - name: age_bucket
+        tests:
+          - not_null
+          - unique
+      - name: bucket_sort_order
         tests:
           - not_null
 
