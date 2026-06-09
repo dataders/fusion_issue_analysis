@@ -16,6 +16,10 @@ models:
       - name: stale_count
         tests:
           - not_null
+      - name: net_flow_4w
+        description: closed_4w minus opened_4w — positive means backlog is shrinking
+        tests:
+          - not_null
 
   - name: cumulative_flow
     description: Weekly cumulative opened/closed with bug/enhancement breakdown

@@ -26,4 +26,7 @@ stale as (
     from {{ ref('fct_issues') }}
     where state = 'OPEN' and updated_at < current_date - interval '30 days' and issue_category != 'epic'
 )
-select * from recent_window cross join rolling_close cross join sla cross join stale
+select
+    *,
+    closed_4w - opened_4w as net_flow_4w
+from recent_window cross join rolling_close cross join sla cross join stale
