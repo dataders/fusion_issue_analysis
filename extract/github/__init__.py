@@ -7,7 +7,7 @@ import dlt
 from dlt.common.typing import TDataItems
 from dlt.sources import DltResource
 
-from .helpers import get_reactions_data, get_rest_pages, get_stargazers
+from .helpers import get_milestones, get_reactions_data, get_rest_pages, get_stargazers
 
 
 @dlt.source
@@ -59,7 +59,11 @@ def github_reactions(
             since=updated_at.last_value,
         )
 
-    return issues, pull_requests
+    @dlt.resource(primary_key="number", write_disposition="replace")
+    def milestones():
+        yield from get_milestones(owner, name, access_token, items_per_page, max_items)
+
+    return issues, pull_requests, milestones
 
 
 @dlt.source(max_table_nesting=2)

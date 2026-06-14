@@ -61,7 +61,7 @@ def main():
         # under GitHub's GraphQL resource-limits ceiling.
         items_per_page=50 if args.limit is None else min(50, args.limit),
         max_items=args.limit,
-    ).with_resources("issues", "pull_requests")
+    ).with_resources("issues", "pull_requests", "milestones")
 
     # pull_requests uses replace so child tables never need _dlt_root_id.
     # Drop stuck pending packages so retried merge jobs from prior failed runs

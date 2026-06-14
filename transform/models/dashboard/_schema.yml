@@ -16,6 +16,10 @@ models:
       - name: stale_count
         tests:
           - not_null
+      - name: net_flow_4w
+        description: closed_4w minus opened_4w — positive means backlog is shrinking
+        tests:
+          - not_null
 
   - name: cumulative_flow
     description: Weekly cumulative opened/closed with bug/enhancement breakdown
@@ -46,7 +50,7 @@ models:
           - not_null
 
   - name: bug_velocity
-    description: Median days to close bugs by week (weeks with >= 3 closures)
+    description: Median days to close bugs by week (weeks with >= 2 closures) — thin filter of velocity
     columns:
       - name: week
         tests:
@@ -57,7 +61,7 @@ models:
           - not_null
 
   - name: enh_velocity
-    description: Median days to close enhancements by week (weeks with >= 2 closures)
+    description: Median days to close enhancements by week (weeks with >= 2 closures) — thin filter of velocity
     columns:
       - name: week
         tests:
@@ -104,7 +108,7 @@ models:
           - not_null
 
   - name: age_distribution
-    description: Open issue counts by age bucket and category
+    description: Open issue counts by age bucket and category (includes bucket_sort_order for deterministic ordering)
     columns:
       - name: issue_category
         tests:
@@ -115,7 +119,25 @@ models:
           - accepted_values:
               arguments:
                 values: ['0-7d', '8-30d', '31-90d', '91-180d', '180d+']
+      - name: bucket_sort_order
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [1, 2, 3, 4, 5]
+                quote: false
       - name: issue_count
+        tests:
+          - not_null
+
+  - name: age_distribution_wide
+    description: Open issue age distribution pivoted wide — one row per bucket, one column per category
+    columns:
+      - name: age_bucket
+        tests:
+          - not_null
+          - unique
+      - name: bucket_sort_order
         tests:
           - not_null
 
@@ -165,6 +187,9 @@ models:
           - accepted_values:
               arguments:
                 values: ['OPEN', 'CLOSED']
+      - name: issue_url
+        tests:
+          - not_null
 
   - name: open_issues_table
     description: Top 50 oldest open non-EPIC issues
@@ -179,6 +204,9 @@ models:
               arguments:
                 values: ['bug', 'enhancement', 'other', 'task']
       - name: age_days
+        tests:
+          - not_null
+      - name: issue_url
         tests:
           - not_null
 
@@ -207,6 +235,9 @@ models:
           - not_null
           - unique
       - name: reactions_total_count
+        tests:
+          - not_null
+      - name: issue_url
         tests:
           - not_null
 

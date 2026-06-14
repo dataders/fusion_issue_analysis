@@ -18,10 +18,17 @@ from prefab_ui.components import (
     Div,
     H2,
     H3,
+    Link,
     Muted,
     Row,
     Separator,
     Span,
+    Table,
+    TableBody,
+    TableCell,
+    TableHead,
+    TableHeader,
+    TableRow,
     Text,
 )
 from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
@@ -45,52 +52,47 @@ def query(sql: str) -> list[dict]:
     return result.to_dict("records")
 
 
-# ── Data queries (same as main dashboard) ──────────────────────────
+# ── Data queries ────────────────────────────────────────────────────
 
 summary_cards = query("SELECT * FROM summary_kpis")[0]
 
-net_flow = summary_cards["closed_4w"] - summary_cards["opened_4w"]
+# net_flow_4w is now a direct column from the model (positive = backlog shrinking)
+net_flow = summary_cards["net_flow_4w"]
 net_flow_sign = "+" if net_flow > 0 else ""
 
 cumulative_flow = query("SELECT * FROM cumulative_flow")
 
 response_pctiles = query("SELECT * FROM response_pctiles")
 
-bug_velocity = query("SELECT * FROM bug_velocity")
+# Velocity: read from unified velocity model, pivot long→wide in Python
+_velocity_rows = query("SELECT * FROM velocity ORDER BY week, issue_category")
+_velocity_map: dict = {}
+for row in _velocity_rows:
+    week = row["week"]
+    if week not in _velocity_map:
+        _velocity_map[week] = {"week": week}
+    _velocity_map[week][row["issue_category"]] = row["median_days"]
+velocity_data = sorted(_velocity_map.values(), key=lambda r: r["week"])
 
-enh_velocity = query("SELECT * FROM enh_velocity")
-
-age_dist = query("SELECT * FROM age_distribution")
+# Age distribution: use age_distribution_wide, ordered by bucket_sort_order
+# Derive category list from data so we never drop a category (e.g. task)
+_age_wide = query("SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
+_age_categories = [c for c in ["bug", "enhancement", "task", "other"] if any(r.get(c) is not None for r in _age_wide)]
+age_chart_data = _age_wide  # already in the right shape for BarChart
 
 close_by_label = query("SELECT * FROM close_by_label")
 
 triage = query("SELECT * FROM triage_health")[0]
 
+triage_health = query("SELECT * FROM issue_triage_health")[0]
+
+oldest_untriaged = query(
+    "SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged ORDER BY age_days DESC LIMIT 8"
+)
+
 community_priorities = query("SELECT * FROM community_priorities")
 
 assignee_workload = query("SELECT * FROM assignee_workload")
-
-velocity_map = {}
-for row in bug_velocity:
-    velocity_map[row["week"]] = {"week": row["week"], "bugs": row["median_days"], "enhancements": None}
-for row in enh_velocity:
-    if row["week"] in velocity_map:
-        velocity_map[row["week"]]["enhancements"] = row["median_days"]
-    else:
-        velocity_map[row["week"]] = {"week": row["week"], "bugs": None, "enhancements": row["median_days"]}
-velocity_data = sorted(velocity_map.values(), key=lambda row: row["week"])
-
-age_buckets = ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
-age_chart_data = []
-for bucket in age_buckets:
-    chart_row = {"age_bucket": bucket}
-    for issue_type in ["bug", "enhancement", "other"]:
-        chart_row[issue_type] = sum(
-            row["issue_count"]
-            for row in age_dist
-            if row["age_bucket"] == bucket and row["issue_category"] == issue_type
-        )
-    age_chart_data.append(chart_row)
 
 GUESTBOOK = [
     ("xX_d4ta_qu33n_Xx", "2003-07-14", "omg ur dashboard is SO cool!! add me 2 ur top 8 plzzz"),
@@ -122,6 +124,7 @@ p,span,td,th,label { color: #39ff14 !important; }
 .neon-card { border: 2px solid #0ff !important; box-shadow: 0 0 10px #0ff !important; background: rgba(10,10,10,.9) !important; }
 .neon-pink { border: 2px solid #ff69b4 !important; box-shadow: 0 0 10px #ff69b4 !important; background: rgba(10,10,10,.9) !important; }
 .neon-green { border: 2px solid #39ff14 !important; box-shadow: 0 0 10px #39ff14 !important; background: rgba(10,10,10,.9) !important; }
+.neon-yellow { border: 2px solid #ff0 !important; box-shadow: 0 0 10px #ff0 !important; background: rgba(10,10,10,.9) !important; }
 .blink { animation: blink 1s step-end infinite; }
 .rainbow { animation: rainbow 3s linear infinite; font-weight: bold; }
 .marquee-wrap { overflow: hidden; }
@@ -172,8 +175,90 @@ with PrefabApp(
         Span("!! UNDER CONSTRUCTION !!", css_class="blink", style={"color": "#ff0", "font-weight": "bold", "font-size": "1.1rem"})
         Span(" 🚧", style={"font-size": "1.3rem"})
 
-    # ── Da Stats ───────────────────────────────────────────────────
-    H3("⭐ ~*~ Da Stats ~*~ ⭐")
+    # ══════════════════════════════════════════════════════════════
+    #  OPERATIONAL TRIAGE
+    # ══════════════════════════════════════════════════════════════
+    H3("🚨 ~*~ Operational Triage ~*~ 🚨", css_class="mt-6")
+    Muted("omg these need 2 b fixed ASAP!!")
+
+    with Row(gap=3, css_class="mt-4 flex-wrap"):
+        with Card(css_class="flex-1 neon-pink"):
+            with CardHeader():
+                CardTitle("Slipped Through (bugs)")
+            with CardContent():
+                H3(str(triage_health["slipped_through_count"]), css_class="blink", style={"font-size": "2rem", "color": "#f00"})
+                Muted("bugs closed w/o repro verified")
+
+        with Card(css_class="flex-1 neon-yellow"):
+            with CardHeader():
+                CardTitle("Triage Queue")
+            with CardContent():
+                H3(str(triage_health["triage_queue_count"]), style={"font-size": "2rem", "color": "#ff0"})
+                Muted("awaiting triage")
+
+        with Card(css_class="flex-1 neon-pink"):
+            with CardHeader():
+                CardTitle("Hard Blockers")
+            with CardContent():
+                H3(str(triage_health["hard_blocker_count"]), css_class="blink", style={"font-size": "2rem", "color": "#f00"})
+                Muted(f"{triage_health['hard_blocker_unreleased']} unreleased")
+
+        with Card(css_class="flex-1 neon-yellow"):
+            with CardHeader():
+                CardTitle("Stale (90d+)")
+            with CardContent():
+                H3(str(triage_health["stale_count"]), style={"font-size": "2rem", "color": "#ff0"})
+                Muted("no activity 90+ days :(")
+
+        with Card(css_class="flex-1 neon-card"):
+            with CardHeader():
+                CardTitle("Needs Repro")
+            with CardContent():
+                H3(str(triage_health["needs_repro_count"]), style={"font-size": "2rem", "color": "#0ff"})
+                Muted("awaiting reproduction")
+
+        with Card(css_class="flex-1 neon-green"):
+            with CardHeader():
+                CardTitle("Repro Verified")
+            with CardContent():
+                H3(str(triage_health["repro_verified_count"]), style={"font-size": "2rem", "color": "#39ff14"})
+                Muted("confirmed reproducible")
+
+    # ── Oldest Untriaged Bugs ──────────────────────────────────────
+    with Card(css_class="mt-4 neon-pink"):
+        with CardHeader():
+            CardTitle("🐛 ~*~ Oldest Untriaged Bugs ~*~ 🐛")
+            Muted("these r ancient!! somebody plz fix!!")
+        with CardContent():
+            with Table():
+                with TableHeader():
+                    with TableRow():
+                        TableHead("#", style={"color": "#ff69b4"})
+                        TableHead("Title", style={"color": "#ff69b4"})
+                        TableHead("Age", style={"color": "#ff69b4"})
+                with TableBody():
+                    for issue in oldest_untriaged:
+                        with TableRow():
+                            with TableCell():
+                                Link(
+                                    f"#{issue['issue_number']}",
+                                    href=issue["issue_url"],
+                                    target="_blank",
+                                    style={"color": "#0ff"},
+                                )
+                            TableCell(
+                                issue["title"][:70] + ("..." if len(issue["title"]) > 70 else ""),
+                                style={"color": "#39ff14", "font-size": "0.85rem"},
+                            )
+                            TableCell(
+                                f"{issue['age_days']}d",
+                                style={"color": "#ff0", "white-space": "nowrap"},
+                            )
+
+    # ══════════════════════════════════════════════════════════════
+    #  KEY METRICS
+    # ══════════════════════════════════════════════════════════════
+    H3("⭐ ~*~ Da Stats ~*~ ⭐", css_class="mt-6")
 
     with Row(gap=3, css_class="mt-4"):
         with Card(css_class="flex-1 neon-card"):
@@ -235,8 +320,8 @@ with PrefabApp(
                 LineChart(
                     data=velocity_data,
                     series=[
-                        ChartSeries(data_key="bugs", label="Bugs", color="#ff1493"),
-                        ChartSeries(data_key="enhancements", label="Enhancements", color="#0ff"),
+                        ChartSeries(data_key="bug", label="Bugs", color="#ff1493"),
+                        ChartSeries(data_key="enhancement", label="Enhancements", color="#0ff"),
                     ],
                     x_axis="week", show_legend=True, curve="smooth", height=250,
                 )
@@ -265,9 +350,11 @@ with PrefabApp(
                 BarChart(
                     data=age_chart_data,
                     series=[
-                        ChartSeries(data_key="bug", label="Bug", color="#ff1493"),
-                        ChartSeries(data_key="enhancement", label="Enhancement", color="#0ff"),
-                        ChartSeries(data_key="other", label="Other", color="#39ff14"),
+                        ChartSeries(data_key=cat, label=cat.capitalize(), color=color)
+                        for cat, color in zip(
+                            _age_categories,
+                            ["#ff1493", "#0ff", "#ff0", "#39ff14"],
+                        )
                     ],
                     x_axis="age_bucket", stacked=True, show_legend=True, height=260,
                 )
@@ -304,7 +391,18 @@ with PrefabApp(
         for issue in community_priorities[:8]:
             with Card(css_class="top8", style={"width": "calc(25% - 12px)", "min-width": "200px"}):
                 with CardContent():
-                    Text(f"#{issue['issue_number']}", style={"color": "#ff69b4", "font-weight": "bold", "font-size": "1.2rem"})
+                    # Use issue_url from model — never string-build GitHub URLs
+                    url = issue.get("issue_url", "")
+                    num_text = f"#{issue['issue_number']}"
+                    if url:
+                        Link(
+                            num_text,
+                            href=url,
+                            target="_blank",
+                            style={"color": "#ff69b4", "font-weight": "bold", "font-size": "1.2rem"},
+                        )
+                    else:
+                        Text(num_text, style={"color": "#ff69b4", "font-weight": "bold", "font-size": "1.2rem"})
                     Text(
                         issue["title"][:50] + ("..." if len(issue["title"]) > 50 else ""),
                         style={"color": "#0ff", "font-size": "0.85rem"},
@@ -320,8 +418,11 @@ with PrefabApp(
         with CardContent():
             BarChart(
                 data=assignee_workload,
-                series=[ChartSeries(data_key="open_issues", label="Open Issues", color="#ff69b4")],
-                x_axis="assignee_login", horizontal=True, show_legend=False, height=300,
+                series=[
+                    ChartSeries(data_key="bugs", label="Bugs", color="#ff1493"),
+                    ChartSeries(data_key="enhancements", label="Enhancements", color="#0ff"),
+                ],
+                x_axis="assignee_login", stacked=True, horizontal=True, show_legend=True, height=300,
             )
 
     # ── Guestbook ──────────────────────────────────────────────────

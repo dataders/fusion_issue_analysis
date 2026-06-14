@@ -47,6 +47,11 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Install DuckDB ADBC driver (MotherDuck 1.5.2 pin)
+        run: |
+          curl -LsSf https://dbc.columnar.tech/install.sh | sh
+          dbc install "duckdb=1.5.2"
+
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
 
@@ -148,7 +153,7 @@ jobs:
           DAC_ENVIRONMENT: prod
           DAC_OUTPUT: preview/dac
         run: |
-          uv run python3 dashboard/dac/render.py
+          uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' preview/dac/index.html
 
       - name: Upload preview artifact

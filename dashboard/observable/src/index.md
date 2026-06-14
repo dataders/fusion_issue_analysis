@@ -85,7 +85,7 @@ const oldestUntriaged = await FileAttachment("data/oldest_untriaged.json").json(
 </div>
 
 <div style="background:#1e1e2e;border:1px solid #313244;border-radius:8px;padding:16px;text-align:center">
-  <div style="font-size:32px;font-weight:bold;color:#a6e3a1">${summary.closed_4w - summary.opened_4w > 0 ? '+' : ''}${summary.closed_4w - summary.opened_4w}</div>
+  <div style="font-size:32px;font-weight:bold;color:#a6e3a1">${summary.net_flow_4w != null ? (summary.net_flow_4w > 0 ? '+' : '') + summary.net_flow_4w : 'N/A'}</div>
   <div style="color:#a6adc8;font-size:13px">Net Flow (4 wk)</div>
 </div>
 
@@ -167,11 +167,12 @@ Plot.plot({
   height: 300,
   x: {label: "Age Bucket"},
   y: {label: "Issues", grid: true},
-  color: {legend: true, domain: ["bug", "enhancement", "other"], range: ["#f38ba8", "#89b4fa", "#a6adc8"]},
+  color: {legend: true, domain: ["bug", "enhancement", "task", "other"], range: ["#f38ba8", "#89b4fa", "#fab387", "#a6adc8"]},
   marks: [
     Plot.barY(ageDist.flatMap(d => [
       {age_bucket: d.age_bucket, count: d.bug, type: "bug"},
       {age_bucket: d.age_bucket, count: d.enhancement, type: "enhancement"},
+      {age_bucket: d.age_bucket, count: d.task, type: "task"},
       {age_bucket: d.age_bucket, count: d.other, type: "other"},
     ]), Plot.stackY({x: "age_bucket", y: "count", fill: "type", tip: true}))
   ]

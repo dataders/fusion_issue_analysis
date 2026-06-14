@@ -130,10 +130,10 @@
 
       // ── Key metrics ─────────────────────────────────────────────────────────
       section('Key metrics');
-      const net = (sm.closed_4w ?? 0) - (sm.opened_4w ?? 0);
+      const net = sm.net_flow_4w ?? null;
       kpis([
-        [sm.open_issues,               '#cba6f7', 'Open issues'],
-        [(net >= 0 ? '+' : '') + net,  '#a6e3a1', 'Net flow (4 wk)'],
+        [sm.open_issues,                                                '#cba6f7', 'Open issues'],
+        [net != null ? (net >= 0 ? '+' : '') + net : null, '#a6e3a1', 'Net flow (4 wk)'],
         [sm.rolling_median_close_days, '#89dceb', 'Median close (4 wk)'],
         [sm.pct_responded_48h != null ? sm.pct_responded_48h + '%' : null, '#fab387', '48h response SLA'],
         [sm.stale_count,               '#f38ba8', 'Stale (30d+)'],
@@ -213,18 +213,15 @@
         y: {label: null},
         marks: [Plot.barX(workload, {y: 'assignee_login', x: 'open_issues', fill: '#cba6f7', tip: true, sort: {y: '-x'}})],
       });
-      const commChart = Plot.plot({
-        style: S, width: 420, height: 300, marginLeft: 160,
-        x: {label: 'Reactions', grid: true, gridColor: '#313244'},
-        y: {label: null},
-        color: {legend: true, domain: ['bug', 'enhancement', 'other'], range: ['#f38ba8', '#89b4fa', '#a6adc8']},
-        marks: [Plot.barX(community, {
-          x: 'reactions_total_count',
-          y: d => `#${d.issue_number} ${String(d.title).slice(0, 35)}`,
-          fill: 'issue_category', tip: true, sort: {y: '-x'},
-        })],
-      });
-      cols2(workChart, commChart);
+      const commWrap = document.createElement('div');
+      const commTbl = document.createElement('table');
+      commTbl.innerHTML = `<thead><tr><th>Issue</th><th>Title</th><th style="text-align:right">Reactions</th></tr></thead>
+        <tbody>${community.map(d => `<tr>
+          <td><a href="${d.issue_url}" target="_blank">#${d.issue_number}</a></td>
+          <td>${String(d.title).slice(0, 60)}</td>
+          <td class="num">${d.reactions_total_count}</td></tr>`).join('')}</tbody>`;
+      commWrap.append(commTbl);
+      cols2(workChart, commWrap);
 
       status.textContent = 'Data loaded live from MotherDuck (DuckDB WASM).';
     }

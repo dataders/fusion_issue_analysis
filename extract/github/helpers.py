@@ -9,6 +9,7 @@ from .queries import (
     COMMENT_REACTIONS_QUERY,
     ISSUE_ONLY_FIELDS,
     ISSUES_QUERY,
+    MILESTONES_QUERY,
     STARGAZERS_QUERY,
     RATE_LIMIT,
 )
@@ -72,6 +73,20 @@ def get_stargazers(
             lambda item: {"starredAt": item["starredAt"], "user": item["node"]},
             page_items,
         )
+
+
+def get_milestones(
+    owner: str,
+    name: str,
+    access_token: str,
+    items_per_page: int,
+    max_items: Optional[int],
+) -> Iterator[List[StrAny]]:
+    variables = {"owner": owner, "name": name, "items_per_page": items_per_page}
+    for page_items in _get_graphql_pages(
+        access_token, MILESTONES_QUERY, variables, "milestones", max_items
+    ):
+        yield page_items
 
 
 def get_reactions_data(

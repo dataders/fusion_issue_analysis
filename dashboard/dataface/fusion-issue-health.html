@@ -1,0 +1,1854 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>dbt-fusion Issue Health</title>
+    <style>
+        @font-face {
+  font-family: 'Inter Variable';
+  src: url('/static/fonts/InterVariable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DFT Sans Tabular';
+  src: url('/static/fonts/DFTSansTabular-Regular.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('/static/fonts/source-serif-4-variable-latin.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Emoji';
+  src: url('/static/fonts/NotoEmoji-Regular.woff2') format('woff2');
+  font-display: swap;
+  unicode-range:
+    U+1F000-1F02F, U+1F0A0-1F0FF, U+1F100-1F1FF, U+1F200-1F2FF,
+    U+1F300-1F5FF, U+1F600-1F64F, U+1F650-1F67F, U+1F680-1F6FF,
+    U+1F700-1F77F, U+1F780-1F7FF, U+1F800-1F8FF, U+1F900-1F9FF,
+    U+1FA00-1FA6F, U+1FA70-1FAFF, U+2600-26FF, U+2700-27BF,
+    U+FE00-FE0F, U+1F1E6-1F1FF;
+}
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('/static/fonts/NotoColorEmoji-Regular.woff2') format('woff2');
+  font-display: swap;
+  unicode-range:
+    U+1F000-1F02F, U+1F0A0-1F0FF, U+1F100-1F1FF, U+1F200-1F2FF,
+    U+1F300-1F5FF, U+1F600-1F64F, U+1F650-1F67F, U+1F680-1F6FF,
+    U+1F700-1F77F, U+1F780-1F7FF, U+1F800-1F8FF, U+1F900-1F9FF,
+    U+1FA00-1FA6F, U+1FA70-1FAFF, U+2600-26FF, U+2700-27BF,
+    U+FE00-FE0F, U+1F1E6-1F1FF;
+}
+
+        * {
+            box-sizing: border-box;
+        }
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif;
+            background-color: #FFFFFF;
+        }
+        .dataface-wrapper {
+            width: 100%;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .dataface-svg-container {
+            width: 100%;
+        }
+        .dataface-svg-container svg {
+            max-width: 100%;
+            height: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="dataface-wrapper">
+        <div class="dataface-svg-container">
+            <svg id="dataface-svg-138245de" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200.0 3718.9375000000005" width="100%" preserveAspectRatio="xMinYMin meet" style="display: block;" data-rendered-at="2026-06-09T21:30:43Z">
+<defs>
+
+<style type="text/css">
+/* SVG Chart Styles
+ * These styles are embedded in dataface SVGs for interactive features.
+ */
+
+@font-face {
+  font-family: 'Inter Variable';
+  src: url('/static/fonts/InterVariable.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'DFT Sans Tabular';
+  src: url('/static/fonts/DFTSansTabular-Regular.woff2') format('woff2-variations');
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Source Serif 4';
+  src: url('/static/fonts/source-serif-4-variable-latin.woff2') format('woff2-variations');
+  font-weight: 200 900;
+  font-style: normal;
+  font-display: swap;
+}
+@font-face {
+  font-family: 'Noto Emoji';
+  src: url('/static/fonts/NotoEmoji-Regular.woff2') format('woff2');
+  font-display: swap;
+  unicode-range:
+    U+1F000-1F02F, U+1F0A0-1F0FF, U+1F100-1F1FF, U+1F200-1F2FF,
+    U+1F300-1F5FF, U+1F600-1F64F, U+1F650-1F67F, U+1F680-1F6FF,
+    U+1F700-1F77F, U+1F780-1F7FF, U+1F800-1F8FF, U+1F900-1F9FF,
+    U+1FA00-1FA6F, U+1FA70-1FAFF, U+2600-26FF, U+2700-27BF,
+    U+FE00-FE0F, U+1F1E6-1F1FF;
+}
+@font-face {
+  font-family: 'Noto Color Emoji';
+  src: url('/static/fonts/NotoColorEmoji-Regular.woff2') format('woff2');
+  font-display: swap;
+  unicode-range:
+    U+1F000-1F02F, U+1F0A0-1F0FF, U+1F100-1F1FF, U+1F200-1F2FF,
+    U+1F300-1F5FF, U+1F600-1F64F, U+1F650-1F67F, U+1F680-1F6FF,
+    U+1F700-1F77F, U+1F780-1F7FF, U+1F800-1F8FF, U+1F900-1F9FF,
+    U+1FA00-1FA6F, U+1FA70-1FAFF, U+2600-26FF, U+2700-27BF,
+    U+FE00-FE0F, U+1F1E6-1F1FF;
+}
+svg text { font-variant-emoji: text; }
+
+/* Chart base styles */
+.dft-chart {
+    position: relative;
+}
+
+/* Chart loading state */
+.dft-chart.loading {
+    opacity: 0.5;
+    pointer-events: none;
+}
+
+/* Chart highlight overlay when hovering over dependent variable */
+/* Border only, no fill - just outlines the dependent charts */
+.dft-chart-highlight-overlay {
+    fill: none;
+    stroke: #667eea;
+    stroke-width: 3;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.15s ease-in-out;
+}
+
+/* Variable control hover */
+.variable-control:hover {
+    cursor: pointer;
+}
+
+.variable-control[data-disabled="true"] {
+    opacity: 0.55;
+    cursor: not-allowed;
+}
+
+.variable-control[data-disabled="true"]:hover {
+    cursor: not-allowed;
+}
+
+/* ==========================================================================
+   Variable Controls - CSS Styles
+
+   These styles use CSS custom properties (variables) set on the .dft-variables
+   container based on the current theme. This enables:
+   - Centralized theming (colors set once, inherited everywhere)
+   - Hover/focus states (impossible with inline styles)
+   - Easier maintenance (styles in one place)
+
+   CSS Custom Properties (set by renderer based on theme):
+   --dft-font-family: Container font family
+   --dft-label-color: Label text color
+   --dft-label-weight: Label font weight
+   --dft-label-size: Label font size in px
+   --dft-text-color: Input text color
+   --dft-value-color: Value text color (slider, readonly)
+   --dft-value-family: Value font family
+   --dft-value-size: Value font size in px
+   --dft-value-weight: Value font weight
+   --dft-value-numeric-variant: Font variant numeric (tabular-nums/normal)
+   --dft-placeholder-color: Placeholder/hint text color (unselected variable inputs)
+   Note: font-style, text-decoration, and case are cascaded through MergedFontStyle
+   but are not consumed by these controls — the control renderer emits only the
+   properties listed above (family, size, weight, color). Adding style/decoration/case
+   here would require extend the CSS custom-property emit path for control elements.
+   --dft-input-bg: Input background color
+   --dft-input-border: Input border color
+   --dft-accent-color: Accent/focus color
+   --dft-muted-color: Muted/secondary text color
+   --dft-focus-ring: Focus ring color (CSS color-mix, requires Color Level 5)
+   ========================================================================== */
+
+/* --------------------------------------------------------------------------
+   Variables Container
+   -------------------------------------------------------------------------- */
+
+.dft-variables {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 15px;
+  align-items: center;
+  background: #f8f9fa;
+  padding: 10px 15px;
+  border-radius: 6px;
+  font-family: var(--dft-font-family, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  box-sizing: border-box;
+  height: 100%;
+  /* Allow absolutely-positioned popovers (daterange chip) to overflow the
+     SVG clipping rect when this container is embedded inside an SVG element. */
+  overflow: visible;
+}
+
+/* --------------------------------------------------------------------------
+   Individual Control Wrapper
+   -------------------------------------------------------------------------- */
+
+.dft-variable-control {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Labels
+   -------------------------------------------------------------------------- */
+
+.dft-variable-label {
+  font-weight: var(--dft-label-weight, 500);
+  color: var(--dft-label-color, #495057);
+  font-size: var(--dft-label-size, inherit);
+  white-space: nowrap;
+  user-select: none;
+}
+
+/* --------------------------------------------------------------------------
+   Base Input Styles (applies to all input types)
+   -------------------------------------------------------------------------- */
+
+.dft-variable-input {
+  padding: 4px 8px;
+  border: 1px solid var(--dft-input-border, #ced4da);
+  border-radius: 4px;
+  background: var(--dft-input-bg, #ffffff);
+  color: var(--dft-text-color, #333333);
+  font-size: inherit;
+  font-family: inherit;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.dft-variable-input:hover {
+  border-color: var(--dft-accent-color, #667eea);
+}
+
+.dft-variable-input:focus {
+  outline: none;
+  border-color: var(--dft-accent-color, #667eea);
+  box-shadow: 0 0 0 3px var(--dft-focus-ring, rgba(102, 126, 234, 0.2));
+}
+
+.dft-variable-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* Placeholder / unselected state — server-rendered data-placeholder="true" tags
+   any input whose value is empty/null. Reads lighter than the selected-value
+   text so the strip is scannable at a glance. */
+.dft-variable-input[data-placeholder="true"] {
+  color: var(--dft-placeholder-color, var(--dft-text-color));
+}
+
+/* --------------------------------------------------------------------------
+   Select / Dropdown
+   -------------------------------------------------------------------------- */
+
+select.dft-variable-input {
+  cursor: pointer;
+  min-width: 120px;
+  padding-right: 24px; /* Space for dropdown arrow */
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%23666' d='M2 4l4 4 4-4'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 8px center;
+}
+
+/* --------------------------------------------------------------------------
+   Checkbox
+   -------------------------------------------------------------------------- */
+
+.dft-variable-checkbox {
+  cursor: pointer;
+}
+
+.dft-variable-checkbox input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+  accent-color: var(--dft-accent-color, #667eea);
+  margin: 0;
+}
+
+.dft-variable-checkbox .dft-variable-label {
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Slider / Range
+   -------------------------------------------------------------------------- */
+
+.dft-variable-slider {
+  gap: 8px;
+}
+
+.dft-variable-slider input[type="range"] {
+  width: 120px;
+  cursor: pointer;
+  accent-color: var(--dft-accent-color, #667eea);
+  height: 4px;
+  border: none;
+  background: transparent;
+}
+
+.dft-variable-slider-value {
+  min-width: 30px;
+  color: var(--dft-value-color, #333333);
+  font-family: var(--dft-value-family, inherit);
+  font-size: var(--dft-value-size, inherit);
+  font-weight: var(--dft-value-weight, inherit);
+  font-variant-numeric: var(--dft-value-numeric-variant, tabular-nums);
+  text-align: right;
+}
+
+/* --------------------------------------------------------------------------
+   Text Input
+   -------------------------------------------------------------------------- */
+
+input[type="text"].dft-variable-input {
+  width: 150px;
+}
+
+/* --------------------------------------------------------------------------
+   Number Input
+   -------------------------------------------------------------------------- */
+
+input[type="number"].dft-variable-input {
+  width: 80px;
+  font-variant-numeric: var(--dft-value-numeric-variant, tabular-nums);
+}
+
+/* Remove spinner buttons for cleaner look */
+input[type="number"].dft-variable-input::-webkit-inner-spin-button,
+input[type="number"].dft-variable-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+input[type="number"].dft-variable-input {
+  -moz-appearance: textfield;
+}
+
+/* --------------------------------------------------------------------------
+   Date Input
+   -------------------------------------------------------------------------- */
+
+input[type="date"].dft-variable-input {
+  cursor: pointer;
+}
+
+/* --------------------------------------------------------------------------
+   Date Range — chip trigger + popover
+   -------------------------------------------------------------------------- */
+
+/* Derived accent tokens — color-mix so retuning --dft-accent-color ripples
+   through the range tint, focus ring, and primary-hover automatically. */
+:root {
+  --dft-accent-soft:  color-mix(in srgb, var(--dft-accent-color, #667eea) 28%, transparent);
+  --dft-accent-ring:  color-mix(in srgb, var(--dft-accent-color, #667eea) 18%, transparent);
+  --dft-accent-hover: color-mix(in srgb, var(--dft-accent-color, #667eea) 85%, black);
+}
+
+/* Positioning anchor for the popover. */
+.dft-chip-host {
+  position: relative;
+  display: inline-block;
+}
+
+/* Chip trigger button — transparent background blends with the canvas;
+   the border carries the "this is a control" signal. */
+.dft-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  min-width: 200px;
+  border: 1px solid var(--dft-input-border, #ced4da);
+  border-radius: 6px;
+  background: transparent;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  font-variant-numeric: tabular-nums;
+  color: var(--dft-text-color, #333333);
+  /* Fade border-color and focus ring together to avoid asymmetric snap. */
+  transition: border-color 80ms, box-shadow 80ms;
+}
+
+/* Border-only hover — no background tint (quieter across the variable bar). */
+.dft-chip:hover {
+  border-color: var(--dft-muted-color, #6c757d);
+}
+
+.dft-chip:focus {
+  outline: none;
+  border-color: var(--dft-accent-color, #667eea);
+  box-shadow: 0 0 0 3px var(--dft-accent-ring);
+}
+
+/* Chip icon — always full ink; placeholder dims text only, not the icon. */
+.dft-chip-icon {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+  width: 16px;
+  height: 16px;
+  color: var(--dft-text-color, #333333);
+}
+
+.dft-chip-icon svg {
+  width: 100%;
+  height: 100%;
+}
+
+/* Icon on left edge, label + clear pushed to the right via margin-left: auto. */
+.dft-chip-label {
+  font-weight: 500;
+  margin-left: auto;
+}
+
+/* Placeholder state — lighter text, normal weight. */
+.dft-chip[data-placeholder="true"] .dft-chip-label {
+  color: var(--dft-placeholder-color, var(--dft-muted-color, #6c757d));
+  font-weight: 400;
+}
+
+/* Clear button — sibling of .dft-chip inside .dft-chip-host.
+   Hidden until the chip carries data-active; shown via adjacent-sibling selector. */
+.dft-chip-clear {
+  display: none;
+  width: 16px;
+  height: 16px;
+  line-height: 14px;
+  text-align: center;
+  border-radius: 50%;
+  color: var(--dft-muted-color, #6c757d);
+  font-size: 14px;
+  cursor: pointer;
+  background: none;
+  border: none;
+  padding: 0;
+}
+
+.dft-chip-clear:hover {
+  background: var(--dft-input-bg, #ffffff);
+  color: var(--dft-text-color, #333333);
+}
+
+/* Show clear button when the sibling chip carries data-active. */
+.dft-chip[data-active] + .dft-chip-clear {
+  display: inline-block;
+}
+
+/* Popover — hidden by default; .dft-popover-open shows it. */
+.dft-popover {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  background: var(--dft-input-bg, #ffffff);
+  border: 1px solid var(--dft-input-border, #ced4da);
+  border-radius: 8px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10);
+  overflow: hidden;
+  z-index: 100;
+}
+
+.dft-popover.dft-popover-open {
+  display: flex;
+}
+
+/* Preset rail — left column of the popover. */
+.dft-preset-rail {
+  width: 164px;
+  border-right: 1px solid var(--dft-input-border, #ced4da);
+  padding: 10px 0;
+  flex-shrink: 0;
+}
+
+.dft-preset-rail button {
+  display: block;
+  width: 100%;
+  padding: 7px 16px;
+  text-align: left;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--dft-text-color, #333333);
+}
+
+.dft-preset-rail button:hover {
+  background: var(--dft-input-border, #ced4da);
+}
+
+.dft-preset-rail button.dft-preset-active {
+  background: var(--dft-accent-color, #667eea);
+  color: white;
+}
+
+.dft-preset-divider {
+  height: 1px;
+  background: var(--dft-input-border, #ced4da);
+  margin: 6px 12px;
+}
+
+/* Calendar area — right column, contains header, grid, footer. */
+.dft-calendar-area {
+  padding: 14px;
+  flex: 1;
+  min-width: 272px;
+}
+
+/* All-sans calendar header (the calendar is UI chrome, not editorial content). */
+.dft-cal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  padding: 0 4px;
+}
+
+.dft-cal-nav {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: var(--dft-text-color, #333333);
+  padding: 2px 8px;
+  border-radius: 3px;
+}
+
+.dft-cal-nav:hover {
+  background: var(--dft-input-border, #ced4da);
+}
+
+/* min-width keeps nav arrows stable as month name length varies
+   ("May 2026" → "September 2026"). */
+.dft-cal-month {
+  font-weight: 500;
+  font-size: 14px;
+  min-width: 130px;
+  text-align: center;
+  color: var(--dft-text-color, #333333);
+}
+
+/* Fixed-width 7-column grid — 34px per cell. Fixed height eliminates
+   height jumps as the user pages between months (fixedHeight = 42 cells). */
+.dft-cal-grid {
+  display: grid;
+  grid-template-columns: repeat(7, 34px);
+  gap: 0;
+}
+
+.dft-cal-dow {
+  font-size: 11px;
+  color: var(--dft-muted-color, #6c757d);
+  text-align: center;
+  padding: 6px 0 4px;
+  font-weight: 500;
+}
+
+/* Cells — proportional figures (grid is fixed-width, no jitter to prevent).
+   Two visual tiers: in-month (full ink) and out-of-month (muted). */
+.dft-cal-cell {
+  text-align: center;
+  padding: 7px 0;
+  font-family: inherit;
+  font-size: 13px;
+  cursor: pointer;
+  border-radius: 3px;
+  background: none;
+  border: none;
+  color: var(--dft-text-color, #333333);
+  min-height: 18px;
+}
+
+.dft-cal-cell.dft-other-month {
+  color: var(--dft-placeholder-color, var(--dft-muted-color, #6c757d));
+}
+
+.dft-cal-cell:hover {
+  background: var(--dft-input-border, #ced4da);
+}
+
+/* Range tint from accent-soft. */
+.dft-cal-cell.dft-in-range,
+.dft-cal-cell.dft-preview-in-range {
+  background: var(--dft-accent-soft);
+  color: var(--dft-text-color, #333333);
+}
+
+/* Selected endpoints — solid accent fill. */
+.dft-cal-cell.dft-selected {
+  background: var(--dft-accent-color, #667eea);
+  color: white;
+  font-weight: 500;
+}
+
+/* Hover preview of the second endpoint — outlined, not filled. */
+.dft-cal-cell.dft-preview-end {
+  background: transparent;
+  color: var(--dft-accent-color, #667eea);
+  font-weight: 500;
+  box-shadow: inset 0 0 0 1px var(--dft-accent-color, #667eea);
+}
+
+/* Radius shaping for range endpoints. */
+.dft-cal-cell.dft-selected.dft-range-start { border-radius: 3px 0 0 3px; }
+.dft-cal-cell.dft-selected.dft-range-end   { border-radius: 0 3px 3px 0; }
+.dft-cal-cell.dft-selected.dft-range-start.dft-range-end { border-radius: 3px; }
+
+/* Today marker: weight-only (same ink, heavier weight).
+   Color or ring conflicted with selection visuals. Bold weight is the
+   cleanest "this is today" signal — same hue, different emphasis. */
+.dft-cal-cell.dft-today:not(.dft-selected):not(.dft-preview-end) {
+  font-weight: 700;
+}
+
+/* Footer: only shows when a selection exists; contains the Clear action. */
+.dft-cal-footer {
+  display: flex;
+  gap: 8px;
+  margin-top: 14px;
+  padding-top: 12px;
+  border-top: 1px solid var(--dft-input-border, #ced4da);
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.dft-cal-action {
+  padding: 6px 12px;
+  background: none;
+  border: 1px solid var(--dft-input-border, #ced4da);
+  border-radius: 4px;
+  font-family: inherit;
+  font-size: 12px;
+  cursor: pointer;
+  color: var(--dft-text-color, #333333);
+}
+
+.dft-cal-action:hover {
+  border-color: var(--dft-muted-color, #6c757d);
+}
+
+/* --------------------------------------------------------------------------
+   Readonly / Fallback
+   -------------------------------------------------------------------------- */
+
+.dft-variable-readonly {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dft-variable-readonly-value {
+  color: var(--dft-value-color, #333333);
+  font-family: var(--dft-value-family, inherit);
+  font-size: var(--dft-value-size, inherit);
+  font-weight: var(--dft-value-weight, inherit);
+}
+
+/* --------------------------------------------------------------------------
+   Loading State
+   -------------------------------------------------------------------------- */
+
+.dft-variable-control.loading {
+  opacity: 0.6;
+  pointer-events: none;
+}
+
+.dft-variable-control.loading::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--dft-input-border, #ced4da);
+  border-top-color: var(--dft-accent-color, #667eea);
+  border-radius: 50%;
+  animation: dft-control-spin 0.6s linear infinite;
+}
+
+@keyframes dft-control-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Spinner animation for loading state */
+@keyframes dft-spin {
+    to { transform: rotate(360deg); }
+}
+</style>
+</defs>
+<rect x="0" y="0" width="1200.0" height="3718.9375000000005" fill="#FFFFFF"/>
+<g transform="translate(40, 24)"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="38.4" viewBox="0 0 1120 38.4">
+  <style>
+    .md-text { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #1a1a1a; }
+    .md-mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+    .md-heading { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #111111; font-weight: 500; }
+    .md-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fill: #be185d; }
+    .md-link { fill: #2563eb; }
+    .md-blockquote { fill: #6b7280; }
+  </style>
+  <text x="0" y="31.2" font-size="24" class="md-heading" text-anchor="start"><tspan style="font-weight: 500">DBT-Fusion Issue Health</tspan></text>
+</svg></g><g transform="translate(24, 70)"><rect x="0" y="0" width="1152.0" height="3597.5375000000004" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-layout-item" data-layout-description="Bug triage queue health and actionable counts." aria-label="Bug triage queue health and actionable counts."><svg width="1152.0" height="309.26250000000005" viewBox="0 0 1152.0 309.26250000000005">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="309.26250000000005" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(16, 0)"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="28.8" viewBox="0 0 1120 28.8">
+  <style>
+    .md-text { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #1a1a1a; }
+    .md-mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+    .md-heading { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #111111; font-weight: 500; }
+    .md-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fill: #be185d; }
+    .md-link { fill: #2563eb; }
+    .md-blockquote { fill: #6b7280; }
+  </style>
+  <text x="0" y="23.4" font-size="18" class="md-heading" text-anchor="start"><tspan style="font-weight: 500">Operational Triage</tspan></text>
+</svg></g><g transform="translate(0, 29)"><rect x="0" y="0" width="1152.0" height="280.46250000000003" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-chart dft-chart-callout" id="chart-slipped_through_kpi" data-chart-id="slipped_through_kpi" data-chart-title="slipped_through_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="slipped_through_kpi — Count of bugs that slipped through without being triaged before first response." data-chart-description="Count of bugs that slipped through without being triaged before first response."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">slipped_through_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(165, 0)"><g class="dft-chart dft-chart-callout" id="chart-triage_queue_kpi" data-chart-id="triage_queue_kpi" data-chart-title="triage_queue_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="triage_queue_kpi — Number of issues currently in the triage queue." data-chart-description="Number of issues currently in the triage queue."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">triage_queue_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(329, 0)"><g class="dft-chart dft-chart-callout" id="chart-hard_blockers_kpi" data-chart-id="hard_blockers_kpi" data-chart-title="hard_blockers_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="hard_blockers_kpi — Count of hard-blocker issues; subtext shows unreleased hard blockers." data-chart-description="Count of hard-blocker issues; subtext shows unreleased hard blockers."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">hard_blockers_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(494, 0)"><g class="dft-chart dft-chart-callout" id="chart-triage_stale_kpi" data-chart-id="triage_stale_kpi" data-chart-title="triage_stale_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="triage_stale_kpi — Issues with no activity in 90+ days." data-chart-description="Issues with no activity in 90+ days."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">triage_stale_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(658, 0)"><g class="dft-chart dft-chart-callout" id="chart-needs_repro_kpi" data-chart-id="needs_repro_kpi" data-chart-title="needs_repro_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="needs_repro_kpi — Bugs that need a reproduction case." data-chart-description="Bugs that need a reproduction case."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">needs_repro_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(823, 0)"><g class="dft-chart dft-chart-callout" id="chart-repro_verified_kpi" data-chart-id="repro_verified_kpi" data-chart-title="repro_verified_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="repro_verified_kpi — Bugs with a verified reproduction case." data-chart-description="Bugs with a verified reproduction case."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">repro_verified_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(987, 0)"><g class="dft-chart dft-chart-callout" id="chart-total_open_kpi" data-chart-id="total_open_kpi" data-chart-title="total_open_kpi" data-chart-width="164.57142857142858" data-chart-height="280.46250000000003" aria-label="total_open_kpi — Total open issues (optional tile retained from original)." data-chart-description="Total open issues (optional tile retained from original)."><rect x="0" y="0" width="164.57142857142858" height="280.46250000000003" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error:</text><text x="12.0" y="65.7125" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">total_open_kpi</text><text x="12.0" y="80.2625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="95.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed:</text><text x="12.0" y="109.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution</text><text x="12.0" y="124.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">failed: Permission Error:</text><text x="12.0" y="139.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="154.5125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/</text><text x="12.0" y="169.3625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">issues/*.parquet&quot; - file</text><text x="12.0" y="184.21250000000003" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are</text><text x="12.0" y="199.0625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration</text><text x="12.0" y="213.91250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="228.7625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: triage_health_kpis)</text><text x="12.0" y="253.6125" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g></g><g transform="translate(0, 317)"><g class="dft-chart dft-chart-callout" id="chart-oldest_untriaged_table" data-chart-id="oldest_untriaged_table" data-chart-title="oldest_untriaged_table" data-chart-width="1152.0" data-chart-height="130.0" aria-label="oldest_untriaged_table — Oldest untriaged bugs with clickable links via issue_url." data-chart-description="Oldest untriaged bugs with clickable links via issue_url."><rect x="0" y="0" width="1152.0" height="130.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: oldest_untriaged_table</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by configuration</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: oldest_untriaged) (query: oldest_untriaged)</text><text x="12.0" y="102.41250000000001" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(0, 455)"><g class="dft-layout-item" data-layout-description="Summary KPIs for the overall issue backlog." aria-label="Summary KPIs for the overall issue backlog."><svg width="1152.0" height="247.16250000000002" viewBox="0 0 1152.0 247.16250000000002">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="247.16250000000002" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(16, 0)"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="28.8" viewBox="0 0 1120 28.8">
+  <style>
+    .md-text { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #1a1a1a; }
+    .md-mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+    .md-heading { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #111111; font-weight: 500; }
+    .md-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fill: #be185d; }
+    .md-link { fill: #2563eb; }
+    .md-blockquote { fill: #6b7280; }
+  </style>
+  <text x="0" y="23.4" font-size="18" class="md-heading" text-anchor="start"><tspan style="font-weight: 500">Key Metrics</tspan></text>
+</svg></g><g transform="translate(0, 29)"><rect x="0" y="0" width="1152.0" height="218.3625" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-chart dft-chart-callout" id="chart-open_issues_kpi" data-chart-id="open_issues_kpi" data-chart-title="open_issues_kpi" data-chart-width="230.4" data-chart-height="218.3625" aria-label="open_issues_kpi — Current total count of open issues." data-chart-description="Current total count of open issues."><rect x="0" y="0" width="230.4" height="218.3625" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: open_issues_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: DuckDB SQL</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: Permission Error:</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.par</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">quet&quot; - file system operations are</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration (query:</text><text x="12.0" y="166.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">summary_kpis) (query: summary_kpis)</text><text x="12.0" y="191.51250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(230, 0)"><g class="dft-chart dft-chart-callout" id="chart-net_flow_kpi" data-chart-id="net_flow_kpi" data-chart-title="net_flow_kpi" data-chart-width="230.4" data-chart-height="218.3625" aria-label="net_flow_kpi — Net flow over last 4 weeks (closed - opened). Positive = backlog shrinking." data-chart-description="Net flow over last 4 weeks (closed - opened). Positive = backlog shrinking."><rect x="0" y="0" width="230.4" height="218.3625" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: net_flow_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: DuckDB SQL</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: Permission Error:</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.par</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">quet&quot; - file system operations are</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration (query:</text><text x="12.0" y="166.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">summary_kpis) (query: summary_kpis)</text><text x="12.0" y="191.51250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(461, 0)"><g class="dft-chart dft-chart-callout" id="chart-median_close_kpi" data-chart-id="median_close_kpi" data-chart-title="median_close_kpi" data-chart-width="230.4" data-chart-height="218.3625" aria-label="median_close_kpi — Rolling 4-week median days to close an issue." data-chart-description="Rolling 4-week median days to close an issue."><rect x="0" y="0" width="230.4" height="218.3625" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: median_close_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: DuckDB SQL</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: Permission Error:</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.par</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">quet&quot; - file system operations are</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration (query:</text><text x="12.0" y="166.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">summary_kpis) (query: summary_kpis)</text><text x="12.0" y="191.51250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(691, 0)"><g class="dft-chart dft-chart-callout" id="chart-response_sla_kpi" data-chart-id="response_sla_kpi" data-chart-title="response_sla_kpi" data-chart-width="230.4" data-chart-height="218.3625" aria-label="response_sla_kpi — Percentage of issues receiving a response within 48 hours." data-chart-description="Percentage of issues receiving a response within 48 hours."><rect x="0" y="0" width="230.4" height="218.3625" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: response_sla_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: DuckDB SQL</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: Permission Error:</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.par</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">quet&quot; - file system operations are</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration (query:</text><text x="12.0" y="166.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">summary_kpis) (query: summary_kpis)</text><text x="12.0" y="191.51250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(922, 0)"><g class="dft-chart dft-chart-callout" id="chart-summary_stale_kpi" data-chart-id="summary_stale_kpi" data-chart-title="summary_stale_kpi" data-chart-width="230.4" data-chart-height="218.3625" aria-label="summary_stale_kpi — Issues with no activity in 30+ days." data-chart-description="Issues with no activity in 30+ days."><rect x="0" y="0" width="230.4" height="218.3625" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: summary_stale_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: DuckDB SQL</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">execution failed: Permission Error:</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.par</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">quet&quot; - file system operations are</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">disabled by configuration (query:</text><text x="12.0" y="166.66250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">summary_kpis) (query: summary_kpis)</text><text x="12.0" y="191.51250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g></g><g transform="translate(0, 710)"><g class="dft-layout-item" data-layout-description="Week-over-week issue flow, velocity, and response-time trends." aria-label="Week-over-week issue flow, velocity, and response-time trends."><svg width="1152.0" height="1670.4" viewBox="0 0 1152.0 1670.4">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="1670.4" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(16, 0)"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="28.8" viewBox="0 0 1120 28.8">
+  <style>
+    .md-text { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #1a1a1a; }
+    .md-mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+    .md-heading { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #111111; font-weight: 500; }
+    .md-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fill: #be185d; }
+    .md-link { fill: #2563eb; }
+    .md-blockquote { fill: #6b7280; }
+  </style>
+  <text x="0" y="23.4" font-size="18" class="md-heading" text-anchor="start"><tspan style="font-weight: 500">Trends</tspan></text>
+</svg></g><g transform="translate(0, 29)"><rect x="0" y="0" width="1152.0" height="1632.0" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><svg width="1152.0" height="416.0" viewBox="0 0 1152.0 416.0">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="416.0" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(0, 0)"><rect x="0" y="0" width="1152.0" height="416.0" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-chart dft-chart-callout" id="chart-cumulative_flow_chart" data-chart-id="cumulative_flow_chart" data-chart-title="cumulative_flow_chart" data-chart-width="576.0" data-chart-height="416.0" aria-label="cumulative_flow_chart — Cumulative opened vs closed issue counts over time (area chart)." data-chart-description="Cumulative opened vs closed issue counts over time (area chart)."><rect x="0" y="0" width="576.0" height="416.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: cumulative_flow_chart</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">configuration (query: cumulative_flow) (query: cumulative_flow)</text><text x="12.0" y="117.26250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(576, 0)"><g class="dft-chart dft-chart-callout" id="chart-velocity_chart" data-chart-id="velocity_chart" data-chart-title="velocity_chart" data-chart-width="576.0" data-chart-height="416.0" aria-label="velocity_chart — Median days to close for bugs vs enhancements each week." data-chart-description="Median days to close for bugs vs enhancements each week."><rect x="0" y="0" width="576.0" height="416.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: velocity_chart</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">configuration (query: velocity) (query: velocity)</text><text x="12.0" y="117.26250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g><g transform="translate(0, 416)"><svg width="1152.0" height="416.0" viewBox="0 0 1152.0 416.0">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="416.0" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(0, 0)"><rect x="0" y="0" width="1152.0" height="416.0" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-chart dft-chart-callout" id="chart-response_pctiles_chart" data-chart-id="response_pctiles_chart" data-chart-title="response_pctiles_chart" data-chart-width="576.0" data-chart-height="416.0" aria-label="response_pctiles_chart — Time to first response at p25/p50/p75 each week." data-chart-description="Time to first response at p25/p50/p75 each week."><rect x="0" y="0" width="576.0" height="416.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: response_pctiles_chart</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">configuration (query: response_pctiles) (query: response_pctiles)</text><text x="12.0" y="117.26250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(576, 0)"><g class="dft-chart dft-chart-callout" id="chart-age_distribution_chart" data-chart-id="age_distribution_chart" data-chart-title="age_distribution_chart" data-chart-width="576.0" data-chart-height="416.0" aria-label="age_distribution_chart — Stacked bar of open issues by age bucket and category. Ordered by bucket_sort_order from the model — no hardcoded bucket list.
+" data-chart-description="Stacked bar of open issues by age bucket and category. Ordered by bucket_sort_order from the model — no hardcoded bucket list.
+"><rect x="0" y="0" width="576.0" height="416.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: age_distribution_chart</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">configuration (query: age_distribution) (query: age_distribution)</text><text x="12.0" y="117.26250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g><g transform="translate(0, 832)"><g class="dft-chart dft-chart-callout" id="chart-close_by_label_chart" data-chart-id="close_by_label_chart" data-chart-title="close_by_label_chart" data-chart-width="1152.0" data-chart-height="800.0" aria-label="close_by_label_chart — Median days to close broken out by issue label." data-chart-description="Median days to close broken out by issue label."><rect x="0" y="0" width="1152.0" height="800.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: close_by_label_chart</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by configuration</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: close_by_label) (query: close_by_label)</text><text x="12.0" y="102.41250000000001" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g></g><g transform="translate(0, 2389)"><g class="dft-layout-item" data-layout-description="Process-quality percentages measuring labeling and assignment completeness." aria-label="Process-quality percentages measuring labeling and assignment completeness."><svg width="1152.0" height="232.3125" viewBox="0 0 1152.0 232.3125">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="232.3125" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(16, 0)"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="28.8" viewBox="0 0 1120 28.8">
+  <style>
+    .md-text { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #1a1a1a; }
+    .md-mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+    .md-heading { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #111111; font-weight: 500; }
+    .md-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fill: #be185d; }
+    .md-link { fill: #2563eb; }
+    .md-blockquote { fill: #6b7280; }
+  </style>
+  <text x="0" y="23.4" font-size="18" class="md-heading" text-anchor="start"><tspan style="font-weight: 500">Triage Health</tspan></text>
+</svg></g><g transform="translate(0, 29)"><rect x="0" y="0" width="1152.0" height="203.51250000000002" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-chart dft-chart-callout" id="chart-pct_labeled_kpi" data-chart-id="pct_labeled_kpi" data-chart-title="pct_labeled_kpi" data-chart-width="288.0" data-chart-height="203.51250000000002" aria-label="pct_labeled_kpi — Percentage of open issues that have at least one label." data-chart-description="Percentage of open issues that have at least one label."><rect x="0" y="0" width="288.0" height="203.51250000000002" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: pct_labeled_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed:</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution failed: Permission Error:</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are disabled by configuration</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: label_health_kpis) (query:</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">label_health_kpis)</text><text x="12.0" y="176.66250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(288, 0)"><g class="dft-chart dft-chart-callout" id="chart-pct_typed_kpi" data-chart-id="pct_typed_kpi" data-chart-title="pct_typed_kpi" data-chart-width="288.0" data-chart-height="203.51250000000002" aria-label="pct_typed_kpi — Percentage of open issues classified as bug/enhancement/task." data-chart-description="Percentage of open issues classified as bug/enhancement/task."><rect x="0" y="0" width="288.0" height="203.51250000000002" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: pct_typed_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed:</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution failed: Permission Error:</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are disabled by configuration</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: label_health_kpis) (query:</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">label_health_kpis)</text><text x="12.0" y="176.66250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(576, 0)"><g class="dft-chart dft-chart-callout" id="chart-pct_assigned_kpi" data-chart-id="pct_assigned_kpi" data-chart-title="pct_assigned_kpi" data-chart-width="288.0" data-chart-height="203.51250000000002" aria-label="pct_assigned_kpi — Percentage of open issues with an assignee." data-chart-description="Percentage of open issues with an assignee."><rect x="0" y="0" width="288.0" height="203.51250000000002" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: pct_assigned_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed:</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution failed: Permission Error:</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are disabled by configuration</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: label_health_kpis) (query:</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">label_health_kpis)</text><text x="12.0" y="176.66250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(864, 0)"><g class="dft-chart dft-chart-callout" id="chart-pct_milestoned_kpi" data-chart-id="pct_milestoned_kpi" data-chart-title="pct_milestoned_kpi" data-chart-width="288.0" data-chart-height="203.51250000000002" aria-label="pct_milestoned_kpi — Percentage of open issues linked to a milestone." data-chart-description="Percentage of open issues linked to a milestone."><rect x="0" y="0" width="288.0" height="203.51250000000002" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: pct_milestoned_kpi</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed:</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">DuckDB SQL execution failed: Permission Error:</text><text x="12.0" y="92.41250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Cannot access file</text><text x="12.0" y="107.26250000000002" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">&quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file</text><text x="12.0" y="122.11250000000001" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">system operations are disabled by configuration</text><text x="12.0" y="136.9625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: label_health_kpis) (query:</text><text x="12.0" y="151.8125" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">label_health_kpis)</text><text x="12.0" y="176.66250000000002" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g></g><g transform="translate(0, 2629)"><g class="dft-layout-item" data-layout-description="Workload distribution and community-driven priorities." aria-label="Workload distribution and community-driven priorities."><svg width="1152.0" height="968.4" viewBox="0 0 1152.0 968.4">
+<g transform="translate(0, 0)">
+<rect x="0" y="0" width="1152.0" height="968.4" fill="#FFFFFF" rx="0.0"/>
+
+<g transform="translate(16, 0)"><svg xmlns="http://www.w3.org/2000/svg" width="1120" height="28.8" viewBox="0 0 1120 28.8">
+  <style>
+    .md-text { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #1a1a1a; }
+    .md-mono { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; }
+    .md-heading { font-family: 'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif; fill: #111111; font-weight: 500; }
+    .md-code { font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; fill: #be185d; }
+    .md-link { fill: #2563eb; }
+    .md-blockquote { fill: #6b7280; }
+  </style>
+  <text x="0" y="23.4" font-size="18" class="md-heading" text-anchor="start"><tspan style="font-weight: 500">People</tspan></text>
+</svg></g><g transform="translate(0, 29)"><rect x="0" y="0" width="1152.0" height="930.0" fill="#FFFFFF" rx="4"/>
+<g transform="translate(0, 0)"><g class="dft-chart dft-chart-callout" id="chart-assignee_workload_chart" data-chart-id="assignee_workload_chart" data-chart-title="assignee_workload_chart" data-chart-width="1152.0" data-chart-height="800.0" aria-label="assignee_workload_chart — Open bugs and enhancements per assignee, stacked." data-chart-description="Open bugs and enhancements per assignee, stacked."><rect x="0" y="0" width="1152.0" height="800.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: assignee_workload_chart</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot access file &quot;../data/raw/fusion_issues/issues__assignees__nodes/*.parquet&quot; - file system operations are disabled</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">by configuration (query: assignee_workload) (query: assignee_workload)</text><text x="12.0" y="102.41250000000001" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g><g transform="translate(0, 800)"><g class="dft-chart dft-chart-callout" id="chart-community_priorities_table" data-chart-id="community_priorities_table" data-chart-title="community_priorities_table" data-chart-width="1152.0" data-chart-height="130.0" aria-label="community_priorities_table — Top community-priority issues with reaction counts and links via issue_url." data-chart-description="Top community-priority issues with reaction counts and links via issue_url."><rect x="0" y="0" width="1152.0" height="130.0" fill="#ffedec" stroke="#e79491" stroke-width="1.0" rx="4.0"/><text x="12.0" y="21.75" font-size="9.75" font-weight="normal" font-family="monospace" fill="#4b000a">DF-UNKNOWN-INTERNAL</text><text x="12.0" y="48.1625" font-size="13.0" font-weight="bold" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#94001e">Chart Error: community_priorities_table</text><text x="12.0" y="62.712500000000006" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">Query execution failed: Query execution failed: DuckDB SQL execution failed: Permission Error: Cannot access file &quot;../data/raw/fusion_issues/issues/*.parquet&quot; - file system operations are disabled by configuration</text><text x="12.0" y="77.5625" font-size="11.0" font-weight="400" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">(query: community_priorities) (query: community_priorities)</text><text x="12.0" y="102.41250000000001" font-size="9.35" font-weight="normal" font-family="&#x27;Inter Variable&#x27;, &#x27;Noto Emoji&#x27;, Inter, system-ui, sans-serif" fill="#4b000a">https://docs.dataface.dev/errors/DF-UNKNOWN-INTERNAL</text></g></g></g>
+</g>
+</svg></g></g></g>
+
+<text data-role="render-timestamp" x="1176" y="14" text-anchor="end" font-size="11" fill="#999999" font-family="'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif" style="font-variant-numeric: tabular-nums lining-nums;">2026-06-09 21:30</text>
+<line x1="24" y1="3691.9375000000005" x2="1176" y2="3691.9375000000005" stroke="#e5e5e5" stroke-width="0.5"/>
+<text x="1176" y="3704.9375000000005" text-anchor="end" font-size="11" fill="#999999" font-family="'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif">made with dataface</text>
+<script type="text/javascript">
+<![CDATA[
+/**
+ * Variable interactivity for datafaces.
+ *
+ * This script handles:
+ * - Variable change events (updateVariable function)
+ * - URL parameter updates
+ * - Chart loading states
+ * - Parent frame communication (for playground/suite embedding)
+ * - URL parameter initialization on load
+ * - Variable hover highlighting
+ * - Date range chip+popover control (makeChip factory)
+ *
+ * Note: Chart menus are handled by Suite's JavaScript (init.js), not here.
+ *
+ */
+(function() {
+    // Guard against double execution (e.g., if script runs both on parse and via executeEmbeddedScripts)
+    if (window.__dfVariablesInitialized) return;
+    window.__dfVariablesInitialized = true;
+
+    function setVariableIfMissing(vars, name, value) {
+        if (Object.prototype.hasOwnProperty.call(vars, name)) {
+            return;
+        }
+        vars[name] = value;
+    }
+
+    function markDependentChartsLoading(name) {
+        var charts = document.querySelectorAll('[data-var-' + name + ']');
+        for (var i = 0; i < charts.length; i++) {
+            var chart = charts[i];
+            // Add loading class
+            var currentClass = chart.getAttribute('class') || '';
+            if (currentClass.indexOf('loading') === -1) {
+                chart.setAttribute('class', currentClass + (currentClass ? ' ' : '') + 'loading');
+            }
+
+            // Add spinner if not already present
+            if (!chart.querySelector('.dft-chart-spinner')) {
+                var spinner = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+                spinner.setAttribute('class', 'dft-chart-spinner');
+                // Get chart bounds for centering spinner
+                var bbox = chart.getBBox ? chart.getBBox() : {width: 200, height: 200};
+                var centerX = bbox.x + bbox.width / 2;
+                var centerY = bbox.y + bbox.height / 2;
+
+                var circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', centerX);
+                circle.setAttribute('cy', centerY);
+                circle.setAttribute('r', '14');
+                circle.setAttribute('fill', 'none');
+                circle.setAttribute('stroke', '#e0e0e0');
+                circle.setAttribute('stroke-width', '3');
+                circle.setAttribute('stroke-dasharray', '20 60');
+                circle.setAttribute('stroke-dashoffset', '0');
+                circle.style.animation = 'dft-spin 0.8s linear infinite';
+
+                spinner.appendChild(circle);
+                chart.appendChild(spinner);
+            }
+        }
+
+        return charts;
+    }
+
+    function scheduleLoadingCleanup(charts) {
+        setTimeout(function() {
+            for (var i = 0; i < charts.length; i++) {
+                var chart = charts[i];
+                var currentClass = chart.getAttribute('class') || '';
+                chart.setAttribute('class', currentClass.replace(/\s*loading\s*/g, ' ').trim());
+                var spinner = chart.querySelector('.dft-chart-spinner');
+                if (spinner) {
+                    spinner.remove();
+                }
+            }
+        }, 5000);
+    }
+
+    // Update URL and reload (or notify parent)
+    function updateVariable(name, value) {
+        // Mark dependent charts as loading (add loading class and spinner)
+        var charts = markDependentChartsLoading(name);
+
+        // Restore after timeout (fallback if reload fails or is prevented)
+        scheduleLoadingCleanup(charts);
+
+        // Update URL
+        var url = new URL(window.location);
+        if (value === '' || value === null || value === false) {
+            url.searchParams.delete(name);
+        } else {
+            url.searchParams.set(name, String(value));
+        }
+
+        // Notify parent (suite/playground) or reload (standalone)
+        // Using '*' is safe here because:
+        // 1. Iframe content is generated by us (not user input)
+        // 2. Parent checks message.type before processing
+        // 3. Blob URLs have null origin, so specific origin targeting doesn't work
+        if (window.parent !== window) {
+            var vars = getAllVariableValues();
+            // Form controls haven't re-rendered yet, so patch the outgoing
+            // snapshot with the pending value before notifying the parent.
+            setVariableIfMissing(vars, name, value);
+            window.parent.postMessage({
+                type: 'dft-variable-change',
+                variables: vars
+            }, '*');
+        } else if (typeof window.__dfHandleVariableUpdate === 'function') {
+            // Suite registers this hook to re-render in place (no page reload).
+            window.__dfHandleVariableUpdate(url);
+        } else {
+            // Plain dft serve: full page reload. Save scroll so initializeFromURL
+            // can restore it after the new page renders.
+            try {
+                sessionStorage.setItem('__dfScrollY_' + window.location.pathname, String(window.scrollY));
+            } catch (e) { /* sessionStorage may be unavailable */ }
+            window.location.href = url.toString();
+        }
+    }
+
+    // Expose functions to window for inline HTML event handlers (onchange="updateVariable(...)")
+    // These are used by foreignObject controls rendered by render_html_control_for_svg
+    window.updateVariable = updateVariable;
+
+    // ── Date range chip+popover ──────────────────────────────────────────────
+
+    // 8 presets: Today / Last 7 / Last 28 / Last 90 / Last 12 months / MTD / YTD / Custom
+    var PRESETS = [
+        { id: 'today',          label: 'Today' },
+        { id: 'last_7_days',    label: 'Last 7 days' },
+        { id: 'last_28_days',   label: 'Last 28 days' },
+        { id: 'last_90_days',   label: 'Last 90 days' },
+        { id: 'last_12_months', label: 'Last 12 months' },
+        { id: 'divider' },
+        { id: 'mtd',            label: 'Month to date' },
+        { id: 'ytd',            label: 'Year to date' },
+        { id: 'divider' },
+        { id: 'custom',         label: 'Custom' },
+    ];
+
+    // All date math is relative to "today at midnight local time" so that
+    // a frozen today in tests resolves deterministically.
+    function resolvePreset(id) {
+        var now = new Date();
+        var today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var end = new Date(today);
+        var start = new Date(today);
+        switch (id) {
+            case 'today':          break;
+            case 'last_7_days':    start.setDate(end.getDate() - 6); break;
+            case 'last_28_days':   start.setDate(end.getDate() - 27); break;
+            case 'last_90_days':   start.setDate(end.getDate() - 89); break;
+            // Compute start as one year back from today + 1 day in a single constructor call
+            // to avoid the two-step setFullYear+setDate rollover on Feb 29 leap years.
+            case 'last_12_months': start = new Date(end.getFullYear() - 1, end.getMonth(), end.getDate() + 1); break;
+            case 'mtd':            start = new Date(end.getFullYear(), end.getMonth(), 1); break;
+            case 'ytd':            start = new Date(end.getFullYear(), 0, 1); break;
+            case 'custom':         return null;
+            default:               return null;
+        }
+        return [start, end];
+    }
+
+    // ISO date string from a Date object (YYYY-MM-DD local time).
+    function toISO(d) {
+        var m = String(d.getMonth() + 1).padStart(2, '0');
+        var day = String(d.getDate()).padStart(2, '0');
+        return d.getFullYear() + '-' + m + '-' + day;
+    }
+
+    // ISO YYYY-MM-DD shape check (does not check calendar validity, just structure).
+    var _ISO_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+    // Date from an ISO string without timezone shift (treat as local midnight).
+    // Returns null when the string is not a well-formed YYYY-MM-DD literal.
+    function fromISO(s) {
+        if (!_ISO_RE.test(s)) return null;
+        var parts = s.split('-');
+        var d = new Date(parseInt(parts[0], 10), parseInt(parts[1], 10) - 1, parseInt(parts[2], 10));
+        // Reject dates that JS rolled over (e.g. Feb 30 → Mar 2).
+        if (d.getFullYear() !== parseInt(parts[0], 10) ||
+            d.getMonth()    !== parseInt(parts[1], 10) - 1 ||
+            d.getDate()     !== parseInt(parts[2], 10)) return null;
+        return d;
+    }
+
+    // Human-readable chip label from a [start, end] Date pair.
+    // Collapses same-day / same-month / same-year / cross-year ranges.
+    var MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    function fmtDate(d) { return d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()] + ' ' + d.getFullYear(); }
+    function fmtDateNoYr(d) { return d.getDate() + ' ' + MONTHS_SHORT[d.getMonth()]; }
+
+    function formatRange(start, end) {
+        var sameDay   = start.getTime() === end.getTime();
+        var sameMonth = start.getFullYear() === end.getFullYear() && start.getMonth() === end.getMonth();
+        var sameYear  = start.getFullYear() === end.getFullYear();
+        if (sameDay)   return fmtDate(start);
+        if (sameMonth) return start.getDate() + '–' + end.getDate() + ' ' + MONTHS_SHORT[start.getMonth()] + ' ' + start.getFullYear();
+        if (sameYear)  return fmtDateNoYr(start) + ' – ' + fmtDate(end);
+        return fmtDate(start) + ' – ' + fmtDate(end);
+    }
+
+    function buildRail(railEl, onPick) {
+        railEl.innerHTML = '';
+        PRESETS.forEach(function(p) {
+            if (p.id === 'divider') {
+                var div = document.createElement('div');
+                div.className = 'dft-preset-divider';
+                railEl.appendChild(div);
+            } else {
+                var btn = document.createElement('button');
+                btn.type = 'button';
+                btn.textContent = p.label;
+                btn.dataset.preset = p.id;
+                btn.addEventListener('click', function() { onPick(p); });
+                railEl.appendChild(btn);
+            }
+        });
+    }
+
+    function markRailActive(railEl, presetId) {
+        railEl.querySelectorAll('button').forEach(function(b) {
+            b.classList.toggle('dft-preset-active', b.dataset.preset === presetId);
+        });
+    }
+
+    // Per-instance chip+popover factory.
+    // rootEl is the .dft-chip-host element; varName is the DFT variable id.
+    // Returns a handle so the global outside-click + Esc handlers can reach in.
+    function makeChip(rootEl, varName) {
+        var trigger  = rootEl.querySelector('.dft-chip');
+        var labelEl  = rootEl.querySelector('.dft-chip-label');
+        var clearBtn = rootEl.querySelector('.dft-chip-clear');
+        var popover  = rootEl.querySelector('.dft-popover');
+        var rail     = rootEl.querySelector('.dft-preset-rail');
+        var calEl    = rootEl.querySelector('.dft-calendar-area');
+
+        var range     = [null, null];
+        var hoverDate = null;
+        var viewMonth = new Date();
+        var now       = new Date();
+        var today     = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+        // Restore server-rendered initial value if present (data-start / data-end).
+        var initStart = calEl.dataset.start;
+        var initEnd   = calEl.dataset.end;
+        if (initStart && initEnd) {
+            var parsedStart = fromISO(initStart);
+            var parsedEnd   = fromISO(initEnd);
+            if (parsedStart && parsedEnd) {
+                range = [parsedStart, parsedEnd];
+                viewMonth = new Date(range[1].getFullYear(), range[1].getMonth(), 1);
+            }
+            // Chip label and state were server-rendered; don't repaint here.
+        }
+
+        // Persist the resolved [start, end] pair as ISO strings via the standard variable pipeline.
+        function commitRange() {
+            if (range[0] && range[1]) {
+                calEl.dataset.start = toISO(range[0]);
+                calEl.dataset.end   = toISO(range[1]);
+                updateVariable(varName, JSON.stringify([toISO(range[0]), toISO(range[1])]));
+            }
+        }
+
+        function setChipValue(text) {
+            labelEl.textContent = text;
+            trigger.setAttribute('data-active', 'true');
+            trigger.removeAttribute('data-placeholder');
+        }
+
+        function setChipEmpty() {
+            labelEl.textContent = 'Date range';
+            trigger.removeAttribute('data-active');
+            trigger.setAttribute('data-placeholder', 'true');
+        }
+
+        function clearAll() {
+            range = [null, null];
+            hoverDate = null;
+            calEl.dataset.start = '';
+            calEl.dataset.end   = '';
+            setChipEmpty();
+            markRailActive(rail, null);
+            rebuildCalendar();
+            updateVariable(varName, '');
+        }
+
+        // ── Calendar render pipeline ─────────────────────────────────────────
+        // rebuildCalendar — full DOM rebuild. Called on pickDay, month nav, preset.
+        // paintCalendarState — class-only mutation on existing cells. Called on hover.
+        // Re-rendering on hover replaces the hovered cell and the next mouseenter
+        // doesn't fire until the user moves away and back — sticky-hover bug.
+        // Class mutation leaves the DOM stable and avoids this.
+
+        function rebuildCalendar() {
+            var year      = viewMonth.getFullYear();
+            var month     = viewMonth.getMonth();
+            var firstDay  = new Date(year, month, 1);
+            var startWeek = firstDay.getDay();
+            var monthName = firstDay.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+
+            // Build via DOM API (not innerHTML) so structural nesting errors
+            // become type errors rather than silent mis-parses.
+            calEl.innerHTML = '';
+
+            // Header: ‹ Month YYYY ›
+            var header = document.createElement('div');
+            header.className = 'dft-cal-header';
+
+            var prevBtn = document.createElement('button');
+            prevBtn.type = 'button';
+            prevBtn.className = 'dft-cal-nav';
+            prevBtn.setAttribute('aria-label', 'Previous month');
+            prevBtn.textContent = '‹'; // ‹
+            prevBtn.addEventListener('click', function() {
+                viewMonth = new Date(year, month - 1, 1);
+                rebuildCalendar();
+            });
+
+            var monthSpan = document.createElement('span');
+            monthSpan.className = 'dft-cal-month';
+            monthSpan.textContent = monthName;
+
+            var nextBtn = document.createElement('button');
+            nextBtn.type = 'button';
+            nextBtn.className = 'dft-cal-nav';
+            nextBtn.setAttribute('aria-label', 'Next month');
+            nextBtn.textContent = '›'; // ›
+            nextBtn.addEventListener('click', function() {
+                viewMonth = new Date(year, month + 1, 1);
+                rebuildCalendar();
+            });
+
+            header.appendChild(prevBtn);
+            header.appendChild(monthSpan);
+            header.appendChild(nextBtn);
+            calEl.appendChild(header);
+
+            // Grid: 7 day-of-week labels + 42 cells (6 rows × 7 cols, fixed height)
+            var grid = document.createElement('div');
+            grid.className = 'dft-cal-grid';
+
+            var DOW = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
+            DOW.forEach(function(d) {
+                var dow = document.createElement('div');
+                dow.className = 'dft-cal-dow';
+                dow.textContent = d;
+                grid.appendChild(dow);
+            });
+
+            var cursor = new Date(year, month, 1 - startWeek);
+            for (var i = 0; i < 42; i++) {
+                var dt      = new Date(cursor);
+                var isOther = dt.getMonth() !== month;
+                var isToday = dt.getTime() === today.getTime();
+                var cell    = document.createElement('button');
+                cell.type        = 'button';
+                cell.className   = 'dft-cal-cell';
+                if (isOther) {
+                    cell.classList.add('dft-other-month');
+                    cell.tabIndex = -1;
+                }
+                if (isToday) cell.classList.add('dft-today');
+                cell.textContent   = dt.getDate();
+                cell.dataset.day   = String(dt.getTime());
+                cell.setAttribute('aria-label', dt.toLocaleDateString('en-US', {weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'}));
+                // Capture dt for closure
+                (function(cellEl, cellDate) {
+                    cellEl.addEventListener('click', function() { pickDay(cellDate.getTime()); });
+                    cellEl.addEventListener('mouseenter', function() {
+                        if (range[0] && !range[1]) {
+                            hoverDate = new Date(cellDate.getTime());
+                            paintCalendarState();
+                        }
+                    });
+                }(cell, dt));
+                grid.appendChild(cell);
+                cursor.setDate(cursor.getDate() + 1);
+            }
+            calEl.appendChild(grid);
+
+            // Footer: [Clear] — commits fire automatically on pickDay when both
+            // endpoints are selected, so there is no Apply button.
+            var hasSelection = range[0] !== null;
+            if (hasSelection) {
+                var footer = document.createElement('div');
+                footer.className = 'dft-cal-footer';
+                var clearAction = document.createElement('button');
+                clearAction.type = 'button';
+                clearAction.className = 'dft-cal-action';
+                clearAction.setAttribute('data-action', 'clear');
+                clearAction.textContent = 'Clear';
+                clearAction.addEventListener('click', clearAll);
+                footer.appendChild(clearAction);
+                calEl.appendChild(footer);
+            }
+
+            paintCalendarState();
+        }
+
+        function paintCalendarState() {
+            var startTs  = range[0] && range[0].getTime();
+            var endTs    = range[1] && range[1].getTime();
+            var previewing = startTs && !endTs && hoverDate;
+            var hoverTs  = previewing && hoverDate.getTime();
+            var lo       = previewing ? Math.min(startTs, hoverTs) : null;
+            var hi       = previewing ? Math.max(startTs, hoverTs) : null;
+
+            calEl.querySelectorAll('.dft-cal-cell').forEach(function(c) {
+                var ts          = parseInt(c.dataset.day, 10);
+                var isStart     = startTs && ts === startTs;
+                var isEnd       = endTs   && ts === endTs;
+                var inRange     = startTs && endTs && ts > startTs && ts < endTs;
+                var inPreview   = previewing && ts > lo && ts < hi;
+                var isPreviewEnd = previewing && ts === hoverTs && ts !== startTs;
+
+                c.classList.toggle('dft-selected',         Boolean(isStart || isEnd));
+                c.classList.toggle('dft-range-start',      Boolean(isStart));
+                c.classList.toggle('dft-range-end',        Boolean(isEnd));
+                c.classList.toggle('dft-in-range',         Boolean(inRange));
+                c.classList.toggle('dft-preview-in-range', Boolean(inPreview));
+                c.classList.toggle('dft-preview-end',      Boolean(isPreviewEnd));
+            });
+        }
+
+        function pickDay(timestamp) {
+            var dt = new Date(timestamp);
+            if (dt.getMonth() !== viewMonth.getMonth()) {
+                viewMonth = new Date(dt.getFullYear(), dt.getMonth(), 1);
+            }
+            if (!range[0] || (range[0] && range[1])) {
+                range = [dt, null];
+            } else if (dt < range[0]) {
+                range = [dt, range[0]];
+            } else if (dt.getTime() === range[0].getTime()) {
+                range = [dt, dt];
+            } else {
+                range = [range[0], dt];
+            }
+            hoverDate = null;
+            if (range[0] && range[1]) {
+                setChipValue(formatRange(range[0], range[1]));
+                markRailActive(rail, 'custom');
+                commitRange();
+            } else {
+                markRailActive(rail, null);
+            }
+            rebuildCalendar();
+        }
+
+        // ── Wire up listeners ────────────────────────────────────────────────
+        clearBtn.addEventListener('click', function(e) {
+            e.stopPropagation();
+            clearAll();
+        });
+
+        buildRail(rail, function(p) {
+            var r = resolvePreset(p.id);
+            if (r) {
+                range = r;
+                viewMonth = new Date(r[1].getFullYear(), r[1].getMonth(), 1);
+                setChipValue(p.label);
+                markRailActive(rail, p.id);
+                commitRange();
+            } else {
+                markRailActive(rail, p.id);
+            }
+            rebuildCalendar();
+        });
+
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            var open = !popover.classList.contains('dft-popover-open');
+            popover.classList.toggle('dft-popover-open', open);
+            trigger.setAttribute('aria-expanded', String(open));
+            popover.setAttribute('aria-hidden', String(!open));
+        });
+
+        // Stop clicks inside the popover from bubbling to document — prevents
+        // the outside-click handler from firing on calendar cell clicks that
+        // rebuild the DOM (the just-clicked cell would become an orphan node
+        // and trigger.contains(target) would return false, closing the popover).
+        popover.addEventListener('click', function(e) { e.stopPropagation(); });
+
+        // Clear hover preview when the cursor leaves the calendar area.
+        calEl.addEventListener('mouseleave', function() {
+            if (hoverDate) {
+                hoverDate = null;
+                paintCalendarState();
+            }
+        });
+
+        rebuildCalendar();
+
+        return {
+            trigger:  trigger,
+            popover:  popover,
+            varName:  varName,
+            close:    function() {
+                popover.classList.remove('dft-popover-open');
+                trigger.setAttribute('aria-expanded', 'false');
+                popover.setAttribute('aria-hidden', 'true');
+            },
+            isOpen:   function() { return popover.classList.contains('dft-popover-open'); },
+            // Restore chip state from a [startISO, endISO] pair (used by initializeFromURL).
+            // Silently ignores malformed ISO strings — leaves chip in placeholder state.
+            restoreRange: function(startISO, endISO) {
+                if (!startISO || !endISO) return;
+                var s = fromISO(startISO);
+                var e = fromISO(endISO);
+                if (!s || !e) return;  // invalid ISO — leave chip in placeholder state
+                range = [s, e];
+                viewMonth = new Date(range[1].getFullYear(), range[1].getMonth(), 1);
+                calEl.dataset.start = startISO;
+                calEl.dataset.end   = endISO;
+                setChipValue(formatRange(range[0], range[1]));
+                rebuildCalendar();
+            },
+        };
+    }
+
+    // ── Global chip registration + outside-click + Esc ──────────────────────
+
+    var _chipInstances = [];
+
+    function _initAllChips() {
+        // Find all chip hosts that have not been initialized yet.
+        var hosts = document.querySelectorAll('.dft-chip-host:not([data-chip-initialized])');
+        hosts.forEach(function(host) {
+            var calArea = host.querySelector('.dft-calendar-area');
+            if (!calArea) return;
+            var varName = calArea.getAttribute('data-variable');
+            if (!varName) return;
+            host.setAttribute('data-chip-initialized', 'true');
+            var inst = makeChip(host, varName);
+            _chipInstances.push(inst);
+        });
+    }
+
+    // Outside-click closes all open popovers.
+    document.addEventListener('click', function(e) {
+        _chipInstances.forEach(function(inst) {
+            if (!inst.trigger.contains(e.target)) inst.close();
+        });
+    });
+
+    // Esc closes whichever instance is open and returns focus to its trigger.
+    document.addEventListener('keydown', function(e) {
+        if (e.key !== 'Escape') return;
+        _chipInstances.forEach(function(inst) {
+            if (inst.isOpen()) {
+                inst.close();
+                inst.trigger.focus();
+            }
+        });
+    });
+
+    // Opening one popover closes all others.
+    // Implemented by attaching a listener after _initAllChips so we have all instances.
+    function _wireExclusiveOpen() {
+        _chipInstances.forEach(function(inst, i) {
+            inst.trigger.addEventListener('click', function() {
+                _chipInstances.forEach(function(other, j) {
+                    if (j !== i) other.close();
+                });
+            });
+        });
+    }
+
+    // ── Intercept clicks on SVG <a href="?..."> links ────────────────────────
+    // Blob URL iframes can't navigate to query-string URLs, so we parse the
+    // params ourselves and send a single postMessage with the merged variable
+    // snapshot instead of navigating.
+    document.addEventListener('click', function(event) {
+        var link = event.target.closest('a[href]');
+        if (!link) return;
+        if (!link.ownerSVGElement && link.namespaceURI !== 'http://www.w3.org/2000/svg') return;
+        var href = link.getAttribute('href');
+        if (!href || href.charAt(0) !== '?') return;
+        var inIframe = window.parent !== window;
+        var hasHook = typeof window.__dfHandleVariableUpdate === 'function';
+        var params = new URLSearchParams(href.slice(1));
+        if (!params.toString()) {
+            if (inIframe || hasHook) event.preventDefault();
+            return;
+        }
+
+        if (!inIframe && !hasHook) {
+            // Standalone dft serve: let the browser navigate, but save scroll
+            // first so restoreScrollIfSaved() can recover position after reload.
+            try {
+                sessionStorage.setItem('__dfScrollY_' + window.location.pathname, String(window.scrollY));
+            } catch (e) { /* sessionStorage may be unavailable */ }
+            return; // browser follows the link naturally
+        }
+
+        event.preventDefault();
+        var vars = getAllVariableValues();
+        var tabUrl = inIframe ? null : new URL(window.location);
+        var chartsToCleanup = [];
+        params.forEach(function(value, name) {
+            var charts = markDependentChartsLoading(name);
+            for (var i = 0; i < charts.length; i++) {
+                chartsToCleanup.push(charts[i]);
+            }
+            vars[name] = value;
+            if (tabUrl) { tabUrl.searchParams.set(name, value); }
+        });
+        scheduleLoadingCleanup(chartsToCleanup);
+        if (inIframe) {
+            window.parent.postMessage({
+                type: 'dft-variable-change',
+                variables: vars
+            }, '*');
+        } else {
+            window.__dfHandleVariableUpdate(tabUrl);
+        }
+    });
+
+    // Collect all variable values from form controls
+    function getAllVariableValues() {
+        var allVars = {};
+        var controls = document.querySelectorAll('[data-variable]');
+        for (var i = 0; i < controls.length; i++) {
+            var control = controls[i];
+            var name = control.getAttribute('data-variable');
+
+            // Date range chip — read committed ISO values from data-start/end attrs.
+            if (control.classList.contains('dft-calendar-area')) {
+                if (!Object.prototype.hasOwnProperty.call(allVars, name)) {
+                    var s = control.dataset.start || '';
+                    var en = control.dataset.end   || '';
+                    allVars[name] = [s, en];
+                }
+                continue;
+            }
+
+            // Skip chip trigger button — value is read via dft-calendar-area above.
+            if (control.classList.contains('dft-chip')) continue;
+
+            // Regular controls
+            if (control.type === 'checkbox') {
+                allVars[name] = control.checked;
+            } else if (control.type === 'range') {
+                allVars[name] = parseFloat(control.value);
+            } else if (control.type === 'number') {
+                allVars[name] = control.value ? parseFloat(control.value) : null;
+            } else {
+                allVars[name] = control.value;
+            }
+        }
+        return allVars;
+    }
+
+    // Restore scroll position saved before a standalone page reload (dft serve).
+    function restoreScrollIfSaved() {
+        try {
+            var key = '__dfScrollY_' + window.location.pathname;
+            var saved = sessionStorage.getItem(key);
+            if (saved !== null) {
+                sessionStorage.removeItem(key);
+                window.scrollTo(0, parseInt(saved, 10));
+            }
+        } catch (e) { /* sessionStorage may be unavailable */ }
+    }
+
+    // Initialize controls from URL params on load
+    // Wrapped in DOMContentLoaded check for dynamic SVG insertion scenarios
+    function initializeFromURL() {
+        var params = new URLSearchParams(window.location.search);
+        var entries = params.entries();
+        var entry = entries.next();
+        while (!entry.done) {
+            var name  = entry.value[0];
+            var value = entry.value[1];
+
+            // Find chip instance for this variable name (daterange).
+            var chipInst = null;
+            for (var ci = 0; ci < _chipInstances.length; ci++) {
+                if (_chipInstances[ci].varName === name) {
+                    chipInst = _chipInstances[ci];
+                    break;
+                }
+            }
+
+            if (chipInst) {
+                try {
+                    var rangeValue = JSON.parse(value);
+                    if (Array.isArray(rangeValue) && rangeValue.length >= 2) {
+                        chipInst.restoreRange(rangeValue[0], rangeValue[1]);
+                    }
+                } catch (e) {
+                    // Malformed URL param — ignore; leave chip in placeholder state.
+                }
+            } else {
+                // Regular control
+                var control = document.querySelector('[data-variable="' + name + '"]:not(.dft-chip):not(.dft-calendar-area)');
+                if (control) {
+                    if (control.type === 'checkbox') {
+                        control.checked = value === 'true' || value === '1';
+                    } else if (control.type === 'range') {
+                        control.value = value;
+                        var valueSpan = control.nextElementSibling;
+                        if (valueSpan && valueSpan.classList.contains('dft-variable-slider-value')) {
+                            valueSpan.textContent = value;
+                        }
+                    } else {
+                        control.value = value;
+                    }
+                }
+            }
+            entry = entries.next();
+        }
+    }
+
+    // Run initialization when DOM is ready
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            _initAllChips();
+            _wireExclusiveOpen();
+            initializeFromURL();
+            restoreScrollIfSaved();
+        });
+    } else {
+        _initAllChips();
+        _wireExclusiveOpen();
+        initializeFromURL();
+        restoreScrollIfSaved();
+    }
+
+    // Setup variable hover highlighting
+    function setupVariableHoverHighlighting() {
+        var controls = document.querySelectorAll('.variable-control');
+        for (var i = 0; i < controls.length; i++) {
+            var control = controls[i];
+            var input = control.querySelector('[data-variable]');
+            if (!input) continue;
+
+            var varName = input.getAttribute('data-variable');
+            if (!varName) continue;
+
+            control.addEventListener('mouseenter', function(vName) {
+                return function() {
+                    var charts = document.querySelectorAll('[data-var-' + vName + ']');
+                    for (var j = 0; j < charts.length; j++) {
+                        var chart = charts[j];
+
+                        // Use transparent overlay for highlighting (cleaner than offset rects)
+                        var existingOverlay = chart.querySelector('.dft-chart-highlight-overlay');
+                        if (!existingOverlay) {
+                            try {
+                                // Use allocated dimensions from data attributes (set by renderer)
+                                var chartWidth = parseFloat(chart.getAttribute('data-chart-width')) || 0;
+                                var chartHeight = parseFloat(chart.getAttribute('data-chart-height')) || 0;
+
+                                // Fallback to getBBox if data attributes not available
+                                if (chartWidth === 0 || chartHeight === 0) {
+                                    var bbox = chart.getBBox ? chart.getBBox() : null;
+                                    if (bbox) {
+                                        chartWidth = bbox.width;
+                                        chartHeight = bbox.height;
+                                    }
+                                }
+
+                                if (chartWidth > 0 && chartHeight > 0) {
+                                    // Create overlay rect that covers entire chart area
+                                    var overlay = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+                                    overlay.setAttribute('class', 'dft-chart-highlight-overlay');
+                                    overlay.setAttribute('x', '0');
+                                    overlay.setAttribute('y', '0');
+                                    overlay.setAttribute('width', chartWidth);
+                                    overlay.setAttribute('height', chartHeight);
+                                    overlay.setAttribute('rx', '4'); // Slight rounding
+                                    // Insert at end so it's on top (but pointer-events: none allows interaction)
+                                    chart.appendChild(overlay);
+                                }
+                            } catch (e) {
+                                // Dimension calculation may fail, ignore silently
+                            }
+                        }
+                    }
+                };
+            }(varName));
+
+            control.addEventListener('mouseleave', function(vName) {
+                return function() {
+                    var charts = document.querySelectorAll('[data-var-' + vName + ']');
+                    for (var j = 0; j < charts.length; j++) {
+                        var chart = charts[j];
+
+                        // Remove highlight overlay
+                        var highlightOverlay = chart.querySelector('.dft-chart-highlight-overlay');
+                        if (highlightOverlay) {
+                            highlightOverlay.remove();
+                        }
+                    }
+                };
+            }(varName));
+        }
+    }
+
+    // Initialize interactions when DOM is ready
+    // Note: Chart menus are handled by Suite's JavaScript (init.js)
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', function() {
+            setupVariableHoverHighlighting();
+        });
+    } else {
+        setupVariableHoverHighlighting();
+    }
+})();
+
+]]>
+</script>
+<script type="text/javascript">
+<![CDATA[
+(function () {
+    const DATAFACE_FONT_FAMILY = "'Inter Variable', 'Noto Emoji', Inter, system-ui, sans-serif";
+
+    function isDataMark(element) {
+        if (!element || typeof element.getAttribute !== 'function') return false;
+        const label = element.getAttribute('aria-label');
+        if (!label || !label.includes(':')) return false;
+        if (label.startsWith('X-axis') || label.startsWith('Y-axis')) return false;
+        if (label.includes('legend') || label.startsWith('Symbol')) return false;
+        return true;
+    }
+
+    function parseAriaLabel(label) {
+        if (!label) return {};
+
+        const data = {};
+        const pairs = label.split(';');
+
+        for (const pair of pairs) {
+            const colonIndex = pair.indexOf(':');
+            if (colonIndex === -1) continue;
+
+            const key = pair.substring(0, colonIndex).trim();
+            const value = pair.substring(colonIndex + 1).trim();
+
+            if (!key || key.startsWith('X-axis') || key.startsWith('Y-axis')) continue;
+
+            const numValue = parseFloat(value);
+            data[key] = !isNaN(numValue) && value === String(numValue) ? numValue : value;
+        }
+
+        return data;
+    }
+
+    function escapeHtml(value) {
+        if (value === null || value === undefined) return '';
+
+        const div = document.createElement('div');
+        div.textContent = String(value);
+        return div.innerHTML;
+    }
+
+    function formatFieldName(key) {
+        return escapeHtml(key
+            .replace(/_/g, ' ')
+            .replace(/-/g, ' ')
+            .replace(/\b\w/g, function (c) { return c.toUpperCase(); }));
+    }
+
+    function formatValue(value) {
+        if (value === null || value === undefined) return '—';
+        if (typeof value === 'number') {
+            return escapeHtml(value.toLocaleString(undefined, { maximumFractionDigits: 2 }));
+        }
+        return escapeHtml(value);
+    }
+
+    function ensureState() {
+        if (window.__datafaceChartHoverState) {
+            return window.__datafaceChartHoverState;
+        }
+
+        const tooltip = document.createElement('div');
+        tooltip.className = 'dft-tooltip';
+        tooltip.setAttribute('role', 'tooltip');
+        tooltip.style.position = 'fixed';
+        tooltip.style.display = 'none';
+        tooltip.style.background = 'rgba(15, 23, 42, 0.95)';
+        tooltip.style.color = '#f8fafc';
+        tooltip.style.padding = '8px 12px';
+        tooltip.style.borderRadius = '8px';
+        tooltip.style.fontSize = '14px';
+        tooltip.style.lineHeight = '1.5';
+        tooltip.style.pointerEvents = 'none';
+        tooltip.style.zIndex = '10000';
+        tooltip.style.maxWidth = '280px';
+        tooltip.style.boxShadow = '0 10px 25px rgba(15, 23, 42, 0.25)';
+        tooltip.style.backdropFilter = 'blur(4px)';
+        tooltip.style.border = '1px solid rgba(148, 163, 184, 0.18)';
+        tooltip.style.fontFamily = DATAFACE_FONT_FAMILY;
+        if (document.body) {
+            document.body.appendChild(tooltip);
+        }
+
+        window.__datafaceChartHoverState = {
+            activeMark: null,
+            tooltip: tooltip,
+        };
+
+        return window.__datafaceChartHoverState;
+    }
+
+    function positionTooltip(state, x, y) {
+        const padding = 12;
+        const rect = state.tooltip.getBoundingClientRect();
+        let left = x + padding;
+        let top = y + padding;
+
+        if (left + rect.width > window.innerWidth - padding) {
+            left = x - rect.width - padding;
+        }
+
+        if (top + rect.height > window.innerHeight - padding) {
+            top = y - rect.height - padding;
+        }
+
+        state.tooltip.style.left = Math.max(padding, left) + 'px';
+        state.tooltip.style.top = Math.max(padding, top) + 'px';
+    }
+
+    function hideTooltip(state) {
+        state.activeMark = null;
+        state.tooltip.style.display = 'none';
+    }
+
+    function showTooltip(state, mark, event) {
+        const entries = Object.entries(parseAriaLabel(mark.getAttribute('aria-label')));
+        if (!entries.length) {
+            hideTooltip(state);
+            return;
+        }
+
+        state.activeMark = mark;
+        state.tooltip.innerHTML = entries.map(function (entry, index) {
+            const key = entry[0];
+            const value = entry[1];
+            const separator = index < entries.length - 1
+                ? 'border-bottom: 1px solid rgba(255,255,255,0.10); padding-bottom: 4px; margin-bottom: 2px;'
+                : '';
+
+            return (
+                '<div style="display:flex;justify-content:space-between;gap:16px;padding:2px 0;' + separator + '">' +
+                    '<span style="color:#94a3b8;font-weight:500;">' + formatFieldName(key) + '</span>' +
+                    '<span style="color:#f8fafc;font-weight:600;text-align:right;font-variant-numeric:tabular-nums lining-nums;">' + formatValue(value) + '</span>' +
+                '</div>'
+            );
+        }).join('');
+        state.tooltip.style.display = 'block';
+        positionTooltip(state, event.clientX, event.clientY);
+    }
+
+    function initializeSvg(svg) {
+        if (!svg || svg.dataset.dftHoverInitialized === 'true') {
+            return;
+        }
+
+        svg.dataset.dftHoverInitialized = 'true';
+        const state = ensureState();
+
+        svg.addEventListener('mousemove', function (event) {
+            const target = event.target && event.target.closest
+                ? event.target.closest('[aria-label]')
+                : null;
+
+            if (!target || !svg.contains(target) || !isDataMark(target)) {
+                if (state.activeMark) {
+                    hideTooltip(state);
+                }
+                return;
+            }
+
+            if (state.activeMark !== target || state.tooltip.style.display === 'none') {
+                showTooltip(state, target, event);
+            } else {
+                positionTooltip(state, event.clientX, event.clientY);
+            }
+        });
+
+        svg.addEventListener('mouseleave', function () {
+            hideTooltip(state);
+        });
+    }
+
+    function initialize() {
+        const script = document.currentScript;
+        const ownerSvg = script && script.closest ? script.closest('svg') : null;
+
+        if (ownerSvg) {
+            initializeSvg(ownerSvg);
+            return;
+        }
+
+        document.querySelectorAll('svg').forEach(initializeSvg);
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initialize, { once: true });
+    } else {
+        initialize();
+    }
+})();
+
+]]>
+</script>
+</svg>
+        </div>
+    </div>
+</body>
+</html>

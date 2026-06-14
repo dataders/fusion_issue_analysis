@@ -1,4 +1,4 @@
--- title: Triage Health
+-- title: Operational Triage
 -- blurb: Single-row operational counts across the open-issue triage taxonomy.
 -- type: kpi
 SELECT

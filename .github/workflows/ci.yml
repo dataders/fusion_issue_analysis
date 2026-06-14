@@ -64,7 +64,7 @@ jobs:
       # ── dbt compile against prod ─────────────────────────────────────────
       - name: Install dbt Fusion
         run: |
-          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update
+          curl -fsSL https://public.cdn.getdbt.com/fs/install/install.sh | sh -s -- --update --version 2.0.0-preview.176
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       # Workaround for dbt-labs/dbt-fusion#1574 — see extract.yml for context.
@@ -72,7 +72,7 @@ jobs:
         if: github.actor != 'dependabot[bot]'
         run: |
           curl -LsSf https://dbc.columnar.tech/install.sh | sh
-          dbc install duckdb
+          dbc install "duckdb=1.5.2"
 
       - name: Compile dbt models
         if: github.actor != 'dependabot[bot]'
@@ -155,7 +155,7 @@ jobs:
           DAC_ENVIRONMENT: prod
           DAC_OUTPUT: dashboard/dac/build
         run: |
-          uv run python3 dashboard/dac/render.py
+          uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
       - name: Smoke-test MCP App
