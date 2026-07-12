@@ -121,7 +121,7 @@ order by reactions_total_count desc;
 
 select ''::section;
 select 'Shaper implementation of the dashboard from:
-https://github.com/dataders/fusion_issues
+https://github.com/dataders/fusion_issue_analysis
 
 More about Shaper:
 https://taleshape.com/shaper/docs';
