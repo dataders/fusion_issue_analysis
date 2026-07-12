@@ -1,233 +1,127 @@
--- shaperid:fusion_issue_health_bakeoff
+-- shaperid:j66rhu7ey1h1dve95hcnypuk
+-- shapersync:2026-06-14T04:07:21Z
 
-SELECT 'dbt-fusion Issue Health'::SECTION;
+select 'Fusion Issue Analysis'::section;
 
-SELECT 'Open source Shaper dashboard — CORE-22 canonical tile set over shared dbt dashboard marts in DuckDB or MotherDuck.'::TEXT_SMALL;
+select concat('fusion-issue-report-', today())::download_pdf as PDF;
 
-SELECT 'Issue category'::LABEL;
+select open_issues as "Open Issues" from fusion_issues.summary_kpis;
+select closed_4w - opened_4w as "Net Flow" from fusion_issues.summary_kpis;
+select (pct_responded_48h / 100)::percent as "48h Response SLA" from fusion_issues.summary_kpis;
+select stale_count as "Stale Issues" from fusion_issues.summary_kpis;
 
-SELECT
-  issue_category::DROPDOWN_MULTI AS issue_category,
-  count::HINT
-FROM open_by_category
-ORDER BY issue_category;
 
--- ────────────────────────────────────────────────────────────────
--- [Operational Triage]
--- ────────────────────────────────────────────────────────────────
+select 'Cumulative Issue Flow'::section;
 
-SELECT 'Operational Triage'::SECTION;
+select 'Weekly Opened vs Closed (non-cumulative)'::label;
+select
+  week::xaxis,
+  value::barchart_stacked,
+  category::category
+from (
+  select
+    week,
+    sum(opened) over (order by week) as opened,
+    sum(closed) over (order by week) as closed
+  from fusion_issues.weekly_flow
+)
+unpivot (value for category in (opened, closed))
+order by week;
 
-SELECT slipped_through_count AS "Slipped Through (bugs)"
-FROM issue_triage_health;
+select 'Open Issues by Category'::label;
+SELECT col1::donutchart, col0::category
+FROM (
+  VALUES
+    ('bug', 165),
+    ('enhancement', 113),
+    ('other', 53),
+);
 
-SELECT triage_queue_count AS "Triage Queue"
-FROM issue_triage_health;
 
-SELECT hard_blocker_count AS "Hard Blockers"
-FROM issue_triage_health;
+select 'Velocity & Response'::section;
+select 'Median Days to Close: Bugs vs Enhancements'::label;
+select
+  week::xaxis,
+  issue_category::category,
+  median_days::linechart
+from fusion_issues.velocity order by week;
 
-SELECT stale_count AS "Stale (90d+)"
-FROM issue_triage_health;
+select 'Time to First Response (hours)'::label;
+select
+  week::xaxis,
+  value::linechart,
+  percentile::category
+from fusion_issues.response_pctiles
+unpivot (value for percentile in (p25, p50, p75))
+order by week;
 
-SELECT needs_repro_count AS "Needs Repro"
-FROM issue_triage_health;
 
-SELECT repro_verified_count AS "Repro Verified"
-FROM issue_triage_health;
+select 'Issue Distribution'::section;
+select 'Open Issue Age by Type'::label;
+select
+  age_bucket::xaxis,
+  issue_category::category,
+  issue_count::barchart_stacked
+from (
+  select *, sum(issue_count) over (partition by age_bucket) as total
+  from fusion_issues.age_distribution
+)
+order by total;
 
-SELECT total_open AS "Total Open"
-FROM issue_triage_health;
+select 'Median Days to Close by Label'::label;
+select
+  label_name::xaxis,
+  median_days_to_close::barchart,
+  closed_count as "# Closed Issues"
+from fusion_issues.close_by_label
+order by median_days_to_close desc;
 
-SELECT 'Oldest Untriaged Bugs'::LABEL;
 
-SELECT
-  issue_number AS "#",
+select 'Triage Health'::section;
+select (pct_labeled / 100)::percent as "Have labels"
+  from fusion_issues.triage_health;
+select (pct_typed / 100)::percent as "Have type"
+  from fusion_issues.triage_health;
+select (pct_assigned / 100)::percent as "Are assigned"
+  from fusion_issues.triage_health;
+select (pct_milestoned / 100)::percent as "In a milestoned"
+  from fusion_issues.triage_health;
+
+
+select 'Workload & Priorities'::section;
+select 'Open Issues by Assignee'::label;
+select
+  assignee_login::yaxis,
+  value::barchart_stacked,
+  category::category
+from (
+  select *, bugs + enhancements as total
+  from fusion_issues.assignee_workload
+)
+unpivot (value for category in (bugs, enhancements))
+order by total;
+
+select 'search issues...'::input as search;
+
+select 'filter by category'::label;
+select issue_category::dropdown_multi as category_filter from fusion_issues.community_priorities group by all order by all;
+
+select 'Community Priorities'::label;
+select
+  issue_number,
   title,
-  age_days,
-  issue_url::HYPERLINK AS "Link"
-FROM oldest_untriaged
-ORDER BY age_days DESC
-LIMIT 20;
+  issue_category,
+  reactions_total_count,
+  age_days
+from fusion_issues.community_priorities
+where issue_category in getvariable('category_filter')
+  and title ilike concat('%', getvariable('search'), '%')
+order by reactions_total_count desc;
 
--- ────────────────────────────────────────────────────────────────
--- [Key Metrics]
--- ────────────────────────────────────────────────────────────────
 
-SELECT 'Key Metrics'::SECTION;
+select ''::section;
+select 'Shaper implementation of the dashboard from:
+https://github.com/dataders/fusion_issue_analysis
 
-SELECT open_issues AS "Open Issues"
-FROM summary_kpis;
-
-SELECT net_flow_4w AS "Net Flow (4 wk)"
-FROM summary_kpis;
-
-SELECT rolling_median_close_days AS "Median Close (4 wk)"
-FROM summary_kpis;
-
-SELECT coalesce(pct_responded_48h / 100.0, 0)::GAUGE_PERCENT AS "48h Response SLA"
-FROM summary_kpis;
-
-SELECT stale_count AS "Stale Issues (30d+)"
-FROM summary_kpis;
-
--- ────────────────────────────────────────────────────────────────
--- [Trends]
--- ────────────────────────────────────────────────────────────────
-
-SELECT 'Trends'::SECTION;
-
-SELECT 'Cumulative Issue Flow'::LABEL;
-
-SELECT
-  week::DATE::XAXIS,
-  cumulative_opened::LINECHART AS "Issues",
-  'opened'::CATEGORY
-FROM cumulative_flow
-UNION ALL
-SELECT
-  week::DATE::XAXIS,
-  cumulative_closed::LINECHART AS "Issues",
-  'closed'::CATEGORY
-FROM cumulative_flow
-ORDER BY 1, 3;
-
-SELECT 'Median Days to Close: Bugs vs Enhancements'::LABEL;
-
-SELECT
-  week::DATE::XAXIS,
-  median_days::LINECHART AS "Median Days",
-  issue_category::CATEGORY
-FROM velocity
-WHERE issue_category IN ('bug', 'enhancement')
-ORDER BY week, issue_category;
-
-SELECT 'Time to First Response (hours)'::LABEL;
-
-SELECT
-  week::DATE::XAXIS,
-  p25::LINECHART AS "p25",
-  'p25'::CATEGORY
-FROM response_pctiles
-UNION ALL
-SELECT
-  week::DATE::XAXIS,
-  p50::LINECHART AS "p50",
-  'p50'::CATEGORY
-FROM response_pctiles
-UNION ALL
-SELECT
-  week::DATE::XAXIS,
-  p75::LINECHART AS "p75",
-  'p75'::CATEGORY
-FROM response_pctiles
-ORDER BY 1, 3;
-
-SELECT 'Open Issue Age by Type'::LABEL;
-
-SELECT
-  age_bucket::XAXIS AS "Age",
-  issue_count::BARCHART_STACKED AS "Issues",
-  issue_category::CATEGORY
-FROM age_distribution
-WHERE issue_category IN getvariable('issue_category')
-ORDER BY bucket_sort_order, issue_category;
-
-SELECT 'Median Days to Close by Label'::LABEL;
-
-SELECT
-  label_name::XAXIS AS "Label",
-  median_days_to_close::BARCHART AS "Median Days"
-FROM close_by_label
-ORDER BY median_days_to_close DESC
-LIMIT 20;
-
--- ────────────────────────────────────────────────────────────────
--- [Triage Health]
--- ────────────────────────────────────────────────────────────────
-
-SELECT 'Triage Health'::SECTION;
-
-SELECT coalesce(pct_labeled / 100.0, 0)::GAUGE_PERCENT AS "% Labeled"
-FROM triage_health;
-
-SELECT coalesce(pct_typed / 100.0, 0)::GAUGE_PERCENT AS "% Typed"
-FROM triage_health;
-
-SELECT coalesce(pct_assigned / 100.0, 0)::GAUGE_PERCENT AS "% Assigned"
-FROM triage_health;
-
-SELECT coalesce(pct_milestoned / 100.0, 0)::GAUGE_PERCENT AS "% Milestoned"
-FROM triage_health;
-
--- ────────────────────────────────────────────────────────────────
--- [People]
--- ────────────────────────────────────────────────────────────────
-
-SELECT 'People'::SECTION;
-
-SELECT 'Open Issues by Assignee'::LABEL;
-
-SELECT
-  assignee_login::XAXIS AS "Assignee",
-  bugs::BARCHART_STACKED AS "Issues",
-  'bug'::CATEGORY
-FROM assignee_workload
-UNION ALL
-SELECT
-  assignee_login::XAXIS AS "Assignee",
-  enhancements::BARCHART_STACKED AS "Issues",
-  'enhancement'::CATEGORY
-FROM assignee_workload
-ORDER BY 1, 3;
-
-SELECT 'Community Priorities'::LABEL;
-
-SELECT
-  issue_number AS "#",
-  title,
-  issue_category AS "type",
-  reactions_total_count AS "reactions",
-  comments_total_count AS "comments",
-  age_days,
-  issue_url::HYPERLINK AS "Link"
-FROM community_priorities
-ORDER BY reactions_total_count DESC;
-
--- ────────────────────────────────────────────────────────────────
--- Open issues table + CSV download
--- ────────────────────────────────────────────────────────────────
-
-SELECT 'Open Issues'::SECTION;
-
-SELECT ('fusion-open-issues-' || today())::DOWNLOAD_CSV AS "CSV";
-
-SELECT
-  "#",
-  title,
-  type,
-  age_days,
-  reactions,
-  comments,
-  milestone,
-  issue_url::HYPERLINK AS "Link"
-FROM open_issues_table
-WHERE type IN getvariable('issue_category')
-ORDER BY age_days DESC;
-
-SELECT 'Oldest Open Issues'::LABEL;
-
-SELECT
-  "#",
-  title,
-  type,
-  age_days,
-  reactions,
-  comments,
-  milestone
-FROM open_issues_table
-WHERE type IN getvariable('issue_category')
-ORDER BY age_days DESC
-LIMIT 20;
-
-SELECT 'https://github.com/dbt-labs/dbt-core/issues?q=label%3Av2'::FOOTER_LINK;
+More about Shaper:
+https://taleshape.com/shaper/docs';
