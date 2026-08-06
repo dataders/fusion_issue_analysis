@@ -198,9 +198,14 @@
         </div>
       </div>
       <div class="hero-image">
-        <span>Live render coming once<br><code>dft render</code> exports to static HTML.<br>Try the <a href="https://play.dataface.com/" target="_blank" rel="noreferrer">Dataface playground</a> in the meantime.</span>
+        <span>Rendered to static HTML via<br><code>dft render</code>.<br><a href="fusion-issue-health.html" target="_blank" rel="noreferrer">Open the full dashboard →</a></span>
       </div>
     </header>
+
+    <section aria-label="Rendered Dataface board">
+      <iframe src="fusion-issue-health.html" title="dbt-fusion Issue Health — Dataface"
+        style="width:100%;height:1400px;border:1px solid #e3e6ee;border-radius:12px;background:#fff"></iframe>
+    </section>
 
     <section class="grid" aria-label="Dataface tab facts">
       <div class="metric"><strong>YAML</strong><span>Boards are plain YAML files in <code>transform/faces/</code>, committed alongside dbt models.</span></div>
@@ -216,7 +221,7 @@
           <li>Canonical face: <code>transform/faces/fusion-issue-health.yml</code>; this directory mirrors it.</li>
           <li>Queries dbt dashboard models directly via SQL — <code>summary_kpis</code>, <code>issue_triage_health</code>, <code>velocity</code>, <code>age_distribution</code>, <code>community_priorities</code>, and more.</li>
           <li>New upstream columns wired: <code>net_flow_4w</code>, <code>bucket_sort_order</code>, <code>issue_url</code> for links.</li>
-          <li>Chart types: <code>kpi</code>, <code>area</code>, <code>line</code>, stacked <code>bar</code>, and <code>table</code> with <code>href</code> links.</li>
+          <li>Chart types: <code>kpi</code>, <code>area</code>, <code>line</code>, stacked <code>bar</code>, and <code>table</code> with <code>link</code> click-throughs.</li>
           <li>Age distribution derives bucket order from data (<code>ORDER BY bucket_sort_order</code>) — no hardcoded label list.</li>
           <li>Local preview: <code>cd transform &amp;&amp; dft serve faces/fusion-issue-health.yml</code></li>
           <li>Validate: <code>cd transform &amp;&amp; dft validate faces/fusion-issue-health.yml</code> — passes.</li>
