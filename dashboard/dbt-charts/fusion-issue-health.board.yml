@@ -1,10 +1,10 @@
-# Canonical face source lives in transform/faces/fusion-issue-health.yml
-# (that is the dft-authoritative copy — run `dft validate` / `dft render` from transform/).
-# This file is kept in sync so the dashboard/dataface/ directory is not stale.
+# Canonical board source lives in transform/charts/fusion-issue-health.yml
+# (that is the dct-authoritative copy — run `dct validate` / `dct render` from transform/).
+# This file is kept in sync so the dashboard/dbt-charts/ directory is not stale.
 #
-# To preview:  cd transform && dft serve faces/fusion-issue-health.yml
-# To validate: cd transform && dft validate faces/fusion-issue-health.yml
-# To render:   cd transform && dft render faces/fusion-issue-health.yml -o ../dashboard/dataface/
+# To preview:  cd transform && dct serve
+# To validate: cd transform && dct validate charts/fusion-issue-health.yml
+# To render:   cd transform && dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
 
 title: "dbt-fusion Issue Health"
 description: >

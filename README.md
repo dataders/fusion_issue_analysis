@@ -45,7 +45,7 @@ What they do:
 - `make serve`: build and open local static wrapper
 - `make mcp-app`: build a local MCP Apps proof of concept for agent-hosted dashboard consumption
 
-Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, DAC, and Shaper. The MCP Apps spike is local-only for now.
+Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, DAC, Shaper, and dbt charts. The MCP Apps spike is local-only for now.
 
 ## Repo Shape
 

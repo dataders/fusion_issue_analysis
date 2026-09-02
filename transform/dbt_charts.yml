@@ -1,0 +1,8 @@
+# dct render opens DuckDB read-only and forces enable_external_access=False,
+# so it cannot follow the dev views that read raw parquet. We therefore point
+# at a fully-materialized serving DB (all marts as base tables, no external
+# file reads). Rebuild it with: scripts/build_dbt_charts_db.sh
+sources:
+  fusion_issues:
+    type: duckdb
+    path: "{{ env_var('FUSION_ISSUES_DCT_DATABASE', '../data/serve/fusion_issues.duckdb') }}"

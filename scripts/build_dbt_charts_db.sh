@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
-# Build the materialized serving DB that dataface renders from.
+# Build the materialized serving DB that dbt charts renders from.
 #
-# Why: `dft render` opens DuckDB read-only and forces enable_external_access=off,
+# Why: `dct render` opens DuckDB read-only and forces enable_external_access=off,
 # so it cannot follow the dev-target views that read raw parquet. We snapshot
 # every model in the dev DB (which DOES read parquet, under the plain duckdb CLI)
 # into base tables in a standalone file the renderer can open safely.
@@ -17,7 +17,8 @@ SRC=../data/fusion_issues.duckdb
 OUT=../data/serve/fusion_issues.duckdb
 
 mkdir -p ../data/serve
-[ -f "$OUT" ] && trash "$OUT"
+NEXT_DIR=$(mktemp -d ../data/serve/dbt-charts-build.XXXXXX)
+NEXT="$NEXT_DIR/fusion_issues.duckdb"
 
 # Open the dev DB as the PRIMARY connection so its views resolve normally
 # (against parquet, with internal `main.<model>` refs pointing at each other).
@@ -28,10 +29,14 @@ CTAS=$(duckdb "$SRC" -list \
   | tail -n +2)
 
 {
-  echo "ATTACH '$OUT' AS serve;"
+  echo "ATTACH '$NEXT' AS serve;"
   echo "CREATE SCHEMA IF NOT EXISTS serve.main;"
   echo "$CTAS"
 } | duckdb "$SRC"
+
+# Publish only after every table has copied successfully.
+mv -f "$NEXT" "$OUT"
+rmdir "$NEXT_DIR"
 
 echo "Built $OUT with $(duckdb "$OUT" -list -noheader \
   "select count(*) from information_schema.tables where table_schema='main'") tables."

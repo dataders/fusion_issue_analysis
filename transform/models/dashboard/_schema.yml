@@ -107,6 +107,22 @@ models:
         tests:
           - not_null
 
+  - name: response_pctiles_long
+    description: Weekly response-time percentiles in chart-ready long form
+    columns:
+      - name: week
+        tests:
+          - not_null
+      - name: percentile
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: [p25, p50, p75]
+      - name: hours
+        tests:
+          - not_null
+
   - name: age_distribution
     description: Open issue counts by age bucket and category (includes bucket_sort_order for deterministic ordering)
     columns:

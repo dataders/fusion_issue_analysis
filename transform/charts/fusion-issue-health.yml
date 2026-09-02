@@ -2,144 +2,68 @@ title: "dbt-fusion Issue Health"
 description: >
   CORE-22 canonical dashboard for the dbt-fusion GitHub repository.
   Queries dbt dashboard models directly: summary_kpis, issue_triage_health,
-  triage_health, cumulative_flow, velocity, response_pctiles, age_distribution,
+  triage_health, cumulative_flow, velocity, response_pctiles_long, age_distribution,
   close_by_label, assignee_workload, community_priorities, oldest_untriaged.
 
 source: fusion_issues
 
 queries:
+  # dbt owns all transformations and business logic. These deliberately remain
+  # thin relation reads because dbt Charts currently expects SQL query entries.
   # --- Operational Triage KPIs ---
   triage_health_kpis:
     description: Single-row operational triage counts from issue_triage_health.
-    sql: >
-      SELECT
-        slipped_through_count,
-        triage_queue_count,
-        hard_blocker_count,
-        hard_blocker_unreleased,
-        stale_count AS triage_stale_count,
-        needs_repro_count,
-        repro_verified_count,
-        total_open
-      FROM fusion_issues.main.issue_triage_health
+    sql: SELECT * FROM fusion_issues.main.issue_triage_health
 
   # --- Oldest Untriaged Bugs table ---
   oldest_untriaged:
     description: Top untriaged bugs ordered by age; issue_url used for hyperlinks.
-    sql: >
-      SELECT
-        issue_number,
-        title,
-        age_days,
-        issue_url
-      FROM fusion_issues.main.oldest_untriaged
-      ORDER BY age_days DESC
+    sql: SELECT * FROM fusion_issues.main.oldest_untriaged
 
   # --- Key Metrics KPIs ---
   summary_kpis:
     description: Single-row summary KPIs including the new net_flow_4w column.
-    sql: >
-      SELECT
-        open_issues,
-        net_flow_4w,
-        rolling_median_close_days,
-        pct_responded_48h,
-        stale_count AS summary_stale_count
-      FROM fusion_issues.main.summary_kpis
+    sql: SELECT * FROM fusion_issues.main.summary_kpis
 
   # --- Trends ---
   cumulative_flow:
     description: Weekly cumulative opened and closed issue counts for area chart.
-    sql: >
-      SELECT
-        week,
-        cumulative_opened,
-        cumulative_closed
-      FROM fusion_issues.main.cumulative_flow
-      ORDER BY week
+    sql: SELECT * FROM fusion_issues.main.cumulative_flow
 
   velocity:
     description: Median days to close by week and issue_category (bug vs enhancement).
-    sql: >
-      SELECT
-        week,
-        issue_category,
-        median_days
-      FROM fusion_issues.main.velocity
-      ORDER BY week, issue_category
+    sql: SELECT * FROM fusion_issues.main.velocity
 
   response_pctiles:
     description: >
-      Weekly time-to-first-response percentiles (p25/p50/p75) in hours,
-      unpivoted to long format so each percentile is a distinct, legended series.
-    sql: >
-      SELECT week, percentile, hours
-      FROM (
-        SELECT week, p25, p50, p75
-        FROM fusion_issues.main.response_pctiles
-      )
-      UNPIVOT (hours FOR percentile IN (p25, p50, p75))
-      ORDER BY week, percentile
+      Weekly time-to-first-response percentiles in long form, modeled by dbt
+      so each percentile is a distinct, legended series.
+    sql: SELECT * FROM fusion_issues.main.response_pctiles_long
 
   age_distribution:
     description: >
       Issue count by age bucket and category. Ordered by bucket_sort_order
       so bars appear chronologically; all categories (bug, enhancement, task,
       other) are included dynamically — no hardcoded list.
-    sql: >
-      SELECT
-        age_bucket,
-        bucket_sort_order,
-        issue_category,
-        issue_count
-      FROM fusion_issues.main.age_distribution
-      ORDER BY bucket_sort_order, issue_category
+    sql: SELECT * FROM fusion_issues.main.age_distribution
 
   close_by_label:
     description: Median days to close grouped by issue label.
-    sql: >
-      SELECT
-        label_name,
-        median_days_to_close,
-        closed_count
-      FROM fusion_issues.main.close_by_label
-      ORDER BY median_days_to_close DESC
+    sql: SELECT * FROM fusion_issues.main.close_by_label
 
   # --- Triage Health KPIs ---
   label_health_kpis:
     description: Single-row triage-process quality percentages.
-    sql: >
-      SELECT
-        pct_labeled,
-        pct_typed,
-        pct_assigned,
-        pct_milestoned
-      FROM fusion_issues.main.triage_health
+    sql: SELECT * FROM fusion_issues.main.triage_health
 
   # --- People ---
   assignee_workload:
     description: Open issues per assignee broken down into bugs and enhancements.
-    sql: >
-      SELECT
-        assignee_login,
-        bugs,
-        enhancements
-      FROM fusion_issues.main.assignee_workload
-      ORDER BY bugs + enhancements DESC
+    sql: SELECT * FROM fusion_issues.main.assignee_workload
 
   community_priorities:
     description: Community-voted high-priority issues; issue_url used for links.
-    sql: >
-      SELECT
-        issue_number,
-        title,
-        issue_category,
-        reactions_total_count,
-        comments_total_count,
-        age_days,
-        issue_url
-      FROM fusion_issues.main.community_priorities
-      ORDER BY reactions_total_count DESC
+    sql: SELECT * FROM fusion_issues.main.community_priorities
 
 charts:
   # ---- Operational Triage ----
@@ -174,7 +98,7 @@ charts:
     description: Issues with no activity in 90+ days.
     query: triage_health_kpis
     type: kpi
-    value: triage_stale_count
+    value: stale_count
     label: "Stale (90d+)"
 
   needs_repro_kpi:
@@ -254,7 +178,7 @@ charts:
     description: Issues with no activity in 30+ days.
     query: summary_kpis
     type: kpi
-    value: summary_stale_count
+    value: stale_count
     label: "Stale Issues (30d+)"
     style:
       value:

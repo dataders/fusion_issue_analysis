@@ -4,6 +4,7 @@ version = "0.1.0"
 description = "Add your description here"
 requires-python = ">=3.12"
 dependencies = [
+    "dbt-charts==0.5.0",
     "dbt-duckdb>=1.10.1",
     "dlt[filesystem,parquet]>=1.24.0",
     "duckdb==1.5.2",
@@ -19,6 +20,7 @@ dependencies = [
 
 [tool.uv]
 exclude-newer = "1 week"
+exclude-newer-package = { dbt-charts = "2026-08-29T00:00:00Z" }
 
 [dependency-groups]
 dev = [

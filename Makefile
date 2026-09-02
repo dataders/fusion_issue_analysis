@@ -2,7 +2,7 @@ PORT ?= 8081
 MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper graphene-mcp mcp-app mcp-app-serve kill-server clean help
+.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper
+build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper dbt-charts
 
 ## ui-test      Run Playwright checks against generated dashboard exports
 ui-test:
@@ -86,6 +86,10 @@ dac:
 ## shaper       Build Shaper source-preview tab
 shaper:
 	uv run python3 dashboard/shaper/build.py
+
+## dbt-charts   Render dbt charts dashboard to self-contained interactive HTML
+dbt-charts:
+	cd transform && uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
 
 ## graphene-mcp  Start the FastMCP server for the Graphene dashboard (builds snapshot on start)
 graphene-mcp:
