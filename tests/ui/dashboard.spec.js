@@ -40,7 +40,10 @@ async function expectFrameToHaveText(page) {
     .poll(
       async () =>
         page.locator("#frame").evaluate((frame) => {
-          const text = frame.contentDocument?.body?.innerText || "";
+          const body = frame.contentDocument?.body;
+          // SVG-first dashboards (including dbt Charts) expose text through
+          // textContent even though HTMLElement.innerText is empty.
+          const text = body?.innerText || body?.textContent || "";
           return text.replace(/\s+/g, " ").trim().length;
         }),
       { message: "active dashboard iframe should render visible text" },
