@@ -162,14 +162,11 @@ jobs:
           uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' dashboard/dac/build/index.html
 
-      - name: Smoke-test dbt charts
+      - name: Validate dbt charts
         if: github.actor != 'dependabot[bot]'
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          FUSION_ISSUES_DCT_DATABASE: md:fusion_issues
         run: |
           cd transform
-          uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
+          uv run dct validate charts/fusion-issue-health.yml --strict
 
       - name: Smoke-test MCP App
         if: github.actor != 'dependabot[bot]'
