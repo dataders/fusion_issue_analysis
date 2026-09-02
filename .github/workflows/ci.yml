@@ -48,7 +48,8 @@ jobs:
 
       - name: Install DAC
         run: |
-          curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
+          # v0.7+ changed the dashboard schema; keep the version this dashboard targets.
+          curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin" v0.6.0
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       # ── Extract unit tests (no network) ──────────────────────────────────
