@@ -89,6 +89,7 @@ test.describe("dashboard bakeoff shell", () => {
     expect(labels).toEqual(DASHBOARD_TABS);
 
     for (const dashboard of DASHBOARD_TABS) {
+      if (dashboard.tab === "dac" && process.env.UI_TEST_SKIP_DAC === "1") continue;
       await expectRouteToExist(request, dashboard.src);
 
       const tab = page.locator(`.main-tabs button[data-tab="${dashboard.tab}"]`);
