@@ -37,7 +37,15 @@ def github_reactions(
         Sequence[DltResource]: Two DltResources: `issues` with issues and `pull_requests` with pull requests
     """
 
-    @dlt.resource(primary_key="number", write_disposition="merge")
+    @dlt.resource(
+        primary_key="number",
+        write_disposition="merge",
+        columns={
+            # GitHub omits nullable nested values from every row when no issue has
+            # a milestone due date. Keep the warehouse schema stable for dbt.
+            "milestone__due_on": {"data_type": "timestamp", "nullable": True},
+        },
+    )
     def issues(
         updated_at: dlt.sources.incremental[str] = dlt.sources.incremental(
             "updatedAt", initial_value="1970-01-01T00:00:00Z"
@@ -59,7 +67,15 @@ def github_reactions(
             since=updated_at.last_value,
         )
 
-    @dlt.resource(primary_key="number", write_disposition="replace")
+    @dlt.resource(
+        primary_key="number",
+        write_disposition="replace",
+        columns={
+            "closed_at": {"data_type": "timestamp", "nullable": True},
+            "description": {"data_type": "text", "nullable": True},
+            "due_on": {"data_type": "timestamp", "nullable": True},
+        },
+    )
     def milestones():
         yield from get_milestones(owner, name, access_token, items_per_page, max_items)
 

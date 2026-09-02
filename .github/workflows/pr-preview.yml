@@ -58,15 +58,18 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
-      - name: Validate dbt charts dashboard
+      - name: Render dbt charts dashboard
         id: dbt_charts
         if: github.actor != 'dependabot[bot]'
         continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           mkdir -p preview/dbt-charts
+          scripts/build_dbt_charts_db.sh --source md:fusion_issues
           cd transform
           uv run dct validate charts/fusion-issue-health.yml --strict
-          cp ../dashboard/dbt-charts/fusion-issue-health.html ../preview/dbt-charts/fusion-issue-health.html
+          uv run dct render charts/fusion-issue-health.yml --format html --output ../preview/dbt-charts/fusion-issue-health.html
 
       - name: Write data freshness metadata
         if: github.actor != 'dependabot[bot]'
