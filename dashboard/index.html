@@ -251,7 +251,7 @@
       <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
       <button data-src="dac/build/" data-tab="dac" onclick="switchTab(this)">DAC</button>
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
-      <button data-src="dataface/index.html" data-tab="dataface" onclick="switchTab(this)">Dataface</button>
+      <button data-src="dbt-charts/fusion-issue-health.html" data-tab="dbt-charts" onclick="switchTab(this)">dbt charts</button>
       <span class="tab-divider">live</span>
       <button data-src="duckdb-wasm/index.html" data-tab="duckdb-wasm" onclick="switchTab(this)">DuckDB WASM</button>
       <button data-src="mosaic/index.html" data-tab="mosaic" onclick="switchTab(this)">Mosaic</button>
@@ -283,6 +283,9 @@
       "prefab-reactive": "reactive",
       "prefab-myspace": "myspace",
       "prefab-windows-2000": "windows-2000",
+    };
+    const legacyTabAliases = {
+      "dataface": "dbt-charts",
     };
 
     function formatTimestamp(value) {
@@ -397,6 +400,8 @@
       let theme = params.get("theme");
       let view = params.get("view");
       if (!tab) return;
+
+      tab = legacyTabAliases[tab] || tab;
 
       if (legacyPrefabThemeAliases[tab]) {
         theme = legacyPrefabThemeAliases[tab];

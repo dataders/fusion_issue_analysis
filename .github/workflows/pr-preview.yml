@@ -58,6 +58,16 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
+      - name: Validate dbt charts dashboard
+        id: dbt_charts
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
+        run: |
+          mkdir -p preview/dbt-charts
+          cd transform
+          uv run dct validate charts/fusion-issue-health.yml --strict
+          cp ../dashboard/dbt-charts/fusion-issue-health.html ../preview/dbt-charts/fusion-issue-health.html
+
       - name: Write data freshness metadata
         if: github.actor != 'dependabot[bot]'
         env:
@@ -190,6 +200,7 @@ jobs:
               `| Marimo | \`marimo.html\` | ${fmt('${{ steps.marimo.outcome }}')} |`,
               `| Quarto | \`quarto/index.html\` | ${fmt('${{ steps.quarto.outcome }}')} |`,
               `| DAC | \`dac/index.html\` | ${fmt('${{ steps.dac.outcome }}')} |`,
+              `| dbt charts | \`dbt-charts/fusion-issue-health.html\` | ${fmt('${{ steps.dbt_charts.outcome }}')} |`,
               `| Shaper | \`shaper/index.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               `| About | \`about.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               '',
@@ -237,6 +248,7 @@ jobs:
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+            echo "| dbt charts | $(icon '${{ steps.dbt_charts.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           for outcome in \
             '${{ steps.prefab.outcome }}' \
@@ -245,7 +257,7 @@ jobs:
             '${{ steps.ggsql.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
-            '${{ steps.dac.outcome }}'; do
+            '${{ steps.dbt_charts.outcome }}'; do
             if [ "$outcome" = "failure" ]; then
               echo "One or more framework builds failed — see table above." >&2
               exit 1

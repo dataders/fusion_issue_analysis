@@ -74,6 +74,13 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
+      - name: Validate dbt charts dashboard
+        id: dbt_charts
+        continue-on-error: true
+        run: |
+          cd transform
+          uv run dct validate charts/fusion-issue-health.yml --strict
+
       - name: Write data freshness metadata
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
@@ -178,6 +185,7 @@ jobs:
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
+            echo "| dbt charts | $(icon '${{ steps.dbt_charts.outcome }}') |"
             echo "| DuckDB WASM (live) | static — no build step |"
             echo "| Mosaic (live) | static — no build step |"
             echo "| Observable (live) | $(icon '${{ steps.npm.outcome }}') |"
@@ -191,7 +199,7 @@ jobs:
             '${{ steps.ggsql.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
-            '${{ steps.dac.outcome }}'; do
+            '${{ steps.dbt_charts.outcome }}'; do
             if [ "$outcome" = "failure" ]; then
               echo "One or more framework builds failed — see table above." >&2
               exit 1

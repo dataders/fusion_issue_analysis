@@ -1,10 +1,10 @@
-# Canonical face source lives in transform/faces/fusion-issue-health.yml
-# (that is the dft-authoritative copy — run `dft validate` / `dft render` from transform/).
-# This file is kept in sync so the dashboard/dataface/ directory is not stale.
+# Canonical board source lives in transform/charts/fusion-issue-health.yml
+# (that is the dct-authoritative copy — run `dct validate` / `dct render` from transform/).
+# This file is kept in sync so the dashboard/dbt-charts/ directory is not stale.
 #
-# To preview:  cd transform && dft serve faces/fusion-issue-health.yml
-# To validate: cd transform && dft validate faces/fusion-issue-health.yml
-# To render:   cd transform && dft render faces/fusion-issue-health.yml -o ../dashboard/dataface/
+# To preview:  cd transform && dct serve
+# To validate: cd transform && dct validate charts/fusion-issue-health.yml
+# To render:   cd transform && dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
 
 title: "dbt-fusion Issue Health"
 description: >
@@ -77,15 +77,17 @@ queries:
       ORDER BY week, issue_category
 
   response_pctiles:
-    description: Weekly time-to-first-response percentiles (p25/p50/p75) in hours.
+    description: >
+      Weekly time-to-first-response percentiles (p25/p50/p75) in hours,
+      unpivoted to long format so each percentile is a distinct, legended series.
     sql: >
-      SELECT
-        week,
-        p25,
-        p50,
-        p75
-      FROM fusion_issues.main.response_pctiles
-      ORDER BY week
+      SELECT week, percentile, hours
+      FROM (
+        SELECT week, p25, p50, p75
+        FROM fusion_issues.main.response_pctiles
+      )
+      UNPIVOT (hours FOR percentile IN (p25, p50, p75))
+      ORDER BY week, percentile
 
   age_distribution:
     description: >
@@ -162,6 +164,9 @@ charts:
     type: kpi
     value: triage_queue_count
     label: "Triage Queue"
+    style:
+      value:
+        format: integer
 
   hard_blockers_kpi:
     description: Count of hard-blocker issues; subtext shows unreleased hard blockers.
@@ -186,6 +191,9 @@ charts:
     type: kpi
     value: needs_repro_count
     label: "Needs Repro"
+    style:
+      value:
+        format: integer
 
   repro_verified_kpi:
     description: Bugs with a verified reproduction case.
@@ -200,12 +208,15 @@ charts:
     type: kpi
     value: total_open
     label: "Total Open"
+    style:
+      value:
+        format: integer
 
   oldest_untriaged_table:
     description: Oldest untriaged bugs with clickable links via issue_url.
     query: oldest_untriaged
     type: table
-    href: issue_url
+    link: issue_url
     style:
       columns:
         issue_number:
@@ -222,6 +233,9 @@ charts:
     type: kpi
     value: open_issues
     label: "Open Issues"
+    style:
+      value:
+        format: integer
 
   net_flow_kpi:
     description: Net flow over last 4 weeks (closed - opened). Positive = backlog shrinking.
@@ -250,6 +264,9 @@ charts:
     type: kpi
     value: summary_stale_count
     label: "Stale Issues (30d+)"
+    style:
+      value:
+        format: integer
 
   # ---- Trends ----
   cumulative_flow_chart:
@@ -276,10 +293,8 @@ charts:
     query: response_pctiles
     type: line
     x: week
-    y:
-      - p25
-      - p50
-      - p75
+    y: hours
+    color: percentile
     title: "Time to First Response (hours)"
 
   age_distribution_chart:
@@ -291,11 +306,12 @@ charts:
     x: age_bucket
     y: issue_count
     color: issue_category
-    stack: true
     sort:
       by: bucket_sort_order
       order: asc
     title: "Open Issue Age by Type"
+    style:
+      stack: zero
 
   close_by_label_chart:
     description: Median days to close broken out by issue label.
@@ -346,14 +362,15 @@ charts:
     y:
       - bugs
       - enhancements
-    stack: true
     title: "Open Issues by Assignee"
+    style:
+      stack: zero
 
   community_priorities_table:
     description: Top community-priority issues with reaction counts and links via issue_url.
     query: community_priorities
     type: table
-    href: issue_url
+    link: issue_url
     style:
       columns:
         issue_number:

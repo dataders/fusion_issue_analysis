@@ -1,7 +1,0 @@
-sources:
-  default: fusion_issues
-  fusion_issues:
-    type: duckdb
-    path: ../data/fusion_issues.duckdb
-    duckdb_config:
-      enable_external_access: true

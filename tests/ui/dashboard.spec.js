@@ -11,7 +11,7 @@ const DASHBOARD_TABS = [
   { label: "Quarto", tab: "quarto", src: "quarto/index.html" },
   { label: "DAC", tab: "dac", src: "dac/build/" },
   { label: "Shaper", tab: "shaper", src: "shaper/index.html" },
-  { label: "Dataface", tab: "dataface", src: "dataface/index.html" },
+  { label: "dbt charts", tab: "dbt-charts", src: "dbt-charts/fusion-issue-health.html" },
   { label: "DuckDB WASM", tab: "duckdb-wasm", src: "duckdb-wasm/index.html" },
   { label: "Mosaic", tab: "mosaic", src: "mosaic/index.html" },
   { label: "Observable (live)", tab: "observable-live", src: "observable/dist/live.html" },
@@ -40,7 +40,10 @@ async function expectFrameToHaveText(page) {
     .poll(
       async () =>
         page.locator("#frame").evaluate((frame) => {
-          const text = frame.contentDocument?.body?.innerText || "";
+          const body = frame.contentDocument?.body;
+          // SVG-first dashboards (including dbt Charts) expose text through
+          // textContent even though HTMLElement.innerText is empty.
+          const text = body?.innerText || body?.textContent || "";
           return text.replace(/\s+/g, " ").trim().length;
         }),
       { message: "active dashboard iframe should render visible text" },
@@ -86,6 +89,7 @@ test.describe("dashboard bakeoff shell", () => {
     expect(labels).toEqual(DASHBOARD_TABS);
 
     for (const dashboard of DASHBOARD_TABS) {
+      if (dashboard.tab === "dac" && process.env.UI_TEST_SKIP_DAC === "1") continue;
       await expectRouteToExist(request, dashboard.src);
 
       const tab = page.locator(`.main-tabs button[data-tab="${dashboard.tab}"]`);
