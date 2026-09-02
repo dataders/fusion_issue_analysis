@@ -2,7 +2,7 @@ title: "dbt-fusion Issue Health"
 description: >
   CORE-22 canonical dashboard for the dbt-fusion GitHub repository.
   Queries dbt dashboard models directly: summary_kpis, issue_triage_health,
-  triage_health, cumulative_flow, velocity, response_pctiles_long, age_distribution,
+  triage_health, cumulative_flow, velocity, response_pctiles, age_distribution,
   close_by_label, assignee_workload, community_priorities, oldest_untriaged.
 
 source: fusion_issues
@@ -36,9 +36,9 @@ queries:
 
   response_pctiles:
     description: >
-      Weekly time-to-first-response percentiles in long form, modeled by dbt
-      so each percentile is a distinct, legended series.
-    sql: SELECT * FROM fusion_issues.main.response_pctiles_long
+      Weekly time-to-first-response percentiles modeled by dbt. Each percentile
+      column is rendered as a distinct series.
+    sql: SELECT * FROM fusion_issues.main.response_pctiles
 
   age_distribution:
     description: >
@@ -209,8 +209,10 @@ charts:
     query: response_pctiles
     type: line
     x: week
-    y: hours
-    color: percentile
+    y:
+      - p25
+      - p50
+      - p75
     title: "Time to First Response (hours)"
 
   age_distribution_chart:
