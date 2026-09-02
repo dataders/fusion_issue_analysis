@@ -6,6 +6,7 @@
 ~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
 """
 
+import math
 import os
 import duckdb
 from prefab_ui.app import PrefabApp, Theme
@@ -286,7 +287,10 @@ with PrefabApp(
                 CardTitle("48h Response SLA")
             with CardContent():
                 pct = summary_cards["pct_responded_48h"]
-                H3(f"{int(pct)}%" if pct else "N/A", style={"font-size": "2rem", "color": "#0ff"})
+                H3(
+                    f"{int(pct)}%" if pct is not None and math.isfinite(pct) else "N/A",
+                    style={"font-size": "2rem", "color": "#0ff"},
+                )
 
         with Card(css_class="flex-1 neon-pink"):
             with CardHeader():

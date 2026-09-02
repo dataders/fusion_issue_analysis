@@ -2,6 +2,17 @@ with issues as (
     select * from {{ ref('stg_issues') }}
 ),
 
+milestones as (
+    select
+        milestone_number,
+        milestone_title,
+        milestone_state,
+        milestone_due_on,
+        milestone_created_at,
+        milestone_closed_at
+    from {{ ref('stg_milestones') }}
+),
+
 first_comments as (
     select
         issue_dlt_id,
@@ -51,12 +62,12 @@ select
     i.author_login,
     i.author_association,
     i.milestone_number,
-    i.milestone_title,
+    m.milestone_title,
     i.issue_type,
-    i.milestone_state,
-    i.milestone_due_on,
-    i.milestone_created_at,
-    i.milestone_closed_at,
+    m.milestone_state,
+    m.milestone_due_on,
+    m.milestone_created_at,
+    m.milestone_closed_at,
     i.parent_number,
     i.parent_title,
     i.parent_issue_type,
@@ -119,6 +130,8 @@ select
     end as is_orphan
 
 from issues i
+left join milestones m
+    on i.milestone_number = m.milestone_number
 left join first_comments fc
     on i.issue_dlt_id = fc.issue_dlt_id
 left join first_non_author_comments fnac

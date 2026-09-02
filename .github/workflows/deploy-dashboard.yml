@@ -9,6 +9,9 @@ on:
     branches: [main]
     paths:
       - 'dashboard/**'
+      - 'transform/charts/**'
+      - 'transform/dbt_charts.yml'
+      - 'scripts/build_dbt_charts_db.*'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy-dashboard.yml'
@@ -74,12 +77,16 @@ jobs:
       - name: Build Shaper tab
         run: uv run python3 dashboard/shaper/build.py
 
-      - name: Validate dbt charts dashboard
+      - name: Render dbt charts dashboard
         id: dbt_charts
         continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
+          scripts/build_dbt_charts_db.sh --source md:fusion_issues
           cd transform
           uv run dct validate charts/fusion-issue-health.yml --strict
+          uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
 
       - name: Write data freshness metadata
         env:

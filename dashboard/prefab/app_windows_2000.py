@@ -3,6 +3,7 @@ Prefab dashboard for dbt-fusion issue analytics.
 Windows 2000 desktop app edition.
 """
 
+import math
 import os
 
 import duckdb
@@ -270,7 +271,10 @@ with PrefabApp(css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
                 )
                 kpi_card(
                     "48h Response SLA",
-                    f"{int(summary['pct_responded_48h'])}%" if summary["pct_responded_48h"] is not None else "N/A",
+                    f"{int(summary['pct_responded_48h'])}%"
+                    if summary["pct_responded_48h"] is not None
+                    and math.isfinite(summary["pct_responded_48h"])
+                    else "N/A",
                     "First response SLA",
                 )
                 kpi_card("Stale Issues (30d+)", str(summary["stale_count"]), "No activity 30+ days")

@@ -3,6 +3,7 @@ Prefab dashboard for dbt-fusion issue analytics.
 Reads from the DuckDB database populated by the dbt transform layer.
 """
 
+import math
 import os
 import duckdb
 from prefab_ui.app import PrefabApp
@@ -252,7 +253,7 @@ with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
                 CardTitle("48h Response SLA")
             with CardContent():
                 pct = summary_cards["pct_responded_48h"]
-                H3(f"{int(pct)}%" if pct is not None else "N/A")
+                H3(f"{int(pct)}%" if pct is not None and math.isfinite(pct) else "N/A")
 
         with Card(css_class="flex-1"):
             with CardHeader():

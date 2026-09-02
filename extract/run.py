@@ -61,13 +61,11 @@ def main():
         # under GitHub's GraphQL resource-limits ceiling.
         items_per_page=50 if args.limit is None else min(50, args.limit),
         max_items=args.limit,
-    ).with_resources("issues", "pull_requests", "milestones")
+    ).with_resources("issues", "milestones")
 
-    # pull_requests uses replace so child tables never need _dlt_root_id.
     # Drop stuck pending packages so retried merge jobs from prior failed runs
     # don't resurface (the root cause of the MergeDispositionException).
     if args.motherduck:
-        source.resources["pull_requests"].apply_hints(write_disposition="replace")
         pipeline.drop_pending_packages()
 
     loader_kwargs = {}
