@@ -48,6 +48,11 @@ def build(source: str, output: Path, chart_path: Path = DEFAULT_CHART) -> None:
                     f'CREATE TABLE serve.main."{model}" AS '
                     f'SELECT * FROM main."{model}"'
                 )
+            # A connection whose primary attachment is a MotherDuck (md:) session
+            # doesn't reliably checkpoint a secondary local ATTACH on close, so
+            # writes can be left stranded in serve's WAL and lost once the file
+            # is moved. Force the flush before closing.
+            connection.execute("CHECKPOINT serve")
         os.replace(next_db, output)
 
     print(f"Built {output} with {len(models)} dbt model tables from {source}")
