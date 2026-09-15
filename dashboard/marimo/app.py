@@ -17,6 +17,23 @@ def _():
 
 
 @app.cell
+def _():
+    def fmt_pct(value):
+        # dbt ratios (e.g. responded / total) are NULL when the denominator is
+        # zero, which pandas surfaces as NaN — int(NaN) raises, so guard first.
+        if value is None or value != value:
+            return "N/A"
+        return f"{int(value)}%"
+
+    def fmt_or_na(value):
+        if value is None or value != value:
+            return "N/A"
+        return value
+
+    return fmt_or_na, fmt_pct
+
+
+@app.cell
 def _(mo):
     mo.md("""
     # dbt-fusion Issue Health · Marimo
@@ -94,14 +111,14 @@ def _(mo, query):
 
 
 @app.cell
-def _(mo, summary):
+def _(fmt_or_na, fmt_pct, mo, summary):
     net = int(summary['net_flow_4w'])
     sla = summary.get('pct_responded_48h')
     mo.hstack([
         mo.stat(label="Open Issues", value=str(int(summary['open_issues'])), bordered=True),
         mo.stat(label="Net Flow (4 wk)", value=f"{'+' if net >= 0 else ''}{net}", bordered=True),
-        mo.stat(label="Median Close (4 wk)", value=str(summary['rolling_median_close_days'] or 'N/A'), bordered=True),
-        mo.stat(label="48h Response SLA", value=f"{int(sla)}%" if sla else "N/A", bordered=True),
+        mo.stat(label="Median Close (4 wk)", value=str(fmt_or_na(summary['rolling_median_close_days'])), bordered=True),
+        mo.stat(label="48h Response SLA", value=fmt_pct(sla), bordered=True),
         mo.stat(label="Stale Issues (30d+)", value=str(int(summary['stale_count'])), bordered=True),
     ])
     return
@@ -220,13 +237,13 @@ def _(mo):
 
 
 @app.cell
-def _(mo, query):
+def _(fmt_pct, mo, query):
     triage = query("SELECT * FROM triage_health").iloc[0]
     mo.hstack([
-        mo.stat(label="% Labeled", value=f"{int(triage['pct_labeled'])}%", bordered=True),
-        mo.stat(label="% Typed", value=f"{int(triage.get('pct_typed', 0))}%", bordered=True),
-        mo.stat(label="% Assigned", value=f"{int(triage['pct_assigned'])}%", bordered=True),
-        mo.stat(label="% Milestoned", value=f"{int(triage['pct_milestoned'])}%", bordered=True),
+        mo.stat(label="% Labeled", value=fmt_pct(triage['pct_labeled']), bordered=True),
+        mo.stat(label="% Typed", value=fmt_pct(triage.get('pct_typed', 0)), bordered=True),
+        mo.stat(label="% Assigned", value=fmt_pct(triage['pct_assigned']), bordered=True),
+        mo.stat(label="% Milestoned", value=fmt_pct(triage['pct_milestoned']), bordered=True),
     ])
     return
 
