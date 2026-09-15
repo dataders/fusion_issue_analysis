@@ -82,6 +82,20 @@ def records(df: pd.DataFrame) -> list[dict]:
     return json.loads(df.to_json(orient="records", date_format="iso"))
 
 
+def fmt_pct(value) -> str:
+    # dbt ratios (e.g. responded / total) are NULL when the denominator is
+    # zero, which pandas surfaces as NaN — int(NaN) raises, so guard first.
+    if value is None or value != value:
+        return "N/A"
+    return f"{int(value)}%"
+
+
+def fmt_or_na(value, suffix: str = "") -> str:
+    if value is None or value != value:
+        return "N/A"
+    return f"{value}{suffix}"
+
+
 summary = query("SELECT * FROM summary_kpis").iloc[0]
 cum_flow = query("SELECT * FROM cumulative_flow")
 velocity = query("SELECT * FROM velocity")
@@ -167,14 +181,14 @@ dict(
 #| content: valuebox
 #| title: "Median Close (4 wk)"
 val = summary["rolling_median_close_days"]
-dict(value=f"{val} days" if val else "N/A", icon="clock", color="secondary")
+dict(value=fmt_or_na(val, " days"), icon="clock", color="secondary")
 ```
 
 ```{python}
 #| content: valuebox
 #| title: "48h Response SLA"
 sla = summary["pct_responded_48h"]
-dict(value=f"{int(sla)}%" if sla else "N/A", icon="bell", color="info")
+dict(value=fmt_pct(sla), icon="bell", color="info")
 ```
 
 ```{python}
@@ -302,25 +316,25 @@ chart({
 ```{python}
 #| content: valuebox
 #| title: "% Labeled"
-dict(value=f"{int(triage['pct_labeled'])}%", icon="tag", color="primary")
+dict(value=fmt_pct(triage['pct_labeled']), icon="tag", color="primary")
 ```
 
 ```{python}
 #| content: valuebox
 #| title: "% Typed"
-dict(value=f"{int(triage['pct_typed'])}%", icon="card-list", color="primary")
+dict(value=fmt_pct(triage['pct_typed']), icon="card-list", color="primary")
 ```
 
 ```{python}
 #| content: valuebox
 #| title: "% Assigned"
-dict(value=f"{int(triage['pct_assigned'])}%", icon="person", color="primary")
+dict(value=fmt_pct(triage['pct_assigned']), icon="person", color="primary")
 ```
 
 ```{python}
 #| content: valuebox
 #| title: "% Milestoned"
-dict(value=f"{int(triage['pct_milestoned'])}%", icon="flag", color="primary")
+dict(value=fmt_pct(triage['pct_milestoned']), icon="flag", color="primary")
 ```
 
 ## Workload & Priorities
