@@ -95,11 +95,12 @@ rows:
         stacked: true
         col: 6
         sql: |
-          select age_bucket, bug, enhancement, task, other
-          from age_distribution_wide
+          select age_bucket, issue_category, issue_count
+          from age_distribution
           order by bucket_sort_order
         x: { field: age_bucket }
-        y: { field: [bug, enhancement, task, other], type: number }
+        y: { field: issue_count, type: number }
+        color: { field: issue_category }
       - name: Median Days to Close by Label
         type: chart
         chart: bar
@@ -244,11 +245,15 @@ rows:
         stacked: true
         col: 6
         sql: |
-          select assignee_login, bugs, enhancements
+          select assignee_login, open_issues, 'bug' as issue_category, bugs as issue_count
           from assignee_workload
-          order by open_issues desc
+          union all
+          select assignee_login, open_issues, 'enhancement' as issue_category, enhancements as issue_count
+          from assignee_workload
+          order by open_issues desc, issue_category
         x: { field: assignee_login }
-        y: { field: [bugs, enhancements], type: number }
+        y: { field: issue_count, type: number }
+        color: { field: issue_category }
       - name: Community Priorities
         type: table
         col: 6
