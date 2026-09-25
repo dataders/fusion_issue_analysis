@@ -1,9 +1,9 @@
 export default {
   root: "src",
-  title: "dbt-fusion Issues · Observable",
+  title: "dbt Fusion issue health · Observable",
   pages: [
     {name: "Overview", path: "/"},
     {name: "Live (MotherDuck)", path: "/live"},
   ],
-  footer: "dbt-fusion issue analytics"
+  footer: "dbt-labs/dbt-core engine:v2 issue analytics"
 };

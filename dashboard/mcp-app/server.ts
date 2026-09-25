@@ -15,17 +15,13 @@ async function loadDashboardData() {
   return JSON.parse(raw) as Record<string, unknown>;
 }
 
-function summarizeDashboard(data: Record<string, unknown>): string {
-  const brief = data.agent_brief as { headline?: string } | undefined;
-  if (brief?.headline) return brief.headline;
+type Kpi = { label: string; value: string; context: string };
 
-  const kpis = data.summary_kpis as Record<string, number | null>;
-  const triage = data.triage_health as Record<string, number | null>;
-  const openIssues = kpis.open_issues ?? "unknown";
-  const opened = kpis.opened_4w ?? "unknown";
-  const closed = kpis.closed_4w ?? "unknown";
-  const typed = triage.pct_typed ?? "unknown";
-  return `Fusion issue health: ${openIssues} open issues, ${opened} opened in the last 4 weeks, ${closed} closed in the last 4 weeks, ${typed}% typed.`;
+/** Agent-facing text: the pre-formatted KPI row plus the freshness note. */
+function summarizeDashboard(data: Record<string, unknown>): string {
+  const kpis = (data.kpis as Kpi[] | undefined) ?? [];
+  const lines = kpis.map((k) => `- ${k.label}: ${k.value}${k.context ? ` (${k.context})` : ""}`);
+  return [String(data.freshness_note ?? ""), ...lines].filter(Boolean).join("\n");
 }
 
 export function createServer(): McpServer {
@@ -41,7 +37,7 @@ export function createServer(): McpServer {
     "show_issue_health",
     {
       title: "Show Fusion Issue Health",
-      description: "Open a deterministic dashboard of dbt Fusion issue health backed by dbt-modeled tables.",
+      description: "Open the dbt Fusion (engine:v2) issue health dashboard: every tile in dashboard/tiles.yml, backed by dbt dashboard models.",
       inputSchema: {},
       _meta: { ui: { resourceUri } },
     },

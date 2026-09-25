@@ -1,26 +1,33 @@
 """
 ~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-    dbt-fusion Issue Analytics Dashboard
+    dbt Fusion Issue Health Dashboard
     -=- MySpace Edition -=-
     Best viewed in Internet Explorer 6.0 at 800x600
 ~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
+
+Renders the tile contract in dashboard/tiles.yml (sections, tiles, palette)
+from the dbt dashboard models. Layout and neon only — no metric logic here.
 """
 
 import math
-import os
-import duckdb
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import tiles
 from prefab_ui.app import PrefabApp, Theme
 from prefab_ui.components import (
-    Badge,
+    H2,
+    H3,
     Card,
     CardContent,
     CardHeader,
     CardTitle,
     Div,
-    H2,
-    H3,
     Link,
     Muted,
+    Progress,
     Row,
     Separator,
     Span,
@@ -32,75 +39,97 @@ from prefab_ui.components import (
     TableRow,
     Text,
 )
-from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
-
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-
-if os.environ.get("FUSION_DB"):
-    DB_PATH = os.environ["FUSION_DB"]
-elif os.environ.get("MOTHERDUCK_TOKEN"):
-    DB_PATH = "md:fusion_issues"
-else:
-    DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
-
-def query(sql: str) -> list[dict]:
-    con = duckdb.connect(DB_PATH, read_only=True)
-    if not DB_PATH.startswith("md:"):
-        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
-        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
-    result = con.execute(sql).fetchdf()
-    con.close()
-    return result.to_dict("records")
-
-
-# ── Data queries ────────────────────────────────────────────────────
-
-summary_cards = query("SELECT * FROM summary_kpis")[0]
-
-# net_flow_4w is now a direct column from the model (positive = backlog shrinking)
-net_flow = summary_cards["net_flow_4w"]
-net_flow_sign = "+" if net_flow > 0 else ""
-
-cumulative_flow = query("SELECT * FROM cumulative_flow")
-
-response_pctiles = query("SELECT * FROM response_pctiles")
-
-# Velocity: read from unified velocity model, pivot long→wide in Python
-_velocity_rows = query("SELECT * FROM velocity ORDER BY week, issue_category")
-_velocity_map: dict = {}
-for row in _velocity_rows:
-    week = row["week"]
-    if week not in _velocity_map:
-        _velocity_map[week] = {"week": week}
-    _velocity_map[week][row["issue_category"]] = row["median_days"]
-velocity_data = sorted(_velocity_map.values(), key=lambda r: r["week"])
-
-# Age distribution: use age_distribution_wide, ordered by bucket_sort_order
-# Derive category list from data so we never drop a category (e.g. task)
-_age_wide = query("SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
-_age_categories = [c for c in ["bug", "enhancement", "task", "other"] if any(r.get(c) is not None for r in _age_wide)]
-age_chart_data = _age_wide  # already in the right shape for BarChart
-
-close_by_label = query("SELECT * FROM close_by_label")
-
-triage = query("SELECT * FROM triage_health")[0]
-
-triage_health = query("SELECT * FROM issue_triage_health")[0]
-
-oldest_untriaged = query(
-    "SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged ORDER BY age_days DESC LIMIT 8"
+from prefab_ui.components.charts import (
+    AreaChart,
+    BarChart,
+    ChartSeries,
+    LineChart,
 )
 
-community_priorities = query("SELECT * FROM community_priorities")
+MODE = "dark"  # MySpace is a dark theme -> dark palette variants
 
-assignee_workload = query("SELECT * FROM assignee_workload")
+
+# ── Data (dashboard models only; see tiles.yml) ─────────────────────
+
+def clean(rows: list[dict]) -> list[dict]:
+    """NaN -> None so the baked-in JSON stays valid."""
+    return [{k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in r.items()} for r in rows]
+
+
+def rows(tile_id: str) -> list[dict]:
+    return clean(tiles.tile_rows(tile_id))
+
+
+def wide(tile_id: str, index: str, column: str = "issue_category", value: str = "issue_count") -> list[dict]:
+    pivoted = tiles.pivot(rows(tile_id), index=index, column=column, value=value)
+    return [{(k if k == index else safe_key(k)): v for k, v in r.items()} for r in pivoted]
+
+
+def safe_key(name: str) -> str:
+    """Series keys become CSS variables in the renderer; '180d+' would break them."""
+    return re.sub(r"\W", "_", str(name))
+
+
+meta = tiles.one("dashboard_meta")
+FRESHNESS = tiles.freshness_note(meta)
+IS_STALE = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
+KPIS = tiles.kpis()  # headline_kpis, formatted per tiles.yml
+
+DATA = {
+    "backlog_weekly": wide("backlog_weekly", "week", value="open_issues"),
+    "weekly_flow": rows("weekly_flow"),
+    "triage_pipeline": wide("triage_pipeline", "status_label", column="age_bucket"),
+    "response_weekly": rows("response_weekly"),
+    "triage_queue": rows("triage_queue"),
+    "open_by_area": wide("open_by_area", "area"),
+    "open_by_adapter": wide("open_by_adapter", "adapter"),
+    "epic_progress": rows("epic_progress"),
+    "top_requested": rows("top_requested"),
+    "assignee_workload": wide("assignee_workload", "assignee_login"),
+}
+
+
+def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
+    """One series per palette entry present in the data, in palette order."""
+    present = set().union(*(r.keys() for r in data)) if data else set()
+    return [
+        ChartSeries(data_key=safe_key(k), label=tiles.label(palette_key, k), color=tiles.color(palette_key, k, MODE))
+        for k in tiles.categories(palette_key)
+        if safe_key(k) in present
+    ]
+
+
+HEADERS = {
+    "issue_number": "#", "epic_number": "#", "title": "Title", "issue_category": "Type",
+    "age_days": "Age (d)", "days_idle": "Idle (d)", "reactions": "Reactions", "comments": "Comments",
+    "is_customer_reported": "Customer?", "areas": "Areas", "triage_status": "Triage",
+    "child_closed": "Closed", "child_total": "Sub-issues", "pct_complete": "% done",
+    "milestone_title": "Milestone",
+}
+
+
+def cell(key: str, value) -> str:
+    if value is None or value == "":
+        return "—"
+    if isinstance(value, bool):
+        return "yes!!" if value else "no"
+    if key == "issue_category":
+        return tiles.label("issue_category", value)
+    if key == "triage_status":
+        return str(value).replace("_", " ")
+    if key == "title":
+        return value[:70] + ("..." if len(value) > 70 else "")
+    if isinstance(value, float) and value.is_integer():
+        return str(int(value))
+    return str(value)
+
 
 GUESTBOOK = [
     ("xX_d4ta_qu33n_Xx", "2003-07-14", "omg ur dashboard is SO cool!! add me 2 ur top 8 plzzz"),
     ("~*SQLboy2002*~", "2003-08-02", "nice analytics bro. check out MY dashboard at geocities.com/sqlboy2002"),
     ("dbt_angel_kissez", "2003-09-11", "luv the charts!! ur issue metrics r off da chain xD"),
-    ("warehouse_gangsta", "2003-10-05", "yo this cumulative flow chart is FIRE. a/s/l??"),
-    ("PiPeLiNe_PrInCeSs", "2003-11-22", "OMG the stale issues counter made me cry lol. *~hugz~*"),
+    ("warehouse_gangsta", "2003-10-05", "yo this backlog chart is FIRE. a/s/l??"),
+    ("PiPeLiNe_PrInCeSs", "2003-11-22", "OMG the triage queue made me cry lol. *~hugz~*"),
 ]
 
 
@@ -131,9 +160,12 @@ p,span,td,th,label { color: #39ff14 !important; }
 .marquee-wrap { overflow: hidden; }
 .marquee { display:inline-block; animation: marquee 12s linear infinite; white-space:nowrap; }
 .sparkle { animation: sparkle 2s ease-in-out infinite; display:inline-block; }
-.top8 { border: 3px dashed #ff69b4 !important; background: linear-gradient(135deg, rgba(255,20,147,.1), rgba(0,255,255,.1)) !important; }
 .visitor-ctr { background:#000 !important; border:2px inset #808080 !important; color:#39ff14 !important; font-family:'Courier New',monospace !important; padding:4px 12px; display:inline-block; }
 .construction { border:3px dashed #ff0 !important; background:repeating-linear-gradient(45deg,rgba(255,255,0,.05),rgba(255,255,0,.05) 10px,rgba(0,0,0,.1) 10px,rgba(0,0,0,.1) 20px) !important; }
+.pf-card-title { color: #ff69b4 !important; font-weight: bold; }
+.recharts-legend-wrapper div { color: #39ff14 !important; }
+.stale-warning { border:3px dashed #f00 !important; background: rgba(255,0,0,.12) !important; }
+.stale-warning span { color: #ff0 !important; }
 """
 
 MYSPACE_THEME = Theme(
@@ -143,31 +175,146 @@ MYSPACE_THEME = Theme(
     accent="#ff69b4",
 )
 
+NEON = ["neon-card", "neon-pink", "neon-green", "neon-yellow"]
+
+
+# ══════════════════════════════════════════════════════════════════
+#  TILE RENDERERS (keyed by tile id in tiles.yml)
+# ══════════════════════════════════════════════════════════════════
+
+def bar_height(data: list[dict]) -> int:
+    return max(220, 34 * len(data) + 60)
+
+
+def neon_table(tile: dict, data: list[dict], bar_key: str | None = None) -> None:
+    columns = tile["columns"]
+    with Table():
+        with TableHeader():
+            with TableRow():
+                for col in columns:
+                    TableHead(HEADERS.get(col, col), style={"color": "#ff69b4"})
+                if bar_key:
+                    TableHead("", style={"color": "#ff69b4"})
+        with TableBody():
+            for r in data:
+                with TableRow():
+                    for col in columns:
+                        if col in ("issue_number", "epic_number"):
+                            with TableCell():
+                                Link(f"#{r[col]}", href=r["issue_url"], target="_blank", style={"color": "#0ff"})
+                        else:
+                            TableCell(cell(col, r[col]), style={"color": "#39ff14", "font-size": "0.85rem"})
+                    if bar_key:
+                        with TableCell(style={"min-width": "120px"}):
+                            Progress(value=r[bar_key] or 0, indicator_class="bg-pink-500")
+
+
+def render_backlog_weekly(tile: dict) -> None:
+    data = DATA["backlog_weekly"]
+    AreaChart(data=data, series=series("issue_category", data), x_axis="week",
+              stacked=True, show_legend=True, height=300)
+
+
+def render_weekly_flow(tile: dict) -> None:
+    data = DATA["weekly_flow"]
+    BarChart(data=data, series=series("flow", data), x_axis="week", show_legend=True, height=280)
+
+
+def render_triage_pipeline(tile: dict) -> None:
+    data = DATA["triage_pipeline"]
+    BarChart(data=data, series=series("age_bucket", data), x_axis="status_label",
+             stacked=True, horizontal=True, show_legend=True, height=bar_height(data))
+
+
+def render_response_weekly(tile: dict) -> None:
+    LineChart(
+        data=DATA["response_weekly"],
+        series=[ChartSeries(data_key="pct_responded_48h", label="% answered within 48h",
+                            color=tiles.MANIFEST["palette"]["single_series"])],
+        x_axis="week", show_legend=False, curve="smooth", height=260,
+    )
+
+
+def render_triage_queue(tile: dict) -> None:
+    neon_table(tile, DATA["triage_queue"])
+
+
+def render_stacked_category_bar(key: str, y: str):
+    def render(tile: dict) -> None:
+        data = DATA[key]
+        BarChart(data=data, series=series("issue_category", data), x_axis=y,
+                 stacked=True, horizontal=True, show_legend=True, height=bar_height(data))
+    return render
+
+
+def render_epic_progress(tile: dict) -> None:
+    neon_table(tile, DATA["epic_progress"], bar_key="pct_complete")
+
+
+def render_top_requested(tile: dict) -> None:
+    neon_table(tile, DATA["top_requested"])
+
+
+RENDER = {
+    "backlog_weekly": render_backlog_weekly,
+    "weekly_flow": render_weekly_flow,
+    "triage_pipeline": render_triage_pipeline,
+    "response_weekly": render_response_weekly,
+    "triage_queue": render_triage_queue,
+    "open_by_area": render_stacked_category_bar("open_by_area", "area"),
+    "open_by_adapter": render_stacked_category_bar("open_by_adapter", "adapter"),
+    "epic_progress": render_epic_progress,
+    "top_requested": render_top_requested,
+    "assignee_workload": render_stacked_category_bar("assignee_workload", "assignee_login"),
+}
+
+SECTION_EMOJI = {"status": "⭐", "backlog": "📉", "triage": "🚨", "where": "🗺️", "epics": "🏆", "next": "💖"}
+
+
+def render_kpis() -> None:
+    """headline_kpis tile: 'Da Stats' neon cards."""
+    with Row(gap=3, css_class="mt-4 flex-wrap"):
+        for i, k in enumerate(KPIS):
+            with Card(css_class=f"flex-1 {NEON[i % len(NEON)]}", style={"min-width": "150px"}):
+                with CardHeader():
+                    CardTitle(k["label"])
+                with CardContent():
+                    H3(k["value"], css_class="rainbow" if i == 0 else None, style={"font-size": "2rem"})
+                    if k["context"]:
+                        Muted(k["context"])
+
+
 # ══════════════════════════════════════════════════════════════════
 #  BUILD DASHBOARD
 # ══════════════════════════════════════════════════════════════════
 
 with PrefabApp(
+    title=f"{tiles.MANIFEST['title']} (MySpace)",
     css_class="max-w-5xl mx-auto p-6",
     theme=MYSPACE_THEME,
     stylesheets=["https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap"],
 ) as app:
 
     # ── Marquee banner ─────────────────────────────────────────────
-    Div(css_class="marquee-wrap", style={"border-top": "2px solid #0ff", "border-bottom": "2px solid #0ff", "padding": "8px 0"})
     with Div(css_class="marquee-wrap", style={"border-top": "2px solid #0ff", "border-bottom": "2px solid #0ff", "padding": "8px 0"}):
-        Span("~*~Welcome 2 my dashboard~*~ ---- dbt-fusion issue analytics ---- best viewed in IE6 @ 800x600 ---- dont steal my HTML!! ----",
+        Span(f"~*~Welcome 2 my dashboard~*~ ---- {meta['source_repo']} {meta['source_label']} issues ---- best viewed in IE6 @ 800x600 ---- dont steal my HTML!! ----",
              css_class="marquee", style={"color": "#0ff", "font-size": "1.5rem", "font-weight": "bold", "text-shadow": "0 0 10px #0ff"})
 
-    # ── Title ──────────────────────────────────────────────────────
-    H2("dbt-fusion Issue Health", css_class="text-center mt-4", style={"font-size": "2.5rem"})
-    Text("Actionable metrics 4 dbt-labs/dbt-fusion -- updated on deploy lol", css_class="text-center", style={"color": "#0ff"})
+    # ── Title + freshness ──────────────────────────────────────────
+    H2(f"~*~ {tiles.MANIFEST['title']} ~*~", css_class="text-center mt-4", style={"font-size": "2.5rem"})
+    Text(tiles.MANIFEST["subtitle"], css_class="text-center block", style={"color": "#0ff"})
+    Text(FRESHNESS, css_class="text-center block", style={"color": "#ff0", "font-size": "0.85rem"})
+
+    if IS_STALE:
+        with Div(css_class="text-center stale-warning p-3 my-4"):
+            Span("⚠ !! DATA IS STALE !! ⚠ ", css_class="blink", style={"font-weight": "bold", "font-size": "1.1rem"})
+            Span(f"last update {meta['days_stale']} days ago — the extract may have stopped :(")
 
     # ── Visitor counter + under construction ───────────────────────
     with Div(css_class="text-center my-4"):
         Span("✨", css_class="sparkle", style={"font-size": "1.5rem"})
         Span(" ", style={"color": "transparent"})
-        Span("You are visitor #13,337", css_class="visitor-ctr")
+        Span(f"You are visitor #{meta['issue_count']:,}", css_class="visitor-ctr")
         Span(" ", style={"color": "transparent"})
         Span("✨", css_class="sparkle", style={"font-size": "1.5rem"})
 
@@ -176,261 +323,25 @@ with PrefabApp(
         Span("!! UNDER CONSTRUCTION !!", css_class="blink", style={"color": "#ff0", "font-weight": "bold", "font-size": "1.1rem"})
         Span(" 🚧", style={"font-size": "1.3rem"})
 
-    # ══════════════════════════════════════════════════════════════
-    #  OPERATIONAL TRIAGE
-    # ══════════════════════════════════════════════════════════════
-    H3("🚨 ~*~ Operational Triage ~*~ 🚨", css_class="mt-6")
-    Muted("omg these need 2 b fixed ASAP!!")
-
-    with Row(gap=3, css_class="mt-4 flex-wrap"):
-        with Card(css_class="flex-1 neon-pink"):
-            with CardHeader():
-                CardTitle("Slipped Through (bugs)")
-            with CardContent():
-                H3(str(triage_health["slipped_through_count"]), css_class="blink", style={"font-size": "2rem", "color": "#f00"})
-                Muted("bugs closed w/o repro verified")
-
-        with Card(css_class="flex-1 neon-yellow"):
-            with CardHeader():
-                CardTitle("Triage Queue")
-            with CardContent():
-                H3(str(triage_health["triage_queue_count"]), style={"font-size": "2rem", "color": "#ff0"})
-                Muted("awaiting triage")
-
-        with Card(css_class="flex-1 neon-pink"):
-            with CardHeader():
-                CardTitle("Hard Blockers")
-            with CardContent():
-                H3(str(triage_health["hard_blocker_count"]), css_class="blink", style={"font-size": "2rem", "color": "#f00"})
-                Muted(f"{triage_health['hard_blocker_unreleased']} unreleased")
-
-        with Card(css_class="flex-1 neon-yellow"):
-            with CardHeader():
-                CardTitle("Stale (90d+)")
-            with CardContent():
-                H3(str(triage_health["stale_count"]), style={"font-size": "2rem", "color": "#ff0"})
-                Muted("no activity 90+ days :(")
-
-        with Card(css_class="flex-1 neon-card"):
-            with CardHeader():
-                CardTitle("Needs Repro")
-            with CardContent():
-                H3(str(triage_health["needs_repro_count"]), style={"font-size": "2rem", "color": "#0ff"})
-                Muted("awaiting reproduction")
-
-        with Card(css_class="flex-1 neon-green"):
-            with CardHeader():
-                CardTitle("Repro Verified")
-            with CardContent():
-                H3(str(triage_health["repro_verified_count"]), style={"font-size": "2rem", "color": "#39ff14"})
-                Muted("confirmed reproducible")
-
-    # ── Oldest Untriaged Bugs ──────────────────────────────────────
-    with Card(css_class="mt-4 neon-pink"):
-        with CardHeader():
-            CardTitle("🐛 ~*~ Oldest Untriaged Bugs ~*~ 🐛")
-            Muted("these r ancient!! somebody plz fix!!")
-        with CardContent():
-            with Table():
-                with TableHeader():
-                    with TableRow():
-                        TableHead("#", style={"color": "#ff69b4"})
-                        TableHead("Title", style={"color": "#ff69b4"})
-                        TableHead("Age", style={"color": "#ff69b4"})
-                with TableBody():
-                    for issue in oldest_untriaged:
-                        with TableRow():
-                            with TableCell():
-                                Link(
-                                    f"#{issue['issue_number']}",
-                                    href=issue["issue_url"],
-                                    target="_blank",
-                                    style={"color": "#0ff"},
-                                )
-                            TableCell(
-                                issue["title"][:70] + ("..." if len(issue["title"]) > 70 else ""),
-                                style={"color": "#39ff14", "font-size": "0.85rem"},
-                            )
-                            TableCell(
-                                f"{issue['age_days']}d",
-                                style={"color": "#ff0", "white-space": "nowrap"},
-                            )
-
-    # ══════════════════════════════════════════════════════════════
-    #  KEY METRICS
-    # ══════════════════════════════════════════════════════════════
-    H3("⭐ ~*~ Da Stats ~*~ ⭐", css_class="mt-6")
-
-    with Row(gap=3, css_class="mt-4"):
-        with Card(css_class="flex-1 neon-card"):
-            with CardHeader():
-                CardTitle("Open Issues")
-            with CardContent():
-                H3(str(summary_cards["open_issues"]), css_class="blink", style={"font-size": "2rem"})
-
-        with Card(css_class="flex-1 neon-pink"):
-            with CardHeader():
-                CardTitle("Net Flow (4 wk)")
-            with CardContent():
-                H3(f"{net_flow_sign}{net_flow}", css_class="rainbow", style={"font-size": "2rem"})
-                Muted(f"{summary_cards['opened_4w']} opened / {summary_cards['closed_4w']} closed")
-
-        with Card(css_class="flex-1 neon-green"):
-            with CardHeader():
-                CardTitle("Median Close (4 wk)")
-            with CardContent():
-                val = summary_cards["rolling_median_close_days"]
-                H3(f"{val} days" if val else "N/A", style={"font-size": "2rem"})
-
-        with Card(css_class="flex-1 neon-card"):
-            with CardHeader():
-                CardTitle("48h Response SLA")
-            with CardContent():
-                pct = summary_cards["pct_responded_48h"]
-                H3(
-                    f"{int(pct)}%" if pct is not None and math.isfinite(pct) else "N/A",
-                    style={"font-size": "2rem", "color": "#0ff"},
-                )
-
-        with Card(css_class="flex-1 neon-pink"):
-            with CardHeader():
-                CardTitle("Stale Issues")
-            with CardContent():
-                H3(str(summary_cards["stale_count"]), css_class="blink", style={"font-size": "2rem", "color": "#f00"})
-                Muted("no activity 30+ days :(")
-
-    # ── Cumulative Flow ────────────────────────────────────────────
-    with Card(css_class="mt-6 neon-card"):
-        with CardHeader():
-            CardTitle("~*~ Cumulative Issue Flow ~*~")
-            Muted("gap = issue debt omg")
-        with CardContent():
-            AreaChart(
-                data=cumulative_flow,
-                series=[
-                    ChartSeries(data_key="cumulative_opened", label="Opened", color="#ff1493"),
-                    ChartSeries(data_key="cumulative_closed", label="Closed", color="#39ff14"),
-                ],
-                x_axis="week", show_legend=True, height=300,
-            )
-
-    # ── Velocity & Response ────────────────────────────────────────
-    with Row(gap=4, css_class="mt-6"):
-        with Card(css_class="flex-1 neon-green"):
-            with CardHeader():
-                CardTitle("Median Days 2 Close")
-                Muted("bugs vs enhancements")
-            with CardContent():
-                LineChart(
-                    data=velocity_data,
-                    series=[
-                        ChartSeries(data_key="bug", label="Bugs", color="#ff1493"),
-                        ChartSeries(data_key="enhancement", label="Enhancements", color="#0ff"),
-                    ],
-                    x_axis="week", show_legend=True, curve="smooth", height=250,
-                )
-
-        with Card(css_class="flex-1 neon-card"):
-            with CardHeader():
-                CardTitle("Time 2 First Response (hours)")
-                Muted("p25 / p50 / p75")
-            with CardContent():
-                LineChart(
-                    data=response_pctiles,
-                    series=[
-                        ChartSeries(data_key="p25", label="p25", color="#39ff14"),
-                        ChartSeries(data_key="p50", label="p50", color="#0ff"),
-                        ChartSeries(data_key="p75", label="p75", color="#ff1493"),
-                    ],
-                    x_axis="week", show_legend=True, curve="smooth", height=250,
-                )
-
-    # ── Issue Distribution ─────────────────────────────────────────
-    with Row(gap=4, css_class="mt-6"):
-        with Card(css_class="flex-1 neon-pink"):
-            with CardHeader():
-                CardTitle("Open Issue Age by Type")
-            with CardContent():
-                BarChart(
-                    data=age_chart_data,
-                    series=[
-                        ChartSeries(data_key=cat, label=cat.capitalize(), color=color)
-                        for cat, color in zip(
-                            _age_categories,
-                            ["#ff1493", "#0ff", "#ff0", "#39ff14"],
-                        )
-                    ],
-                    x_axis="age_bucket", stacked=True, show_legend=True, height=260,
-                )
-
-        with Card(css_class="flex-1 neon-green"):
-            with CardHeader():
-                CardTitle("Median Days to Close by Label")
-            with CardContent():
-                BarChart(
-                    data=close_by_label,
-                    series=[ChartSeries(data_key="median_days_to_close", label="Days", color="#39ff14")],
-                    x_axis="label_name", horizontal=True, show_legend=False, height=300,
-                )
-
-    # ── Triage Health ──────────────────────────────────────────────
-    H3("Triage Health", css_class="mt-6")
-    with Row(gap=3, css_class="mt-3"):
-        for label, value in [
-            ("% Labeled", triage["pct_labeled"]),
-            ("% Typed", triage["pct_typed"]),
-            ("% Assigned", triage["pct_assigned"]),
-            ("% Milestoned", triage["pct_milestoned"]),
-        ]:
-            with Card(css_class="flex-1 neon-card"):
+    # ── Sections, in tiles.yml order ───────────────────────────────
+    n = 0
+    for section in tiles.sections():
+        emoji = SECTION_EMOJI.get(section["id"], "✨")
+        H3(f"{emoji} ~*~ {section['question']} ~*~ {emoji}", css_class="mt-8")
+        for tile in section["tiles"]:
+            if tile["id"] == "headline_kpis":
+                render_kpis()
+                continue
+            with Card(css_class=f"mt-4 {NEON[n % len(NEON)]}"):
+                with CardHeader():
+                    CardTitle(f"~*~ {tile['title']} ~*~")
+                    Muted(tile["subtitle"])
                 with CardContent():
-                    H3(f"{int(value)}%", style={"font-size": "1.8rem"})
-                    Muted(label)
-
-    # ── Top 8 Issues (MySpace Top 8 style!!) ──────────────────────
-    H3("💖 ~*~ My Top 8 Issues ~*~ 💖", css_class="mt-6")
-    Muted("these r my BEST issues. dont be jealous!!")
-
-    with Row(gap=3, css_class="mt-3 flex-wrap"):
-        for issue in community_priorities[:8]:
-            with Card(css_class="top8", style={"width": "calc(25% - 12px)", "min-width": "200px"}):
-                with CardContent():
-                    # Use issue_url from model — never string-build GitHub URLs
-                    url = issue.get("issue_url", "")
-                    num_text = f"#{issue['issue_number']}"
-                    if url:
-                        Link(
-                            num_text,
-                            href=url,
-                            target="_blank",
-                            style={"color": "#ff69b4", "font-weight": "bold", "font-size": "1.2rem"},
-                        )
-                    else:
-                        Text(num_text, style={"color": "#ff69b4", "font-weight": "bold", "font-size": "1.2rem"})
-                    Text(
-                        issue["title"][:50] + ("..." if len(issue["title"]) > 50 else ""),
-                        style={"color": "#0ff", "font-size": "0.85rem"},
-                    )
-                    with Row(gap=1, css_class="mt-2"):
-                        Badge(f"{issue['reactions_total_count']} reactions", variant="outline")
-                        Badge(f"{issue['age_days']}d old", variant="outline")
-
-    # ── Assignee workload ──────────────────────────────────────────
-    with Card(css_class="mt-6 neon-pink"):
-        with CardHeader():
-            CardTitle("~*~ Who's Doing All Da Work ~*~")
-        with CardContent():
-            BarChart(
-                data=assignee_workload,
-                series=[
-                    ChartSeries(data_key="bugs", label="Bugs", color="#ff1493"),
-                    ChartSeries(data_key="enhancements", label="Enhancements", color="#0ff"),
-                ],
-                x_axis="assignee_login", stacked=True, horizontal=True, show_legend=True, height=300,
-            )
+                    RENDER[tile["id"]](tile)
+            n += 1
 
     # ── Guestbook ──────────────────────────────────────────────────
-    H3("📝 ~*~ Guestbook ~*~ 📝", css_class="mt-6")
+    H3("📝 ~*~ Guestbook ~*~ 📝", css_class="mt-8")
     Muted("sign my guestbook plzz!! (jk its read-only lol)")
 
     with Card(css_class="mt-3 neon-card"):

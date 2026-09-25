@@ -14,6 +14,15 @@ ISSUE_ONLY_FIELDS = """
           title
           issueType { name }
         }
+        stateReason
+        closedByPullRequestsReferences(first: 10) {
+          nodes {
+            number
+            merged
+            mergedAt
+            baseRepository { nameWithOwner }
+          }
+        }
 """
 
 ISSUES_QUERY = """
@@ -26,7 +35,7 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
         startCursor
       }
       nodes {
-        # id
+        id
         number
         url
         title
@@ -71,7 +80,7 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
             createdAt
           }
         }
-        timelineItems(first: $first_timeline_items, itemTypes: [LABELED_EVENT, UNLABELED_EVENT]) {
+        timelineItems(first: $first_timeline_items, itemTypes: [LABELED_EVENT, UNLABELED_EVENT, CLOSED_EVENT, REOPENED_EVENT]) {
           totalCount
           nodes {
             __typename
@@ -84,6 +93,15 @@ query($owner: String!, $name: String!, $issues_per_page: Int!, $first_reactions:
               createdAt
               actor {login avatarUrl url}
               label {name color}
+            }
+            ... on ClosedEvent {
+              createdAt
+              actor {login avatarUrl url}
+              stateReason
+            }
+            ... on ReopenedEvent {
+              createdAt
+              actor {login avatarUrl url}
             }
           }
         }

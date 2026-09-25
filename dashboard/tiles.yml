@@ -1,0 +1,162 @@
+# The dashboard contract. Every framework in the bakeoff renders exactly these
+# sections and tiles, in this order, from these dbt models
+# (transform/models/dashboard/). Frameworks may select, sort, rename, format
+# and lightly pivot model columns — they must not compute metrics.
+# Query each tile as `select * from {model} order by {order_by}`.
+#
+# Checked by tests/test_tiles_contract.py:
+#   - every `model` here exists in transform/models/dashboard/ and vice versa
+#   - every framework directory references every tile model
+#
+# Change a tile here first, then in each framework.
+
+title: dbt Fusion issue health
+subtitle: Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)
+
+# Freshness banner: show "Data as of {as_of_date}" in the header. When
+# days_stale > stale_after_days, show a visible warning that the extract has
+# probably stopped.
+meta:
+  model: dashboard_meta
+  stale_after_days: 3
+
+# Colorblind-validated (dataviz validate_palette.js, light + dark). Colors
+# follow the entity, never its rank; text never uses series colors.
+palette:
+  issue_category:          # categorical, fixed order
+    feature: {light: "#2a78d6", dark: "#3987e5", label: Feature}
+    bug:     {light: "#eb6834", dark: "#d95926", label: Bug}
+    task:    {light: "#1baf7a", dark: "#199e70", label: Task}
+    other:   {light: "#898781", dark: "#898781", label: Other}
+  flow:                    # weekly_flow series
+    opened:  {light: "#eb6834", dark: "#d95926", label: Opened}
+    closed:  {light: "#2a78d6", dark: "#3987e5", label: Closed}
+  age_bucket:              # sequential blue ramp, young -> old = light -> dark
+    "0-7d":    "#b7d3f6"
+    "8-30d":   "#86b6ef"
+    "31-90d":  "#5598e7"
+    "91-180d": "#256abf"
+    "180d+":   "#104281"
+  single_series: "#2a78d6"
+
+sections:
+  - id: status
+    question: Where do things stand?
+    tiles:
+      - id: headline_kpis
+        model: headline_kpis
+        form: kpi_row
+        kpis:
+          - {label: Open issues, value: open_issues, context: "{backlog_change_28d:+} in 28 days"}
+          - {label: Opened / closed (28d), value: "{opened_28d} / {closed_28d}"}
+          - {label: Awaiting triage, value: awaiting_triage, context: "median age {awaiting_triage_median_age_days} days"}
+          - {label: Answered within 48h (28d), value: "{pct_responded_48h_28d}%", context: "median first reply {median_hours_to_first_response_28d} h"}
+          - {label: Median days to close (28d), value: median_days_to_close_28d}
+          - {label: Customer-reported open, value: open_customer_reported, context: "{open_hard_blockers} hard blockers"}
+
+  - id: backlog
+    question: Is the backlog shrinking?
+    tiles:
+      - id: backlog_weekly
+        model: backlog_weekly
+        order_by: week
+        title: Open issues over time
+        subtitle: Open at the end of each week, by type
+        form: stacked_area
+        x: week
+        y: open_issues
+        color: issue_category        # palette.issue_category, stack order feature, bug, task, other
+      - id: weekly_flow
+        model: weekly_flow
+        order_by: week
+        title: Opened vs closed per week
+        subtitle: Complete weeks; when closed > opened the backlog shrank
+        form: grouped_bar
+        x: week
+        series: [opened, closed]     # palette.flow
+        tooltip: [net_change]
+
+  - id: triage
+    question: Are we keeping up with triage?
+    tiles:
+      - id: triage_pipeline
+        model: triage_pipeline
+        order_by: status_order, age_bucket_order
+        title: Open issues by triage status and age
+        subtitle: How much is waiting, and for how long
+        form: horizontal_stacked_bar
+        y: status_label
+        x: issue_count
+        color: age_bucket            # palette.age_bucket
+      - id: response_weekly
+        model: response_weekly
+        order_by: week
+        title: New issues answered within 48 hours
+        subtitle: By week opened; unanswered issues count as misses
+        form: line
+        x: week
+        y: pct_responded_48h         # 0-100 %, single series
+        tooltip: [issues_opened, responded_48h, median_hours_to_first_response]
+      - id: triage_queue
+        model: triage_queue
+        order_by: age_days desc
+        title: Triage queue — oldest first
+        subtitle: Open issues still labeled status:triage
+        form: table
+        columns: [issue_number, title, issue_category, age_days, days_idle, reactions, comments, is_customer_reported]
+        link: issue_url
+
+  - id: where
+    question: Where is the work?
+    tiles:
+      - id: open_by_area
+        model: open_by_area
+        order_by: area_total desc, area
+        title: Open issues by area
+        subtitle: Issues with several areas count in each
+        form: horizontal_stacked_bar
+        y: area
+        x: issue_count
+        color: issue_category
+      - id: open_by_adapter
+        model: open_by_adapter
+        order_by: adapter_total desc, adapter
+        title: Open issues by adapter
+        subtitle: "(none) = adapter-agnostic"
+        form: horizontal_stacked_bar
+        y: adapter
+        x: issue_count
+        color: issue_category
+
+  - id: epics
+    question: How close are the epics?
+    tiles:
+      - id: epic_progress
+        model: epic_progress
+        order_by: pct_complete desc, child_open, epic_number
+        title: Open epics by % of sub-issues closed
+        subtitle: Top of the list can be closed out soon
+        form: table_with_bar         # bar = pct_complete (0-100); a horizontal bar chart is also fine
+        columns: [epic_number, title, child_closed, child_total, pct_complete, milestone_title]
+        link: issue_url
+
+  - id: next
+    question: What should we work on, and who is on it?
+    tiles:
+      - id: top_requested
+        model: top_requested
+        order_by: reactions desc, comments desc
+        title: Most-requested open issues
+        subtitle: Ranked by reactions, then comments
+        form: table
+        columns: [issue_number, title, issue_category, areas, triage_status, reactions, comments, age_days, is_customer_reported]
+        link: issue_url
+      - id: assignee_workload
+        model: assignee_workload
+        order_by: assignee_total desc, assignee_login
+        title: Open issues by assignee
+        subtitle: Top 15, including unassigned
+        form: horizontal_stacked_bar
+        y: assignee_login
+        x: issue_count
+        color: issue_category

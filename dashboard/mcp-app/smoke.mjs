@@ -24,9 +24,14 @@ try {
     arguments: {},
   });
 
-  if (!result.structuredContent?.dashboard?.summary_kpis) {
+  const dashboard = result.structuredContent?.dashboard;
+  if (!dashboard?.models?.headline_kpis || !dashboard?.manifest?.sections?.length) {
     throw new Error("show_issue_health did not return dashboard structured content");
   }
+  const missing = dashboard.manifest.sections
+    .flatMap((section) => section.tiles.map((tile) => tile.model))
+    .filter((model) => !(model in dashboard.models));
+  if (missing.length) throw new Error(`payload is missing tile models: ${missing.join(", ")}`);
 
   console.log(result.content?.[0]?.text ?? "MCP app smoke passed");
 } finally {

@@ -1,540 +1,178 @@
 """
-Prefab dashboard for dbt-fusion issue analytics.
-Reads from the DuckDB database populated by the dbt transform layer.
+Prefab dashboard for dbt Fusion (engine:v2) issue health.
+
+A thin renderer over the tile contract in dashboard/tiles.yml: every section
+and tile comes from the manifest, every number from a dbt dashboard model.
+Adding a tile = add it to tiles.yml (and its model); no metric logic lives here.
 """
 
-import math
-import os
-import duckdb
-from prefab_ui.app import PrefabApp
-from prefab_ui.components import (
-    Badge,
+import re
+import sys
+from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+
+import tiles  # noqa: E402
+from prefab_ui.actions import OpenLink  # noqa: E402
+from prefab_ui.app import PrefabApp  # noqa: E402
+from prefab_ui.components import (  # noqa: E402
+    Alert,
+    AlertDescription,
+    AlertTitle,
     Card,
     CardContent,
     CardHeader,
     CardTitle,
-    Column,
     DataTable,
     DataTableColumn,
+    Grid,
     H2,
     H3,
-    H4,
-    Link,
+    Metric,
     Muted,
     Row,
-    Separator,
-    Text,
 )
-from prefab_ui.actions import OpenLink
-from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart
+from prefab_ui.components.charts import AreaChart, BarChart, ChartSeries, LineChart  # noqa: E402
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-
-if os.environ.get("FUSION_DB"):
-    DB_PATH = os.environ["FUSION_DB"]
-elif os.environ.get("MOTHERDUCK_TOKEN"):
-    DB_PATH = "md:fusion_issues"
-else:
-    DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
-
-def query(sql: str) -> list[dict]:
-    con = duckdb.connect(DB_PATH, read_only=True)
-    if not DB_PATH.startswith("md:"):
-        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
-        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
-    result = con.execute(sql).fetchdf()
-    con.close()
-    return result.to_dict("records")
-
-
-# ── Operational triage KPIs ────────────────────────────────────────
-
-triage_health = query("SELECT * FROM issue_triage_health")[0]
-try:
-    triage_lag = query("SELECT * FROM issue_triage_lag")[0]
-except Exception:
-    triage_lag = {"median_days_to_first_triage_bugs": None, "median_days_triage_to_repro_verified": None}
-oldest_untriaged = query("SELECT * FROM oldest_untriaged")
-
-# ── Summary cards ──────────────────────────────────────────────────
-
-summary_cards = query("SELECT * FROM summary_kpis")[0]
-
-net_flow = summary_cards["net_flow_4w"]
-net_flow_sign = "+" if net_flow > 0 else ""
-
-# ── Cumulative flow: bugs vs enhancements ──────────────────────────
-
-cumulative_flow = query("SELECT * FROM cumulative_flow")
-
-# ── Issue age distribution ─────────────────────────────────────────
-
-age_dist_wide = query("SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
-
-# Derive category columns dynamically from the data (excludes bucket_sort_order and age_bucket)
-age_categories = [k for k in age_dist_wide[0].keys() if k not in ("age_bucket", "bucket_sort_order")] if age_dist_wide else []
-age_chart_data = age_dist_wide
-
-# ── Response time percentile bands ─────────────────────────────────
-
-response_pctiles = query("SELECT * FROM response_pctiles")
-
-# ── Velocity: pivot long velocity model to wide by issue_category ─
-
-velocity_long = query("SELECT week, issue_category, median_days FROM velocity ORDER BY week, issue_category")
-
-velocity_map: dict = {}
-for r in velocity_long:
-    wk = r["week"]
-    if wk not in velocity_map:
-        velocity_map[wk] = {"week": wk}
-    velocity_map[wk][r["issue_category"]] = r["median_days"]
-velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
-
-# ── Close time by label ────────────────────────────────────────────
-
-close_by_label = query("SELECT * FROM close_by_label")
-
-# ── Triage health ─────────────────────────────────────────────────
-
-triage = query("SELECT * FROM triage_health")[0]
-
-# ── EPIC burndown ──────────────────────────────────────────────────
-
-epic_list = query("SELECT * FROM epic_list")
-
-# ── Assignee workload ──────────────────────────────────────────────
-
-assignee_workload = query("SELECT * FROM assignee_workload")
-
-# ── Community priorities ───────────────────────────────────────────
-
-community_priorities = query("SELECT * FROM community_priorities")
-
-# ── Milestone burndown ─────────────────────────────────────────────
-
-burndown_data = query("SELECT * FROM milestone_burndown_weekly")
-open_milestone_titles = sorted({r["milestone_title"] for r in burndown_data})
-
-# ── Open issues table ──────────────────────────────────────────────
-
-open_issues_table = query("SELECT * FROM open_issues_table")
-
-# ── Contributor leaderboard ────────────────────────────────────────
-
-leaderboard = query("SELECT * FROM leaderboard")
+COLUMN_HEADERS = {
+    "issue_number": "#",
+    "epic_number": "#",
+    "title": "Title",
+    "issue_category": "Type",
+    "age_days": "Age (d)",
+    "days_idle": "Idle (d)",
+    "reactions": "👍",
+    "comments": "💬",
+    "is_customer_reported": "Customer",
+    "triage_status": "Status",
+    "areas": "Area / adapter",
+    "child_closed": "Closed",
+    "child_total": "Sub-issues",
+    "pct_complete": "% done",
+    "milestone_title": "Milestone",
+}
+NUMERIC = {"issue_number", "epic_number", "age_days", "days_idle", "reactions", "comments",
+           "child_closed", "child_total", "pct_complete"}
 
 
-# ══════════════════════════════════════════════════════════════════
-#  BUILD DASHBOARD
-# ══════════════════════════════════════════════════════════════════
+def safe_key(name: str) -> str:
+    """Prefab derives a CSS variable from each series key; '180d+' would break it."""
+    return re.sub(r"\W", "_", str(name))
+
+
+def series_for(palette_key: str, keys: list[str] | None = None) -> list[ChartSeries]:
+    keys = keys or tiles.categories(palette_key)
+    return [ChartSeries(data_key=safe_key(k), label=tiles.label(palette_key, k), color=tiles.color(palette_key, k))
+            for k in keys]
+
+
+def stacked(tile: dict, rows: list[dict], category_key: str, value_key: str) -> tuple[list[dict], list[ChartSeries]]:
+    """Pivot a long model to one key per series, keeping only series present in the data."""
+    palette_key = tile["color"]
+    wide = [{(k if k == category_key else safe_key(k)): v for k, v in r.items()}
+            for r in tiles.pivot(rows, index=category_key, column=palette_key, value=value_key)]
+    present = {r[palette_key] for r in rows if r[value_key]}
+    keys = [k for k in tiles.categories(palette_key) if k in present]
+    return wide, series_for(palette_key, keys)
+
+
+def display_rows(rows: list[dict], columns: list[str]) -> list[dict]:
+    """Presentation-only formatting: booleans to marks, labels for enums."""
+    out = []
+    for r in rows:
+        row = dict(r)
+        for c in columns:
+            if isinstance(row.get(c), bool):
+                row[c] = "✓" if row[c] else ""
+        if "issue_category" in row:
+            row["issue_category"] = tiles.label("issue_category", row["issue_category"])
+        if "triage_status" in row:
+            row["triage_status"] = str(row["triage_status"]).replace("_", " ")
+        out.append(row)
+    return out
+
+
+def render_tile(tile: dict) -> None:
+    form = tile["form"]
+    rows = tiles.tile_rows(tile["id"]) if form != "kpi_row" else []
+
+    if form == "kpi_row":
+        with Grid(columns={"default": 2, "md": 3, "lg": 6}, gap=3):
+            for k in tiles.kpis():
+                with Card():
+                    with CardContent(css_class="pt-4"):
+                        Metric(label=k["label"], value=k["value"], description=k["context"] or None)
+        return
+
+    with Card(css_class="h-full"):
+        with CardHeader():
+            CardTitle(tile["title"])
+            Muted(tile["subtitle"])
+        with CardContent():
+            if form == "stacked_area":
+                wide, series = stacked(tile, rows, tile["x"], tile["y"])
+                AreaChart(data=wide, series=series, x_axis=tile["x"], stacked=True, show_legend=True, height=300)
+            elif form == "grouped_bar":
+                BarChart(data=rows, series=series_for("flow", tile["series"]), x_axis=tile["x"],
+                         show_legend=True, height=300)
+            elif form == "line":
+                LineChart(data=rows, x_axis=tile["x"], show_legend=False, height=300,
+                          series=[ChartSeries(data_key=tile["y"], label=tile["title"],
+                                              color=tiles.MANIFEST["palette"]["single_series"])])
+            elif form == "horizontal_stacked_bar":
+                wide, series = stacked(tile, rows, tile["y"], tile["x"])
+                BarChart(data=wide, series=series, x_axis=tile["y"], stacked=True, horizontal=True,
+                         show_legend=True, height=max(220, 34 * len(wide)))
+            elif form in ("table", "table_with_bar"):
+                cols = tile["columns"]
+                DataTable(
+                    rows=display_rows(rows, cols),
+                    columns=[
+                        DataTableColumn(key=c, header=COLUMN_HEADERS.get(c, c), sortable=c in NUMERIC,
+                                        align="right" if c in NUMERIC else None)
+                        for c in cols
+                    ],
+                    search=True,
+                    paginated=True,
+                    page_size=10,
+                    on_row_click=OpenLink("{{ $event." + tile["link"] + " }}"),
+                )
+            else:
+                raise ValueError(f"Unknown tile form {form!r} in tiles.yml")
+
+
+meta = tiles.one(tiles.MANIFEST["meta"]["model"])
+is_stale = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
+
+# Tiles that sit side by side on wide screens; everything else is full width.
+PAIRED_FORMS = {"stacked_area", "grouped_bar", "line", "horizontal_stacked_bar"}
 
 with PrefabApp(css_class="max-w-7xl mx-auto p-6") as app:
-    H2("dbt-fusion Issue Health")
-    Muted("Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)")
-
-    # ── Daily operational KPIs ─────────────────────────────────────
-    H3("Daily triage", css_class="mt-6")
-    Muted("Open the dashboard, scan this row, act on the table below.")
-
-    with Row(gap=3, css_class="mt-3"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Slipped through (bugs)")
-            with CardContent():
-                H3(str(triage_health["slipped_through_count"]))
-                Muted("Zero triage signal")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Triage queue")
-            with CardContent():
-                H3(str(triage_health["triage_queue_count"]))
-                Muted("Awaiting maintainer decision")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Hard blockers")
-            with CardContent():
-                H3(str(triage_health["hard_blocker_count"]))
-                Muted(f"{triage_health['hard_blocker_unreleased']} unreleased")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Stale (90d+)")
-            with CardContent():
-                H3(str(triage_health["stale_count"]))
-                Muted("Cleanup candidates")
-
-    with Row(gap=3, css_class="mt-3"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Needs repro")
-            with CardContent():
-                H3(str(triage_health["needs_repro_count"]))
-                Muted("Awaiting reproduction")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Ready for engineer")
-            with CardContent():
-                H3(str(triage_health["repro_verified_count"]))
-                Muted("has-repro / repro/verified")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Median triage lag, bugs")
-                Muted("7-day rolling, proxy")
-            with CardContent():
-                lag = triage_lag["median_days_to_first_triage_bugs"]
-                H3(f"{lag} d" if lag is not None else "—")
-                Muted("Created → first maintainer reply")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Median repro lag")
-                Muted("7-day rolling, proxy")
-            with CardContent():
-                lag = triage_lag["median_days_triage_to_repro_verified"]
-                H3(f"{lag} d" if lag is not None else "—")
-                Muted("Triage → repro/verified")
-
-    # ── Oldest untriaged action queue ──────────────────────────────
-    with Card(css_class="mt-6"):
-        with CardHeader():
-            CardTitle("Oldest untriaged bugs")
-            Muted(f"Top {len(oldest_untriaged)} open bugs with zero triage signal — work this list")
-        with CardContent():
-            DataTable(
-                rows=oldest_untriaged,
-                columns=[
-                    DataTableColumn(key="issue_number", header="#", sortable=True),
-                    DataTableColumn(key="title", header="Title"),
-                    DataTableColumn(key="issue_category", header="Type", sortable=True),
-                    DataTableColumn(key="age_days", header="Age (days)", sortable=True),
-                    DataTableColumn(key="days_since_activity", header="Idle (days)", sortable=True),
-                    DataTableColumn(key="reactions_total_count", header="Reactions", sortable=True),
-                    DataTableColumn(key="comments_total_count", header="Comments", sortable=True),
-                    DataTableColumn(key="author_login", header="Author"),
-                ],
-                search=True,
-                paginated=True,
-                page_size=15,
-                on_row_click=OpenLink("{{ issue_url }}"),
+    H2(tiles.MANIFEST["title"])
+    Muted(tiles.MANIFEST["subtitle"])
+    Muted(tiles.freshness_note(meta))
+    if is_stale:
+        with Alert(variant="warning", css_class="mt-3"):
+            AlertTitle("Stale data")
+            AlertDescription(
+                f"The newest issue activity is {meta['days_stale']} days old. "
+                "The extract has probably stopped — check the Extract GitHub Issues workflow."
             )
 
-    Separator(css_class="my-8")
-    H3("Trends and context")
-
-    # ── Summary cards ──────────────────────────────────────────────
-    with Row(gap=3, css_class="mt-6"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Open Issues")
-            with CardContent():
-                H3(str(summary_cards["open_issues"]))
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Net Flow (4 wk)")
-            with CardContent():
-                H3(f"{net_flow_sign}{net_flow}")
-                Muted(f"{summary_cards['opened_4w']} opened / {summary_cards['closed_4w']} closed")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Median Close (4 wk)")
-            with CardContent():
-                val = summary_cards["rolling_median_close_days"]
-                H3(f"{val} days" if val else "N/A")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("48h Response SLA")
-            with CardContent():
-                pct = summary_cards["pct_responded_48h"]
-                H3(f"{int(pct)}%" if pct is not None and math.isfinite(pct) else "N/A")
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Stale Issues")
-            with CardContent():
-                H3(str(summary_cards["stale_count"]))
-                Muted("No activity 30+ days")
-
-    # ── Cumulative Issue Flow ──────────────────────────────────────
-    with Card(css_class="mt-6"):
-        with CardHeader():
-            CardTitle("Cumulative Issue Flow")
-            Muted("Gap = issue debt (excludes EPICs)")
-        with CardContent():
-            AreaChart(
-                data=cumulative_flow,
-                series=[
-                    ChartSeries(data_key="cumulative_opened", label="Opened", color="hsl(0, 70%, 60%)"),
-                    ChartSeries(data_key="cumulative_closed", label="Closed", color="hsl(140, 70%, 45%)"),
-                ],
-                x_axis="week",
-                show_legend=True,
-                height=300,
-            )
-
-    # ── Bug vs Enhancement flow side by side ───────────────────────
-    with Row(gap=4, css_class="mt-6"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Bug Flow")
-            with CardContent():
-                AreaChart(
-                    data=cumulative_flow,
-                    series=[
-                        ChartSeries(data_key="cum_bugs_opened", label="Opened", color="hsl(0, 70%, 60%)"),
-                        ChartSeries(data_key="cum_bugs_closed", label="Closed", color="hsl(140, 70%, 45%)"),
-                    ],
-                    x_axis="week",
-                    show_legend=True,
-                    height=250,
-                )
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Enhancement Flow")
-            with CardContent():
-                AreaChart(
-                    data=cumulative_flow,
-                    series=[
-                        ChartSeries(data_key="cum_enh_opened", label="Opened", color="hsl(30, 80%, 55%)"),
-                        ChartSeries(data_key="cum_enh_closed", label="Closed", color="hsl(200, 70%, 50%)"),
-                    ],
-                    x_axis="week",
-                    show_legend=True,
-                    height=250,
-                )
-
-    # ── Velocity: bugs vs enhancements ─────────────────────────────
-    with Row(gap=4, css_class="mt-6"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Median Days to Close: Bugs vs Enhancements")
-            with CardContent():
-                # Build series dynamically from categories present in velocity data
-                _vel_colors = {
-                    "bug": "hsl(0, 70%, 55%)",
-                    "enhancement": "hsl(200, 70%, 50%)",
-                    "task": "hsl(45, 80%, 50%)",
-                    "other": "hsl(0, 0%, 60%)",
-                }
-                _vel_categories = sorted({k for row in velocity_data for k in row if k != "week"})
-                LineChart(
-                    data=velocity_data,
-                    series=[
-                        ChartSeries(
-                            data_key=cat,
-                            label=cat.capitalize(),
-                            color=_vel_colors.get(cat, "hsl(260, 70%, 60%)"),
-                        )
-                        for cat in _vel_categories
-                    ],
-                    x_axis="week",
-                    show_legend=True,
-                    curve="smooth",
-                    height=300,
-                )
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Time to First Response (hours)")
-                Muted("p25 / p50 / p75 bands")
-            with CardContent():
-                LineChart(
-                    data=response_pctiles,
-                    series=[
-                        ChartSeries(data_key="p75", label="p75", color="hsl(0, 60%, 70%)"),
-                        ChartSeries(data_key="p50", label="Median", color="hsl(200, 80%, 50%)"),
-                        ChartSeries(data_key="p25", label="p25", color="hsl(140, 60%, 60%)"),
-                    ],
-                    x_axis="week",
-                    show_legend=True,
-                    curve="smooth",
-                    height=300,
-                )
-
-    # ── Age distribution + close time by label ─────────────────────
-    with Row(gap=4, css_class="mt-6"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Open Issue Age by Type")
-            with CardContent():
-                # Build series dynamically from categories in age_distribution_wide
-                _age_colors = {
-                    "bug": "hsl(0, 70%, 55%)",
-                    "enhancement": "hsl(200, 70%, 50%)",
-                    "task": "hsl(45, 80%, 50%)",
-                    "other": "hsl(0, 0%, 60%)",
-                }
-                BarChart(
-                    data=age_chart_data,
-                    series=[
-                        ChartSeries(
-                            data_key=cat,
-                            label=cat.capitalize(),
-                            color=_age_colors.get(cat, "hsl(260, 70%, 60%)"),
-                        )
-                        for cat in age_categories
-                    ],
-                    x_axis="age_bucket",
-                    stacked=True,
-                    show_legend=True,
-                    height=300,
-                )
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Median Days to Close by Label")
-            with CardContent():
-                BarChart(
-                    data=close_by_label,
-                    series=[ChartSeries(data_key="median_days_to_close", label="Days")],
-                    x_axis="label_name",
-                    horizontal=True,
-                    show_legend=False,
-                    height=400,
-                )
-
-    # ── Triage Health ──────────────────────────────────────────────
-    with Card(css_class="mt-6"):
-        with CardHeader():
-            CardTitle("Triage Health")
-            Muted("How well-organized is the backlog?")
-        with CardContent():
-            with Row(gap=4):
-                with Card(css_class="flex-1"):
-                    with CardContent():
-                        H3(f"{int(triage['pct_labeled'])}%")
-                        Muted("Have labels")
-                with Card(css_class="flex-1"):
-                    with CardContent():
-                        H3(f"{int(triage['pct_typed'])}%")
-                        Muted("Have type (bug/enhancement)")
-                with Card(css_class="flex-1"):
-                    with CardContent():
-                        H3(f"{int(triage['pct_assigned'])}%")
-                        Muted("Are assigned")
-                with Card(css_class="flex-1"):
-                    with CardContent():
-                        H3(f"{int(triage['pct_milestoned'])}%")
-                        Muted("In a milestone")
-                with Card(css_class="flex-1"):
-                    with CardContent():
-                        H3(str(triage["unlabeled_count"]))
-                        Muted("Unlabeled issues")
-
-    # ── Milestone Burndown ─────────────────────────────────────────
-    if burndown_data:
-        with Card(css_class="mt-6"):
-            with CardHeader():
-                CardTitle("Milestone Burndown")
-            with CardContent():
-                burndown_by_date: dict[str, dict] = {}
-                for r in burndown_data:
-                    d = r["date_day"]
-                    if d not in burndown_by_date:
-                        burndown_by_date[d] = {"date": d}
-                    burndown_by_date[d][r["milestone_title"]] = r["open_at_date"]
-                merged_burndown = sorted(burndown_by_date.values(), key=lambda x: x["date"])
-                LineChart(
-                    data=merged_burndown,
-                    series=[ChartSeries(data_key=t, label=t) for t in open_milestone_titles],
-                    x_axis="date",
-                    show_legend=True,
-                    height=300,
-                )
-
-    # ── EPICs ──────────────────────────────────────────────────────
-    with Card(css_class="mt-6"):
-        with CardHeader():
-            CardTitle("EPICs")
-            Muted(f"{sum(1 for e in epic_list if e['state'] == 'OPEN')} open / {len(epic_list)} total")
-        with CardContent():
-            for epic in epic_list:
-                if epic["state"] == "OPEN":
-                    with Row(gap=2, css_class="py-1 border-b"):
-                        Link(f"#{epic['issue_number']}", href=epic["issue_url"], target="_blank")
-                        Text(
-                            epic["title"][:70] + ("..." if len(epic["title"]) > 70 else ""),
-                            css_class="flex-1 text-sm",
-                        )
-                        Badge(f"{epic['reactions_total_count']} reactions", variant="secondary")
-                        Badge(f"{epic['comments_total_count']} comments", variant="secondary")
-
-    # ── Assignee workload + community priorities ───────────────────
-    with Row(gap=4, css_class="mt-6"):
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Open Issues by Assignee")
-            with CardContent():
-                BarChart(
-                    data=assignee_workload,
-                    series=[
-                        ChartSeries(data_key="bugs", label="Bugs", color="hsl(0, 70%, 55%)"),
-                        ChartSeries(data_key="enhancements", label="Enhancements", color="hsl(200, 70%, 50%)"),
-                    ],
-                    x_axis="assignee_login",
-                    stacked=True,
-                    horizontal=True,
-                    show_legend=True,
-                    height=400,
-                )
-
-        with Card(css_class="flex-1"):
-            with CardHeader():
-                CardTitle("Community Priorities")
-                Muted("Most-reacted open issues")
-            with CardContent():
-                for issue in community_priorities:
-                    with Row(gap=2, css_class="py-1 border-b"):
-                        Link(f"#{issue['issue_number']}", href=issue["issue_url"], target="_blank")
-                        Badge(issue["issue_category"], variant="secondary")
-                        Text(
-                            issue["title"][:55] + ("..." if len(issue["title"]) > 55 else ""),
-                            css_class="flex-1 text-sm",
-                        )
-                        Badge(f"{issue['reactions_total_count']} reactions", variant="default")
-
-    # ── Open Issues Table ──────────────────────────────────────────
-    with Card(css_class="mt-6"):
-        with CardHeader():
-            CardTitle("Oldest Open Issues")
-            Muted("Top 50 by age")
-        with CardContent():
-            DataTable(
-                rows=open_issues_table,
-                columns=[
-                    DataTableColumn(key="#", header="#", sortable=True),
-                    DataTableColumn(key="title", header="Title"),
-                    DataTableColumn(key="type", header="Type", sortable=True),
-                    DataTableColumn(key="age_days", header="Age (days)", sortable=True),
-                    DataTableColumn(key="reactions", header="Reactions", sortable=True),
-                    DataTableColumn(key="comments", header="Comments", sortable=True),
-                    DataTableColumn(key="milestone", header="Milestone"),
-                ],
-                search=True,
-                paginated=True,
-                page_size=15,
-                on_row_click=OpenLink("{{ issue_url }}"),
-            )
-
-    # ── Contributor Leaderboard ────────────────────────────────────
-    with Card(css_class="mt-6"):
-        with CardHeader():
-            CardTitle("Contributor Leaderboard")
-            Muted("Top 15 by issues closed (all time)")
-        with CardContent():
-            BarChart(
-                data=leaderboard,
-                series=[ChartSeries(data_key="issues_closed", label="Issues Closed", color="hsl(260, 70%, 60%)")],
-                x_axis="author_login",
-                horizontal=True,
-                show_legend=False,
-                height=400,
-            )
+    for section in tiles.sections():
+        H3(section["question"], css_class="mt-8 mb-3")
+        pending: list[dict] = []
+        for t in section["tiles"] + [None]:
+            if t is not None and t["form"] in PAIRED_FORMS:
+                pending.append(t)
+                if len(pending) < 2:
+                    continue
+            if pending:
+                with Grid(columns={"default": 1, "lg": len(pending)}, gap=4, css_class="mb-4"):
+                    for p in pending:
+                        render_tile(p)
+                pending = []
+            if t is not None and t["form"] not in PAIRED_FORMS:
+                with Row(css_class="mb-4"):
+                    with Grid(columns=1, css_class="w-full"):
+                        render_tile(t)

@@ -52,8 +52,8 @@ def _motherduck_metadata() -> dict[str, Any]:
                 max(i.updated_at) as latest_source_updated_at,
                 count(*) as issue_rows,
                 count(distinct i._dlt_load_id) as issue_load_count
-            from raw_github.issues i
-            left join raw_github._dlt_loads l
+            from raw_github_core.issues i
+            left join raw_github_core._dlt_loads l
                 on i._dlt_load_id = l.load_id
             where coalesce(l.status, 0) = 0
             """
@@ -74,16 +74,16 @@ def _local_metadata() -> dict[str, Any]:
             select
                 (
                     select max(inserted_at)
-                    from read_json_auto('{PROJECT_ROOT}/data/raw/fusion_issues/_dlt_loads/*.jsonl')
+                    from read_json_auto('{PROJECT_ROOT}/data/raw/fusion_issues_core/_dlt_loads/*.jsonl')
                     where status = 0
                 ) as latest_load_at,
                 (
                     select max(updated_at)
-                    from read_parquet('{PROJECT_ROOT}/data/raw/fusion_issues/issues/*.parquet')
+                    from read_parquet('{PROJECT_ROOT}/data/raw/fusion_issues_core/issues/*.parquet')
                 ) as latest_source_updated_at,
                 (
                     select count(*)
-                    from read_parquet('{PROJECT_ROOT}/data/raw/fusion_issues/issues/*.parquet')
+                    from read_parquet('{PROJECT_ROOT}/data/raw/fusion_issues_core/issues/*.parquet')
                 ) as issue_rows
             """
         ).fetchone()

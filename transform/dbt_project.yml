@@ -16,14 +16,15 @@ clean-targets:
   - "target"
   - "dbt_packages"
 
-# Materialize as tables in prod (MotherDuck) so data is queryable remotely
-# Dev stays as views for fast iteration
+# Staging stays as views; everything downstream is a table in every target so
+# dashboards can read the database from any working directory (dev staging
+# views resolve parquet paths relative to transform/).
 models:
   fusion_issue_analytics:
     +materialized: view
     marts:
-      +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"
+      +materialized: table
     metrics:
-      +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"
+      +materialized: table
     dashboard:
-      +materialized: "{{ 'table' if target.name == 'prod' else 'view' }}"
+      +materialized: table

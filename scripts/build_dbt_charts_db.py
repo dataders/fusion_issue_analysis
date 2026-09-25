@@ -16,7 +16,9 @@ ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_CHART = ROOT / "transform" / "charts" / "fusion-issue-health.yml"
 DEFAULT_OUTPUT = ROOT / "data" / "serve" / "fusion_issues.duckdb"
 MODEL_QUERY = re.compile(
-    r"^\s*select\s+\*\s+from\s+fusion_issues\.main\.([a-zA-Z_][a-zA-Z0-9_]*)\s*$",
+    # Direct model read, optionally ordered (tiles.yml order_by).
+    r"^\s*select\s+\*\s+from\s+fusion_issues\.main\.([a-zA-Z_][a-zA-Z0-9_]*)"
+    r"(?:\s+order\s+by\s+[\w\s,]+?)?\s*;?\s*$",
     re.IGNORECASE,
 )
 
@@ -40,8 +42,10 @@ def build(source: str, output: Path, chart_path: Path = DEFAULT_CHART) -> None:
         next_db = Path(tmpdir) / "fusion_issues.duckdb"
         # Dev views contain paths relative to transform/, where dbt created them.
         os.chdir(ROOT / "transform")
-        with duckdb.connect(source) as connection:
-            connection.execute(f"ATTACH '{next_db.as_posix()}' AS serve")
+        # Read local sources read-only so a running dashboard doesn't block the build.
+        read_only = not source.startswith("md:")
+        with duckdb.connect(source, read_only=read_only) as connection:
+            connection.execute(f"ATTACH '{next_db.as_posix()}' AS serve (READ_WRITE)")
             connection.execute("CREATE SCHEMA IF NOT EXISTS serve.main")
             for model in models:
                 connection.execute(

@@ -23,7 +23,8 @@ def load_source() -> str:
 
 
 def statement_count(sql: str) -> int:
-    return sum(1 for part in sql.split(";") if part.strip())
+    # Statements end a line with ';' (string literals may contain ';').
+    return sum(1 for line in sql.splitlines() if line.rstrip().endswith(";"))
 
 
 def render_page(sql: str) -> str:
@@ -34,7 +35,7 @@ def render_page(sql: str) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shaper | dbt-fusion Issue Analysis</title>
+  <title>Shaper | dbt Fusion issue health</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{
@@ -232,8 +233,9 @@ def render_page(sql: str) -> str:
         <h2>Bakeoff fit</h2>
         <ul>
           <li>Dashboard is authored as <code>fusion-issue-health.dashboard.sql</code>.</li>
-          <li>SQL uses Shaper casts such as <code>::SECTION</code>, <code>::DROPDOWN_MULTI</code>, <code>::LINECHART</code>, and <code>::BARCHART_STACKED</code>.</li>
-          <li>Shared semantic layer stays in dbt tables like <code>summary_kpis</code>, <code>cumulative_flow</code>, and <code>open_issues_table</code>.</li>
+          <li>SQL uses Shaper casts such as <code>::SECTION</code>, <code>::YAXIS</code>, <code>::BARCHART_STACKED</code>, <code>::LINECHART_PERCENT</code>, and <code>::COLOR</code> (the shared tiles.yml palette).</li>
+          <li>Every section and tile of <code>dashboard/tiles.yml</code>, each a thin read of one dbt dashboard model such as <code>headline_kpis</code>, <code>backlog_weekly</code>, and <code>triage_queue</code>.</li>
+          <li>A freshness warning renders only when <code>dashboard_meta.days_stale</code> exceeds 3 days.</li>
           <li>Local live rendering starts from <code>dashboard/shaper</code> with Shaper pointed at a DuckDB or MotherDuck-backed database.</li>
         </ul>
         <p class="small">Generated from <code>{SOURCE.name}</code> and <code>{CONFIG.name}</code>.</p>

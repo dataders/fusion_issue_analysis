@@ -28,23 +28,34 @@ models:
                 values: ['OPEN', 'CLOSED']
         dimension:
           type: categorical
-      - name: issue_type
+      - name: github_issue_type
         description: >
-          Raw value of GitHub's native Issue Type field. Common values:
-          'Bug', 'Feature', 'Task', 'Epic'. NULL when the issue has no type set,
-          or for repos that don't use Issue Types.
+          Raw value of GitHub's native Issue Type field ('Bug', 'Feature',
+          'Task', 'Epic'). NULL when the issue has no type set.
       - name: issue_category
         description: >
-          Coarse bucket resolved by combining label-derived flags with GitHub's
-          native Issue Type. Task-typed issues without a stronger label map to
-          'task'.
+          Coarse type bucket. GitHub's native Issue Type wins; normalized
+          `type:*` labels (see the label_map seed) are the fallback.
         tests:
           - not_null
           - accepted_values:
               arguments:
-                values: ['bug', 'enhancement', 'epic', 'task', 'other']
+                values: ['bug', 'feature', 'epic', 'task', 'other']
         dimension:
           type: categorical
+      - name: triage_status
+        description: >
+          Where the issue sits in the triage pipeline, from its current
+          `status:*` labels. 'triaged' = no status label (triage label removed).
+        tests:
+          - not_null
+          - accepted_values:
+              arguments:
+                values: ['awaiting_triage', 'needs_repro', 'has_repro', 'awaiting_release', 'triaged']
+        dimension:
+          type: categorical
+      - name: triaged_at
+        description: First time the triage label was removed (from timeline label events).
       - name: milestone_number
         entity:
           name: milestone
@@ -64,11 +75,11 @@ models:
         dimension:
           type: time
       - name: is_epic
-        description: True when issue_type = 'Task' and 'epic' appears in title (authoritative epic flag; preferred over the legacy label-based has_epic).
+        description: True when issue_category = 'epic'.
         tests:
           - not_null
       - name: has_epic_parent
-        description: True when this issue's parent is an epic (parent_issue_type = 'Task' and 'epic' in parent_title).
+        description: True when this issue's sub-issue parent is an Epic.
         tests:
           - not_null
       - name: is_orphan
@@ -153,7 +164,7 @@ models:
         expr: comment_dlt_id
 
   - name: fct_epics
-    description: One row per Epic (Task-typed issue with 'epic' in title), enriched with child counts and milestone attribution.
+    description: One row per Epic (issue_category = epic), enriched with sub-issue counts and milestone attribution.
     columns:
       - name: epic_number
         tests:

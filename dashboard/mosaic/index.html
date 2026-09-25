@@ -3,52 +3,73 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>dbt-fusion Issue Health · Mosaic</title>
+  <title>dbt Fusion issue health · Mosaic</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px 24px 40px; max-width: 960px; }
-    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 4px; }
-    h2 { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #7f849c; margin: 24px 0 4px; }
-    #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
-    .error { color: #f38ba8 !important; }
-    .hint { color: #585b70; font-size: 0.73rem; margin-bottom: 8px; }
-    #app svg { display: block; }
-    .row { display: flex; gap: 20px; flex-wrap: wrap; }
-    .row > * { flex: 1 1 300px; }
-
-    /* KPI stat rows */
-    .kpi-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 8px; }
-    .kpi-card {
-      background: #313244; border-radius: 8px; padding: 12px 18px;
-      flex: 1 1 120px; min-width: 100px;
+    :root {
+      --bg: #f7f7f5; --card: #ffffff; --border: #e3e2de; --text: #1f1f1d; --muted: #6b6a66; --faint: #8d8c87;
+      --link: #1d5fb0; --warn-bg: #fff4e5; --warn: #8a4b00; --track: #e3e2de;
     }
-    .kpi-label { font-size: 0.72rem; color: #7f849c; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
-    .kpi-value { font-size: 1.6rem; font-weight: 700; color: #cdd6f4; }
-    .kpi-sub   { font-size: 0.72rem; color: #585b70; margin-top: 2px; }
-    .kpi-value.positive { color: #a6e3a1; }
-    .kpi-value.negative { color: #f38ba8; }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1e1e2e; --card: #262637; --border: #313244; --text: #cdd6f4; --muted: #a6adc8; --faint: #7f849c;
+              --link: #89b4fa; --warn-bg: #3b2a1e; --warn: #fab387; --track: #313244; }
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           margin: 0 auto; padding: 20px 16px 40px; max-width: 1040px; }
+    h1 { font-size: 1.2rem; font-weight: 650; margin: 0 0 4px; }
+    .sub, .asof, #status { color: var(--muted); font-size: 0.8rem; margin: 2px 0; }
+    .stale { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); border-radius: 6px;
+             padding: 8px 12px; font-weight: 600; font-size: 0.85rem; margin: 8px 0; }
+    .error { color: var(--warn) !important; }
+    h2.question { font-size: 1rem; font-weight: 650; margin: 28px 0 4px; }
+    .hint { color: var(--faint); font-size: 0.73rem; margin: 0 0 10px; }
+    .row { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+    .row > * { flex: 1 1 440px; min-width: 0; }
+    .tile { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; overflow-x: auto; }
+    .tile h3 { font-size: 0.9rem; margin: 0; }
+    .tile .tile-sub { color: var(--muted); font-size: 0.75rem; margin: 2px 0 8px; }
+    .tile svg { display: block; }
 
-    /* Oldest untriaged table */
-    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
-    .data-table th { text-align: left; color: #7f849c; font-weight: 600; padding: 4px 8px; border-bottom: 1px solid #313244; }
-    .data-table td { padding: 5px 8px; border-bottom: 1px solid #1e1e2e; }
-    .data-table tr:hover td { background: #313244; }
-    .data-table a { color: #89b4fa; text-decoration: none; }
+    .kpi-row { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .kpi-card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 12px 16px; }
+    .kpi-label { font-size: 0.72rem; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; margin-bottom: 4px; }
+    .kpi-value { font-size: 1.6rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+    .kpi-sub   { font-size: 0.72rem; color: var(--muted); margin-top: 2px; }
+
+    .table-wrap { max-height: 460px; overflow: auto; }
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    .data-table th { position: sticky; top: 0; background: var(--card); text-align: left; color: var(--muted); font-weight: 600;
+                     padding: 5px 8px; border-bottom: 1px solid var(--border); }
+    .data-table td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    .data-table .num { text-align: right; font-variant-numeric: tabular-nums; }
+    .data-table a { color: var(--link); text-decoration: none; }
     .data-table a:hover { text-decoration: underline; }
+    .bar { display: flex; align-items: center; gap: 6px; min-width: 150px; }
+    .bar .track { flex: 1; height: 0.7rem; background: var(--track); border-radius: 3px; overflow: hidden; }
+    .bar .track > div { height: 100%; }
+    .bar > span { font-size: 0.75rem; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 720px) { .kpi-row { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
 <body>
-  <h1>dbt-fusion Issue Health · Mosaic + MotherDuck live</h1>
+  <header id="header"><h1>dbt Fusion issue health · Mosaic + MotherDuck live</h1></header>
   <p id="status">Connecting…</p>
   <div id="app"></div>
 
   <script type="module">
+    // Tiles come from dashboard/tiles.yml; every chart reads a dbt dashboard
+    // model in MotherDuck directly. Interactions only filter modeled rows:
+    //   - click the type legend to filter backlog / area / adapter / assignee by issue_category
+    //   - brush the backlog chart to filter the weekly-flow and response charts by week
     import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
     import * as vg from 'https://esm.sh/@uwdata/vgplot@0.25.0';
+    import yaml from 'https://esm.sh/js-yaml@4.1.0';
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
     const status = document.getElementById('status');
-    const app    = document.getElementById('app');
+    const app = document.getElementById('app');
+    const header = document.getElementById('header');
+    const T = model => `fusion_issues.main.${model}`;
 
     if (!TOKEN || TOKEN.startsWith('__')) {
       status.textContent = 'Token not injected — run deploy workflow.';
@@ -57,291 +78,200 @@
       setup().catch(err => { status.textContent = `Error: ${err.message}`; status.className = 'error'; console.error(err); });
     }
 
+    const toRows = result => JSON.parse(JSON.stringify(result.data.toRows(), (_, v) => typeof v === 'bigint' ? Number(v) : v));
     function makeMDConnector(conn) {
       return {
         query: async ({sql, type}) => {
           if (type === 'exec') { await conn.evaluateQuery(sql); return undefined; }
-          const result = await conn.evaluateQuery(sql);
-          // Convert BigInt → Number so vgplot arithmetic doesn't throw
-          return JSON.parse(JSON.stringify(result.data.toRows(),
-            (_, v) => typeof v === 'bigint' ? Number(v) : v));
+          return toRows(await conn.evaluateQuery(sql));
         },
       };
     }
 
-    // Helper: append an <h2> section header
-    function h2(text, hint) {
-      const el = document.createElement('h2'); el.textContent = text; app.append(el);
-      if (hint) { const p = document.createElement('p'); p.className = 'hint'; p.textContent = hint; app.append(p); }
+    // ── Formatting helpers ────────────────────────────────────────────────────
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    const num = v => v == null ? '—' : Number(v).toLocaleString('en-US', {maximumFractionDigits: 1});
+    const isoDay = v => v instanceof Date || typeof v === 'number' ? new Date(v).toISOString().slice(0, 10) : String(v).slice(0, 10);
+    function fill(template, row) {  // bare column or "{col}" / "{col:+}" template; nulls -> "—"
+      const t = String(template), tpl = t.includes('{') ? t : `{${t}}`;
+      if ([...tpl.matchAll(/\{(\w+)(?::\+)?\}/g)].some(([, c]) => row[c] == null)) return '—';
+      return tpl.replace(/\{(\w+)(:\+)?\}/g, (_, c, sign) => (sign && row[c] > 0 ? '+' : '') + num(row[c]));
     }
-
-    // Helper: wrap elements in a flex row
-    function row(...els) {
-      const d = document.createElement('div'); d.className = 'row'; d.append(...els); app.append(d);
-    }
-
-    // Helper: render a KPI row from query results
-    // cols: array of {key, label, fmt?, sub?}  (sub is optional subtext key)
-    function kpiRow(data, cols) {
-      const wrap = document.createElement('div');
-      wrap.className = 'kpi-row';
-      const rec = data[0] || {};
-      for (const col of cols) {
-        const card = document.createElement('div');
-        card.className = 'kpi-card';
-        const lbl = document.createElement('div'); lbl.className = 'kpi-label'; lbl.textContent = col.label;
-        const val = document.createElement('div'); val.className = 'kpi-value';
-        const raw = rec[col.key];
-        val.textContent = col.fmt ? col.fmt(raw) : (raw == null ? '—' : raw);
-        if (col.sign) {
-          val.classList.add(raw > 0 ? 'positive' : raw < 0 ? 'negative' : '');
-        }
-        card.append(lbl, val);
-        if (col.sub && rec[col.sub] != null) {
-          const sub = document.createElement('div'); sub.className = 'kpi-sub';
-          sub.textContent = col.subFmt ? col.subFmt(rec[col.sub]) : rec[col.sub];
-          card.append(sub);
-        }
-        wrap.append(card);
-      }
-      app.append(wrap);
-    }
-
-    // Helper: render the Oldest Untriaged Bugs table
-    function untriagedTable(rows) {
-      const tbl = document.createElement('table'); tbl.className = 'data-table';
-      const thead = tbl.createTHead();
-      const hrow = thead.insertRow();
-      for (const h of ['#', 'Title', 'Age (days)']) {
-        const th = document.createElement('th'); th.textContent = h; hrow.append(th);
-      }
-      const tbody = tbl.createTBody();
-      for (const r of rows) {
-        const tr = tbody.insertRow();
-        const tdNum = tr.insertCell(); tdNum.textContent = r.issue_number;
-        const tdTitle = tr.insertCell();
-        const a = document.createElement('a');
-        a.href = r.issue_url;
-        a.target = '_blank';
-        a.rel = 'noopener noreferrer';
-        a.textContent = r.title;
-        tdTitle.append(a);
-        const tdAge = tr.insertCell(); tdAge.textContent = r.age_days;
-      }
-      app.append(tbl);
-    }
+    const COLUMN_LABELS = {
+      issue_number: '#', epic_number: '#', title: 'Title', issue_category: 'Type', areas: 'Areas',
+      triage_status: 'Triage', reactions: 'Reactions', comments: 'Comments', age_days: 'Age (d)',
+      days_idle: 'Idle (d)', is_customer_reported: 'Customer', child_closed: 'Closed',
+      child_total: 'Sub-issues', pct_complete: '% complete', milestone_title: 'Milestone',
+    };
+    const NUMERIC = new Set(['reactions', 'comments', 'age_days', 'days_idle', 'child_closed', 'child_total', 'pct_complete']);
+    function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
     async function setup() {
-      const conn = MDConnection.create({mdToken: TOKEN});
-      await conn.isInitialized();
+      const [contract, conn] = await Promise.all([
+        fetch('../tiles.yml').then(r => { if (!r.ok) throw new Error(`tiles.yml: ${r.status}`); return r.text(); }).then(yaml.load),
+        (async () => { const c = MDConnection.create({mdToken: TOKEN}); await c.isInitialized(); return c; })(),
+      ]);
       vg.coordinator().databaseConnector(makeMDConnector(conn));
+      // mosaic-core 0.25 query consolidation throws ("r.select is not a function") when one
+      // plot has two marks over the same table (the weekly-flow opened/closed bars).
+      vg.coordinator().manager.consolidate(false);
       await vg.coordinator().exec("ATTACH IF NOT EXISTS 'md:fusion_issues' AS fusion_issues;");
       status.textContent = 'Connected. Rendering…';
 
-      // Fetch scalar KPI data via raw query (one-off, not crossfiltered)
-      async function sqlRows(sql) {
-        const result = await conn.evaluateQuery(sql);
-        return JSON.parse(JSON.stringify(result.data.toRows(),
-          (_, v) => typeof v === 'bigint' ? Number(v) : v));
+      const tiles = new Map(contract.sections.flatMap(s => s.tiles.map(t => [t.id, t])));
+      // Rows for non-crossfiltered tiles (KPIs, tables, axis order), as tiles.yml specifies.
+      const rowsOf = async model => {
+        const t = [...tiles.values()].find(t => t.model === model);
+        return toRows(await conn.evaluateQuery(`SELECT * FROM ${T(model)}` + (t?.order_by ? ` ORDER BY ${t.order_by}` : '')));
+      };
+
+      // ── Palette ─────────────────────────────────────────────────────────────
+      const mode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      const TEXT = getComputedStyle(document.documentElement).getPropertyValue('--text').trim();
+      const keys = k => Object.keys(contract.palette[k]);
+      const color = (k, n) => { const e = contract.palette[k][n]; return typeof e === 'string' ? e : e[mode]; };
+      const label = (k, n) => contract.palette[k]?.[n]?.label ?? n;
+      const colorScale = k => [vg.colorDomain(keys(k)), vg.colorRange(keys(k).map(n => color(k, n))), vg.colorTickFormat(n => label(k, n))];
+      const SINGLE = contract.palette.single_series;
+      const look = [vg.style({background: 'transparent', color: TEXT, fontSize: '11px'})];
+      const W = 460;
+
+      // ── Selections ──────────────────────────────────────────────────────────
+      const catSel = vg.Selection.intersect();   // issue_category legend toggle
+      const weekSel = vg.Selection.intersect();  // week brush on the backlog chart
+      // Epoch ms so the axis is continuous time (rows cross the connector as JSON).
+      // Fresh expression per channel: vgplot binds each expression to one mark.
+      const WEEK = () => vg.sql`epoch_ms(CAST(week AS DATE))`;
+      const DAYS_3 = () => vg.sql`epoch_ms(CAST(week AS DATE)) + 3 * 86400000`;
+      const DAYS_6 = () => vg.sql`epoch_ms(CAST(week AS DATE)) + 6 * 86400000`;
+
+      // ── Layout helpers ──────────────────────────────────────────────────────
+      const question = id => app.append(el('h2', 'question', esc(contract.sections.find(s => s.id === id).question)));
+      const hint = text => app.append(el('p', 'hint', esc(text)));
+      const row = (...els) => { const d = el('div', 'row'); d.append(...els); app.append(d); };
+      function tileCard(id, ...content) {
+        const t = tiles.get(id);
+        const card = el('div', 'tile', `<h3>${esc(t.title)}</h3><p class="tile-sub">${esc(t.subtitle)}</p>`);
+        card.append(...content);
+        return card;
       }
+      function table(id, rows) {
+        const t = tiles.get(id);
+        const cell = (c, d) => {
+          const v = d[c];
+          if (c === 'issue_number' || c === 'epic_number') return `<a href="${esc(d[t.link])}" target="_blank" rel="noopener noreferrer">#${esc(v)}</a>`;
+          if (c === 'title') return `<a href="${esc(d[t.link])}" target="_blank" rel="noopener noreferrer">${esc(v)}</a>`;
+          if (c === 'issue_category') return esc(label('issue_category', v));
+          if (typeof v === 'boolean') return v ? 'Yes' : '';
+          if (c === 'pct_complete' && t.form === 'table_with_bar')
+            return `<div class="bar"><div class="track"><div style="width:${Number(v) || 0}%;background:${SINGLE}"></div></div><span>${num(v)}%</span></div>`;
+          return NUMERIC.has(c) ? num(v) : esc(v);
+        };
+        const cls = c => NUMERIC.has(c) ? ' class="num"' : '';
+        return tileCard(id, el('div', 'table-wrap', `<table class="data-table">
+          <thead><tr>${t.columns.map(c => `<th${cls(c)}>${COLUMN_LABELS[c] ?? c}</th>`).join('')}</tr></thead>
+          <tbody>${rows.map(d => `<tr>${t.columns.map(c => `<td${cls(c)}>${cell(c, d)}</td>`).join('')}</tr>`).join('')}</tbody>
+        </table>`));
+      }
+      const uniq = (rows, col) => [...new Set(rows.map(d => d[col]))];
 
-      // ── Selection handles ────────────────────────────────────────────────────
-      const timeSel = vg.Selection.intersect();   // time-range brush on cumulative flow
-      const ageSel  = vg.Selection.crossfilter(); // age-bucket click → no cross-table filter (same table only)
-
-      // ════════════════════════════════════════════════════════════════════════
-      // SECTION: Operational Triage
-      // ════════════════════════════════════════════════════════════════════════
-      h2('Operational Triage');
-
-      const triageData = await sqlRows(
-        'SELECT slipped_through_count, triage_queue_count, hard_blocker_count, hard_blocker_unreleased, stale_count, needs_repro_count, repro_verified_count, total_open FROM fusion_issues.main.issue_triage_health'
-      );
-      kpiRow(triageData, [
-        {key: 'slipped_through_count', label: 'Slipped Through (bugs)'},
-        {key: 'triage_queue_count',    label: 'Triage Queue'},
-        {key: 'hard_blocker_count',    label: 'Hard Blockers', sub: 'hard_blocker_unreleased', subFmt: v => `${v} unreleased`},
-        {key: 'stale_count',           label: 'Stale (90d+)'},
-        {key: 'needs_repro_count',     label: 'Needs Repro'},
-        {key: 'repro_verified_count',  label: 'Repro Verified'},
-        {key: 'total_open',            label: 'Total Open'},
+      const [meta, kpi, triageQueue, epics, topRequested, triageOrder, areaOrder, adapterOrder, assigneeOrder] = await Promise.all([
+        rowsOf('dashboard_meta'), rowsOf('headline_kpis'), rowsOf('triage_queue'), rowsOf('epic_progress'),
+        rowsOf('top_requested'), rowsOf('triage_pipeline'), rowsOf('open_by_area'), rowsOf('open_by_adapter'),
+        rowsOf('assignee_workload'),
       ]);
 
-      h2('Oldest Untriaged Bugs');
-      const untriagedRows = await sqlRows(
-        'SELECT issue_number, title, age_days, issue_url FROM fusion_issues.main.oldest_untriaged ORDER BY age_days DESC'
+      // ── Header: freshness banner ────────────────────────────────────────────
+      const m = meta[0] ?? {};
+      header.innerHTML = `<h1>${esc(contract.title)}</h1><p class="sub">${esc(contract.subtitle)} · Mosaic + MotherDuck live</p>
+        <p class="asof">Data as of <strong>${isoDay(m.as_of_date)}</strong> · ${esc(m.source_repo)} · label ${esc(m.source_label)}</p>`;
+      if (m.days_stale > contract.meta.stale_after_days)
+        header.append(el('p', 'stale', `⚠ Data is ${m.days_stale} days old — the extract has probably stopped.`));
+
+      // ── Where do things stand? ──────────────────────────────────────────────
+      question('status');
+      const k = kpi[0] ?? {};
+      app.append(el('div', 'kpi-row', tiles.get('headline_kpis').kpis.map(x => `<div class="kpi-card">
+        <div class="kpi-label">${esc(x.label)}</div><div class="kpi-value">${esc(fill(x.value, k))}</div>
+        ${x.context ? `<div class="kpi-sub">${esc(fill(x.context, k))}</div>` : ''}</div>`).join('')));
+
+      // ── Is the backlog shrinking? ───────────────────────────────────────────
+      question('backlog');
+      hint('Click a type in the legend to filter the stacked charts on this page; brush the backlog chart to zoom the weekly charts.');
+      const backlog = tiles.get('backlog_weekly');
+      const backlogPlot = vg.plot(
+        vg.areaY(vg.from(T('backlog_weekly'), {filterBy: catSel}), {
+          x: WEEK(), y: backlog.y, fill: backlog.color, z: backlog.color, order: keys(backlog.color), tip: true,
+        }),
+        // Brush bounds arrive as timestamps, so filter on a real DATE (every weekly model has `week`).
+        vg.intervalX({as: weekSel, field: vg.sql`CAST(week AS DATE)`}),
+        vg.name('backlog'), vg.xScale('utc'), ...colorScale(backlog.color),
+        vg.xLabel(null), vg.yLabel('Open issues'), vg.yGrid(true), ...look, vg.width(W), vg.height(260),
       );
-      untriagedTable(untriagedRows);
-
-      // ════════════════════════════════════════════════════════════════════════
-      // SECTION: Key Metrics
-      // ════════════════════════════════════════════════════════════════════════
-      h2('Key Metrics');
-
-      const kpiData = await sqlRows(
-        'SELECT open_issues, net_flow_4w, rolling_median_close_days, pct_responded_48h, stale_count FROM fusion_issues.main.summary_kpis'
+      const flow = tiles.get('weekly_flow');
+      // Grouped bars on a time axis: opened in the first half of each week, closed in the second.
+      const flowMark = (series, x1, x2, fill) => vg.rectY(vg.from(T('weekly_flow'), {filterBy: weekSel}), {
+        x1, x2, y: series, fill, inset: 0.5, tip: true,
+        channels: Object.fromEntries(flow.tooltip.map(c => [c, c])),
+      });
+      const flowPlot = vg.plot(
+        flowMark(flow.series[0], WEEK(), DAYS_3(), vg.sql`'opened'`),
+        flowMark(flow.series[1], DAYS_3(), DAYS_6(), vg.sql`'closed'`),
+        vg.name('flow'), vg.xScale('utc'), ...colorScale('flow'),
+        vg.xLabel(null), vg.yLabel('Issues'), vg.yGrid(true), ...look, vg.width(W), vg.height(260),
       );
-      kpiRow(kpiData, [
-        {key: 'open_issues',               label: 'Open Issues'},
-        {key: 'net_flow_4w',               label: 'Net Flow (4 wk)',       sign: true,
-          fmt: v => v == null ? '—' : (v > 0 ? `+${v}` : `${v}`)},
-        {key: 'rolling_median_close_days', label: 'Median Close (4 wk)',   fmt: v => v == null ? '—' : `${v}d`},
-        {key: 'pct_responded_48h',         label: '48h Response SLA',      fmt: v => v == null ? '—' : `${v}%`},
-        {key: 'stale_count',               label: 'Stale Issues (30d+)'},
-      ]);
-
-      // ════════════════════════════════════════════════════════════════════════
-      // SECTION: Trends
-      // ════════════════════════════════════════════════════════════════════════
-      h2('Cumulative Issue Flow', 'Brush the time axis to filter the velocity chart below.');
-
-      const cumChart = vg.plot(
-        vg.areaY(vg.from('fusion_issues.main.cumulative_flow'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'cumulative_opened', fill: '#f38ba8', fillOpacity: 0.35, tip: true,
-        }),
-        vg.areaY(vg.from('fusion_issues.main.cumulative_flow'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'cumulative_closed', fill: '#a6e3a1', fillOpacity: 0.35, tip: true,
-        }),
-        vg.lineY(vg.from('fusion_issues.main.cumulative_flow'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'cumulative_opened', stroke: '#f38ba8', strokeWidth: 2,
-        }),
-        vg.lineY(vg.from('fusion_issues.main.cumulative_flow'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'cumulative_closed', stroke: '#a6e3a1', strokeWidth: 2,
-        }),
-        vg.intervalX({as: timeSel}),
-        vg.xLabel('Week'), vg.yLabel('Cumulative issues'),
-        vg.colorLegend(),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(880), vg.height(200),
-      );
-      app.append(cumChart);
-
-      h2('Median Days to Close: Bugs vs Enhancements', 'Filtered by time brush above.');
-      const velBugs = vg.plot(
-        vg.lineY(vg.from('fusion_issues.main.velocity', {filterBy: timeSel}), {
-          filter: vg.sql`issue_category = 'bug'`,
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'median_days', stroke: '#f38ba8', strokeWidth: 2, tip: true,
-        }),
-        vg.xLabel('Week'), vg.yLabel('Median days (bugs)'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(420), vg.height(180),
-      );
-      const velEnh = vg.plot(
-        vg.lineY(vg.from('fusion_issues.main.velocity', {filterBy: timeSel}), {
-          filter: vg.sql`issue_category = 'enhancement'`,
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'median_days', stroke: '#89b4fa', strokeWidth: 2, tip: true,
-        }),
-        vg.xLabel('Week'), vg.yLabel('Median days (enhancements)'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(420), vg.height(180),
-      );
-      row(velBugs, velEnh);
-
-      h2('Time to First Response (hours)');
-      const responseChart = vg.plot(
-        vg.lineY(vg.from('fusion_issues.main.response_pctiles'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'p25', stroke: '#a6e3a1', strokeWidth: 2, tip: true,
-        }),
-        vg.lineY(vg.from('fusion_issues.main.response_pctiles'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'p50', stroke: '#89b4fa', strokeWidth: 2, tip: true,
-        }),
-        vg.lineY(vg.from('fusion_issues.main.response_pctiles'), {
-          x: vg.sql`epoch_ms(strptime(week::TEXT, '%Y-%m-%d'))`,
-          y: 'p75', stroke: '#f38ba8', strokeWidth: 2, tip: true,
-        }),
-        vg.xLabel('Week'), vg.yLabel('Hours to first response'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(880), vg.height(200),
-      );
-      app.append(responseChart);
-
-      // Age distribution — order by bucket_sort_order from the data, not hardcoded labels
-      h2('Open Issue Age by Type', 'Click an age bucket to filter the assignee workload chart.');
-
-      // Fetch ordered buckets to drive explicit x-domain ordering
-      const ageBuckets = await sqlRows(
-        'SELECT age_bucket FROM fusion_issues.main.age_distribution_wide ORDER BY bucket_sort_order'
-      );
-      const bucketOrder = ageBuckets.map(r => r.age_bucket);
-
-      const ageChart = vg.plot(
-        vg.barY(vg.from('fusion_issues.main.age_distribution', {filterBy: ageSel}), {
-          x: 'age_bucket', y: vg.sum('issue_count'), fill: 'issue_category', tip: true,
-        }),
-        vg.toggleX({as: ageSel}),
-        vg.colorLegend(),
-        vg.xDomain(bucketOrder),
-        vg.xLabel('Age bucket'), vg.yLabel('Open issues'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(420), vg.height(220),
+      row(
+        tileCard('backlog_weekly', vg.colorLegend({for: 'backlog', as: catSel}), backlogPlot),
+        tileCard('weekly_flow', vg.colorLegend({for: 'flow'}), flowPlot),
       );
 
-      h2('Assignee Workload (filtered by age selection)');
-      // ageSel filters age_distribution which shares no column with assignee_workload —
-      // display workload without cross-table filterBy to avoid broken queries
-      const workChart = vg.plot(
-        vg.barX(vg.from('fusion_issues.main.assignee_workload'), {
-          y: 'assignee_login',
-          x: vg.sum(vg.sql`bugs + enhancements`),
-          fill: '#cba6f7', tip: true, sort: {y: '-x'},
+      // ── Are we keeping up with triage? ──────────────────────────────────────
+      question('triage');
+      const pipe = tiles.get('triage_pipeline');
+      const pipePlot = vg.plot(
+        vg.barX(vg.from(T('triage_pipeline')), {y: pipe.y, x: pipe.x, fill: pipe.color, z: pipe.color, order: keys(pipe.color), tip: true}),
+        vg.name('pipeline'), ...colorScale(pipe.color), vg.yDomain(uniq(triageOrder, pipe.y)),
+        vg.yLabel(null), vg.xLabel('Open issues'), vg.xGrid(true), vg.marginLeft(150), ...look, vg.width(W), vg.height(240),
+      );
+      const resp = tiles.get('response_weekly');
+      const respPlot = vg.plot(
+        vg.lineY(vg.from(T('response_weekly'), {filterBy: weekSel}), {x: WEEK(), y: resp.y, stroke: SINGLE, strokeWidth: 2}),
+        vg.dot(vg.from(T('response_weekly'), {filterBy: weekSel}), {
+          x: WEEK(), y: resp.y, fill: SINGLE, r: 2.5, tip: true,
+          channels: Object.fromEntries(resp.tooltip.map(c => [c, c])),
         }),
-        vg.xLabel('Open issues (bugs + enhancements)'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(420), vg.height(280),
+        vg.xScale('utc'), vg.yDomain([0, 100]), vg.xLabel(null), vg.yLabel('% answered within 48h'), vg.yGrid(true),
+        ...look, vg.width(W), vg.height(260),
       );
-      row(ageChart, workChart);
+      row(tileCard('triage_pipeline', vg.colorLegend({for: 'pipeline'}), pipePlot), tileCard('response_weekly', respPlot));
+      row(table('triage_queue', triageQueue));
 
-      h2('Median Days to Close by Label');
-      const labelChart = vg.plot(
-        vg.barX(vg.from('fusion_issues.main.close_by_label'), {
-          y: 'label_name', x: 'median_days_to_close',
-          fill: '#89dceb', tip: true, sort: {y: '-x'},
-        }),
-        vg.xLabel('Median days to close'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(880), vg.height(320),
+      // ── Where is the work? ──────────────────────────────────────────────────
+      // Stacked by issue_category; bars keep the model's *_total order and follow the legend filter.
+      const stacked = (id, domainRows) => {
+        const t = tiles.get(id);
+        const domain = uniq(domainRows, t.y);
+        return vg.plot(
+          vg.barX(vg.from(T(t.model), {filterBy: catSel}), {y: t.y, x: t.x, fill: t.color, z: t.color, order: keys(t.color), tip: true}),
+          ...colorScale(t.color), vg.yDomain(domain),
+          vg.yLabel(null), vg.xLabel('Open issues'), vg.xGrid(true), vg.marginLeft(150),
+          ...look, vg.width(W), vg.height(Math.max(160, 26 * domain.length + 60)),
+        );
+      };
+      question('where');
+      row(
+        tileCard('open_by_area', stacked('open_by_area', areaOrder)),
+        tileCard('open_by_adapter', stacked('open_by_adapter', adapterOrder)),
       );
-      app.append(labelChart);
 
-      // ════════════════════════════════════════════════════════════════════════
-      // SECTION: Triage Health
-      // ════════════════════════════════════════════════════════════════════════
-      h2('Triage Health');
+      // ── How close are the epics? ────────────────────────────────────────────
+      question('epics');
+      row(table('epic_progress', epics));
 
-      const triageHealthData = await sqlRows(
-        'SELECT pct_labeled, pct_typed, pct_assigned, pct_milestoned FROM fusion_issues.main.triage_health'
-      );
-      kpiRow(triageHealthData, [
-        {key: 'pct_labeled',    label: '% Labeled',    fmt: v => v == null ? '—' : `${v}%`},
-        {key: 'pct_typed',      label: '% Typed',      fmt: v => v == null ? '—' : `${v}%`},
-        {key: 'pct_assigned',   label: '% Assigned',   fmt: v => v == null ? '—' : `${v}%`},
-        {key: 'pct_milestoned', label: '% Milestoned', fmt: v => v == null ? '—' : `${v}%`},
-      ]);
-
-      // ════════════════════════════════════════════════════════════════════════
-      // SECTION: People
-      // ════════════════════════════════════════════════════════════════════════
-      h2('Community Priorities');
-      const commChart = vg.plot(
-        vg.barX(vg.from('fusion_issues.main.community_priorities'), {
-          y: vg.sql`'#' || issue_number::TEXT || ' ' || left(title, 40)`,
-          x: 'reactions_total_count', fill: 'issue_category', tip: true,
-          sort: {y: '-x'},
-        }),
-        vg.colorLegend(),
-        vg.xLabel('Reactions'),
-        vg.style({background: 'transparent', color: '#cdd6f4'}),
-        vg.width(880), vg.height(340),
-      );
-      app.append(commChart);
+      // ── What should we work on, and who is on it? ───────────────────────────
+      question('next');
+      row(table('top_requested', topRequested));
+      row(tileCard('assignee_workload', stacked('assignee_workload', assigneeOrder)));
 
       status.textContent = 'Data loaded live from MotherDuck (Mosaic).';
     }

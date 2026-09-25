@@ -112,6 +112,11 @@ def main() -> None:
 
         if env_name:
             warm_bruin_query_runtime(config, env, env_name)
+        else:
+            # Bruin resolves a DuckDB path relative to the config file's
+            # directory even when it is absolute, so hand it a relative path.
+            db = Path(env["FUSION_DB"]).resolve()
+            env["FUSION_DB"] = os.path.relpath(db, tmp_path.resolve())
 
         command = ["dac", "--config", str(config)]
         command.extend([

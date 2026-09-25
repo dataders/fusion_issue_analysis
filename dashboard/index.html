@@ -241,24 +241,24 @@
       </div>
     </div>
     <nav class="main-tabs" aria-label="Dashboard framework">
-      <button class="active" data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
+      <button class="active" data-src="dbt-charts/fusion-issue-health.html" data-tab="dbt-charts" onclick="switchTab(this)">dbt charts</button>
+      <button data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
+      <button data-src="evidence/build/" data-tab="evidence" onclick="switchTab(this)">Evidence.dev</button>
+      <button data-src="dac/build/" data-tab="dac" onclick="switchTab(this)">DAC</button>
       <button data-src="ggsql/index.html" data-tab="ggsql" onclick="switchTab(this)">ggsql + Vega-Lite</button>
       <button data-src="mviz/index.html" data-tab="mviz" onclick="switchTab(this)">mviz</button>
       <button data-src="mdv/index.html" data-tab="mdv" onclick="switchTab(this)">MDV</button>
       <button data-src="observable/dist/" data-tab="observable" onclick="switchTab(this)">Observable</button>
-      <button data-src="evidence/build/" data-tab="evidence" onclick="switchTab(this)">Evidence.dev</button>
       <button data-src="marimo.html" data-tab="marimo" onclick="switchTab(this)">Marimo</button>
       <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
-      <button data-src="dac/build/" data-tab="dac" onclick="switchTab(this)">DAC</button>
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
-      <button data-src="dbt-charts/fusion-issue-health.html" data-tab="dbt-charts" onclick="switchTab(this)">dbt charts</button>
       <span class="tab-divider">live</span>
       <button data-src="duckdb-wasm/index.html" data-tab="duckdb-wasm" onclick="switchTab(this)">DuckDB WASM</button>
       <button data-src="mosaic/index.html" data-tab="mosaic" onclick="switchTab(this)">Mosaic</button>
       <button data-src="observable/dist/live.html" data-tab="observable-live" onclick="switchTab(this)">Observable (live)</button>
       <button data-src="about.html" data-tab="about" onclick="switchTab(this)">About</button>
     </nav>
-    <div class="subnav" id="prefab-themes" aria-label="Prefab theme">
+    <div class="subnav" id="prefab-themes" hidden aria-label="Prefab theme">
       <button class="active" data-src="prefab/app.html" data-theme="vanilla" onclick="switchPrefabTheme(this)">Vanilla</button>
       <button data-src="prefab/app_reactive.html" data-theme="reactive" onclick="switchPrefabTheme(this)">Reactive</button>
       <button data-src="prefab/app_myspace.html" data-theme="myspace" onclick="switchPrefabTheme(this)">MySpace</button>
@@ -269,7 +269,7 @@
       <button data-src="duckdb-wasm/metricflow/index.html" data-view="metricflow" onclick="switchDuckDBView(this)">MetricFlow</button>
     </div>
   </header>
-  <iframe id="frame" src="prefab/app.html" title="Dashboard"></iframe>
+  <iframe id="frame" src="dbt-charts/fusion-issue-health.html" title="dbt charts"></iframe>
 
   <script>
     const tabs = Array.from(document.querySelectorAll('.main-tabs button'));

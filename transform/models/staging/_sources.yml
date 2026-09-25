@@ -1,10 +1,12 @@
 version: 2
 
 sources:
-  - name: raw_github
+  - name: raw_github_core
     description: >
-      Raw GitHub issue data extracted via dlt from dbt-labs/dbt-fusion.
-      Parquet files in data/raw/fusion_issues/. Gitignored — run extract/run.py to populate.
+      Raw GitHub issue data extracted via dlt from dbt-labs/dbt-core, filtered to
+      the `engine:v2` label (dbt Fusion issues). Parquet files in
+      data/raw/fusion_issues_core/ locally; `raw_github_core` schema in MotherDuck.
+      Gitignored — run extract/run.py to populate.
     tables:
       - name: milestones
         description: Raw milestones extracted directly from GitHub GraphQL (all states, one row per milestone).
@@ -35,7 +37,7 @@ models:
                 values: ['OPEN', 'CLOSED']
 
   - name: stg_issues
-    description: Cleaned issues from dbt-labs/dbt-fusion
+    description: Cleaned dbt Fusion (engine:v2) issues from dbt-labs/dbt-core
     columns:
       - name: issue_dlt_id
         description: Unique identifier from dlt

@@ -1,222 +1,141 @@
 """
 Generate CSV files for the MDV dashboard.
 
-MDV does not query databases directly, so this script keeps warehouse access in
-the build step and lets the .mdv file stay Markdown-native.
+MDV does not query databases directly, so this script keeps warehouse access
+in the build step and lets dashboard.mdv stay Markdown-native. Tiles follow
+dashboard/tiles.yml and read only the dbt dashboard models via the shared
+tiles helper; this script only selects, sorts, renames, formats and pivots.
+
+MDV v1 has table, stat, bar (single series), line and pie blocks — no
+stacking, no horizontal bars, no custom colors, no links. So:
+  - stacked bars become crosstab tables (one column per stack segment),
+  - the stacked area and the grouped bar become multi-series lines,
+  - postprocess.py recolors series to the tiles.yml palette and turns issue
+    URLs into links after rendering.
 """
 
 from __future__ import annotations
 
 import csv
-import json
-import os
+import sys
 from pathlib import Path
 from typing import Any
 
-import duckdb
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import tiles  # noqa: E402
 
-
-PROJECT_ROOT = Path(__file__).resolve().parents[2]
 HERE = Path(__file__).resolve().parent
 DATA_DIR = HERE / "data"
-FILE_SEARCH_ROOT = Path(os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT))
-
-if os.environ.get("FUSION_DB"):
-    DB_PATH = os.environ["FUSION_DB"]
-elif os.environ.get("MOTHERDUCK_TOKEN"):
-    DB_PATH = "md:fusion_issues"
-else:
-    DB_PATH = str(PROJECT_ROOT / "data" / "fusion_issues.duckdb")
+CATEGORIES = tiles.categories("issue_category")  # feature, bug, task, other
 
 
-def get_connection():
-    con = duckdb.connect(DB_PATH, read_only=True)
-    if not DB_PATH.startswith("md:"):
-        con.execute(f"SET file_search_path = '{FILE_SEARCH_ROOT / 'transform'}'")
-    return con
-
-
-def query(con, sql: str) -> list[dict[str, Any]]:
-    return json.loads(con.execute(sql).fetchdf().to_json(orient="records"))
-
-
-def fmt_int(value: Any) -> str:
-    return f"{int(value):,}" if value is not None else "0"
-
-
-def fmt_days(value: Any) -> str:
-    return f"{float(value):.1f}d" if value is not None else "0.0d"
-
-
-def fmt_pct(value: Any) -> str:
-    return f"{float(value):.0f}%" if value is not None else "0%"
-
-
-def build_stats(summary: dict[str, Any]) -> list[dict[str, str]]:
-    net_flow = int(summary["net_flow_4w"])
-    return [
-        {"label": "Open issues", "value": fmt_int(summary["open_issues"]), "delta": ""},
-        {"label": "Net flow (4wk)", "value": f"{net_flow:+,}", "delta": ""},
-        {"label": "Median close (4wk)", "value": fmt_days(summary["rolling_median_close_days"]), "delta": ""},
-        {"label": "48h response SLA", "value": fmt_pct(summary["pct_responded_48h"]), "delta": ""},
-        {"label": "Stale issues", "value": fmt_int(summary["stale_count"]), "delta": ""},
-    ]
-
-
-def write_csv(filename: str, rows: list[dict[str, Any]], fieldnames: list[str] | None = None) -> None:
+def write_csv(filename: str, rows: list[dict[str, Any]]) -> None:
     DATA_DIR.mkdir(parents=True, exist_ok=True)
     path = DATA_DIR / filename
-    columns = fieldnames or list(rows[0].keys() if rows else [])
     with path.open("w", newline="") as f:
-        writer = csv.DictWriter(f, fieldnames=columns)
+        writer = csv.DictWriter(f, fieldnames=list(rows[0].keys()))
         writer.writeheader()
         writer.writerows(rows)
     print(f"  wrote {path} ({len(rows)} records)")
 
 
-def build_triage_stats(triage: dict[str, Any]) -> list[dict[str, str]]:
-    return [
-        {"label": "Slipped through (bugs)", "value": fmt_int(triage["slipped_through_count"]), "delta": ""},
-        {"label": "In triage queue", "value": fmt_int(triage["triage_queue_count"]), "delta": ""},
-        {"label": "Hard blockers", "value": fmt_int(triage["hard_blocker_count"]), "delta": ""},
-        {"label": "Needs repro", "value": fmt_int(triage["needs_repro_count"]), "delta": ""},
-        {"label": "Repro verified", "value": fmt_int(triage["repro_verified_count"]), "delta": ""},
-        {"label": "Stale", "value": fmt_int(triage["stale_count"]), "delta": ""},
-    ]
+def issue_type(row: dict) -> str:
+    return tiles.label("issue_category", row["issue_category"])
 
 
-def build_triage_pct_stats(th: dict[str, Any]) -> list[dict[str, str]]:
-    """Canon tiles 18-21: triage quality percentages from triage_health."""
-    return [
-        {"label": "% Labeled", "value": fmt_pct(th["pct_labeled"]), "delta": ""},
-        {"label": "% Typed", "value": fmt_pct(th["pct_typed"]), "delta": ""},
-        {"label": "% Assigned", "value": fmt_pct(th["pct_assigned"]), "delta": ""},
-        {"label": "% Milestoned", "value": fmt_pct(th["pct_milestoned"]), "delta": ""},
-    ]
+def yes(value) -> str:
+    return "yes" if value else ""
+
+
+def pct_bar(pct: float | None, width: int = 10) -> str:
+    """Text progress bar — MDV tables have no per-cell styling."""
+    pct = pct or 0
+    filled = round(pct / 100 * width)
+    return "█" * filled + "░" * (width - filled) + f" {pct:.0f}%"
+
+
+def crosstab(tile_id: str, index: str, header: str, total: str | None = None) -> None:
+    """Long (index, issue_category, issue_count) -> one row per index, one column per type."""
+    rows = tiles.tile_rows(tile_id)
+    totals = {r[index]: r[total] for r in rows} if total else {}
+    wide = tiles.pivot(rows, index=index, column="issue_category", value="issue_count")
+    write_csv(f"{tile_id}.csv", [
+        {header: r[index],
+         **{tiles.label("issue_category", c): int(r.get(c, 0)) for c in CATEGORIES},
+         **({"Total": int(totals[r[index]])} if total else {})}
+        for r in wide
+    ])
 
 
 def main() -> None:
-    con = get_connection()
+    # -- Header: freshness (dashboard_meta) --
+    meta = tiles.one("dashboard_meta")
+    stale = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
+    freshness = [
+        {"label": "Data as of", "value": str(meta["as_of_date"])[:10], "delta": ""},
+        {"label": f"label {meta['source_label']}", "value": meta["source_repo"], "delta": ""},
+    ]
+    if stale:
+        freshness.append({"label": "⚠ The extract may have stopped",
+                          "value": f"{meta['days_stale']} days old", "delta": f"-{meta['days_stale']} days"})
+    write_csv("dashboard_meta.csv", freshness)
 
-    summary = query(con, "SELECT * FROM summary_kpis")[0]
-    write_csv("stats.csv", build_stats(summary), ["label", "value", "delta"])
+    # -- Where do things stand? headline_kpis formatted per tiles.yml --
+    write_csv("headline_kpis.csv", [
+        {"label": f"{k['label']} · {k['context']}" if k["context"] else k["label"], "value": k["value"], "delta": ""}
+        for k in tiles.kpis()
+    ])
 
-    triage = query(con, "SELECT * FROM issue_triage_health")[0]
-    write_csv("triage_health.csv", build_triage_stats(triage), ["label", "value", "delta"])
+    # -- Is the backlog shrinking? --
+    # Rows are ordered week, then palette order, so series appear feature,
+    # bug, task, other (postprocess.py colors them in that order).
+    rank = {c: i for i, c in enumerate(CATEGORIES)}
+    backlog = sorted(tiles.tile_rows("backlog_weekly"), key=lambda r: (r["week"], rank[r["issue_category"]]))
+    write_csv("backlog_weekly.csv", [
+        {"week": r["week"], "type": issue_type(r), "open_issues": r["open_issues"]} for r in backlog
+    ])
+    write_csv("weekly_flow.csv", [
+        {"week": r["week"], "series": tiles.label("flow", s), "issues": r[s]}
+        for r in tiles.tile_rows("weekly_flow") for s in ("opened", "closed")
+    ])
 
-    th = query(con, "SELECT pct_labeled, pct_typed, pct_assigned, pct_milestoned FROM triage_health")[0]
-    write_csv("triage_pct_health.csv", build_triage_pct_stats(th), ["label", "value", "delta"])
+    # -- Are we keeping up with triage? --
+    pipeline = tiles.tile_rows("triage_pipeline")
+    buckets = list(dict.fromkeys(r["age_bucket"] for r in pipeline))
+    by_status = tiles.pivot(pipeline, index="status_label", column="age_bucket", value="issue_count")
+    write_csv("triage_pipeline.csv", [
+        {"Triage status": r["status_label"], **{b: int(r[b]) for b in buckets}} for r in by_status
+    ])
+    write_csv("response_weekly.csv", [
+        {"week": r["week"], "pct_answered_48h": r["pct_responded_48h"] or 0} for r in tiles.tile_rows("response_weekly")
+    ])
+    write_csv("triage_queue.csv", [
+        {"#": r["issue_url"], "Title": r["title"], "Type": issue_type(r), "Age (days)": r["age_days"],
+         "Idle (days)": r["days_idle"], "Reactions": r["reactions"], "Comments": r["comments"],
+         "Customer": yes(r["is_customer_reported"])}
+        for r in tiles.tile_rows("triage_queue")
+    ])
 
-    write_csv(
-        "oldest_untriaged.csv",
-        query(
-            con,
-            """
-            select
-                issue_number,
-                title,
-                age_days,
-                issue_url
-            from oldest_untriaged
-            order by age_days desc
-            """,
-        ),
-    )
+    # -- Where is the work? --
+    crosstab("open_by_area", "area", "Area", total="area_total")
+    crosstab("open_by_adapter", "adapter", "Adapter", total="adapter_total")
 
-    write_csv(
-        "cumulative_flow.csv",
-        query(
-            con,
-            """
-            select week, 'Opened' as series, cumulative_opened as issues from cumulative_flow
-            union all
-            select week, 'Closed' as series, cumulative_closed as issues from cumulative_flow
-            order by week, series
-            """,
-        ),
-    )
+    # -- How close are the epics? --
+    write_csv("epic_progress.csv", [
+        {"#": r["issue_url"], "Epic": r["title"], "Closed": r["child_closed"], "Sub-issues": r["child_total"],
+         "% closed": pct_bar(r["pct_complete"]), "Milestone": r["milestone_title"]}
+        for r in tiles.tile_rows("epic_progress")
+    ])
 
-    write_csv(
-        "velocity.csv",
-        query(
-            con,
-            """
-            select
-                week,
-                case issue_category
-                    when 'bug' then 'Bugs'
-                    when 'enhancement' then 'Enhancements'
-                    else upper(left(issue_category, 1)) || lower(substr(issue_category, 2))
-                end as type,
-                median_days as days
-            from velocity
-            order by week, type
-            """,
-        ),
-    )
+    # -- What should we work on, and who is on it? --
+    write_csv("top_requested.csv", [
+        {"#": r["issue_url"], "Title": r["title"], "Type": issue_type(r), "Areas": r["areas"],
+         "Triage": r["triage_status"], "Reactions": r["reactions"], "Comments": r["comments"],
+         "Age (days)": r["age_days"], "Customer": yes(r["is_customer_reported"])}
+        for r in tiles.tile_rows("top_requested")
+    ])
+    crosstab("assignee_workload", "assignee_login", "Assignee", total="assignee_total")
 
-    write_csv(
-        "response.csv",
-        query(
-            con,
-            """
-            select week, 'p25' as percentile, p25 as hours from response_pctiles
-            union all
-            select week, 'p50' as percentile, p50 as hours from response_pctiles
-            union all
-            select week, 'p75' as percentile, p75 as hours from response_pctiles
-            order by week, percentile
-            """,
-        ),
-    )
-
-    write_csv(
-        "age_distribution.csv",
-        query(
-            con,
-            """
-            SELECT age_bucket, issue_category, issue_count
-            FROM age_distribution
-            ORDER BY bucket_sort_order, issue_category
-            """,
-        ),
-    )
-    write_csv(
-        "close_by_label.csv",
-        query(con, "SELECT label_name, median_days_to_close FROM close_by_label ORDER BY median_days_to_close DESC LIMIT 12"),
-    )
-    write_csv(
-        "assignee_workload.csv",
-        query(
-            con,
-            """
-            select assignee_login, 'Bugs' as type, bugs as open_issues from assignee_workload
-            union all
-            select assignee_login, 'Enhancements' as type, enhancements as open_issues from assignee_workload
-            order by assignee_login, type
-            """,
-        ),
-    )
-    write_csv(
-        "community_priorities.csv",
-        query(
-            con,
-            """
-            select
-                issue_number as number,
-                title,
-                issue_category as type,
-                reactions_total_count as reactions,
-                comments_total_count as comments,
-                age_days,
-                issue_url
-            from community_priorities
-            order by reactions desc, comments desc
-            """,
-        ),
-    )
-
-    con.close()
     print("\nDone. All data files written to mdv/data/")
 
 

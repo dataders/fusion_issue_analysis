@@ -1,108 +1,39 @@
 version: 2
 
+# Every bakeoff framework renders the same tile set (dashboard/tiles.yml), so
+# they share one exposure. tests/test_tiles_contract.py keeps this list, the
+# manifest, and the models directory in sync.
+
 exposures:
-  - name: prefab_issue_health
+  - name: issue_health_bakeoff
     type: dashboard
     maturity: high
     url: https://dataders.github.io/fusion_issue_analysis/
-    description: Primary Prefab dashboard — dbt-fusion issue health metrics
+    description: >
+      dbt Fusion (engine:v2) issue health, rendered by every framework in the
+      visualization bakeoff from the same tile models.
     depends_on:
-      - ref('summary_kpis')
-      - ref('cumulative_flow')
-      - ref('age_distribution')
-      - ref('response_pctiles')
-      - ref('bug_velocity')
-      - ref('enh_velocity')
-      - ref('close_by_label')
-      - ref('triage_health')
-      - ref('epic_list')
-      - ref('assignee_workload')
-      - ref('community_priorities')
-      - ref('open_issues_table')
-      - ref('leaderboard')
-      - ref('milestone_burndown_weekly')
-    owner:
-      name: dataders
-
-  - name: prefab_myspace
-    type: dashboard
-    maturity: low
-    description: Prefab MySpace-themed dashboard (bakeoff)
-    depends_on:
-      - ref('summary_kpis')
-      - ref('cumulative_flow')
-      - ref('response_pctiles')
-      - ref('community_priorities')
-      - ref('assignee_workload')
-    owner:
-      name: dataders
-
-  - name: mviz_dashboard
-    type: dashboard
-    maturity: low
-    description: mviz + Vega-Lite dashboard (bakeoff)
-    depends_on:
-      - ref('summary_kpis')
-      - ref('cumulative_flow')
-      - ref('bug_velocity')
-      - ref('enh_velocity')
-      - ref('response_pctiles')
-      - ref('age_distribution')
-      - ref('close_by_label')
-      - ref('assignee_workload')
-      - ref('community_priorities')
-    owner:
-      name: dataders
-
-  - name: marimo_dashboard
-    type: dashboard
-    maturity: low
-    description: Marimo dashboard (bakeoff)
-    depends_on:
-      - ref('summary_kpis')
-      - ref('velocity')
+      - ref('dashboard_meta')
+      - ref('headline_kpis')
+      - ref('backlog_weekly')
       - ref('weekly_flow')
-      - ref('triage_health')
-      - ref('community_priorities')
+      - ref('triage_pipeline')
+      - ref('response_weekly')
+      - ref('triage_queue')
+      - ref('open_by_area')
+      - ref('open_by_adapter')
+      - ref('epic_progress')
+      - ref('top_requested')
       - ref('assignee_workload')
     owner:
       name: dataders
 
-  - name: observable_dashboard
+  - name: duckdb_wasm_metricflow
     type: dashboard
     maturity: low
-    description: Observable Framework dashboard (bakeoff)
+    description: DuckDB-WASM MetricFlow view (bakeoff)
     depends_on:
-      - ref('summary_kpis')
-      - ref('velocity')
-      - ref('weekly_flow')
-      - ref('triage_health')
-      - ref('community_priorities')
-    owner:
-      name: dataders
-
-  - name: evidence_dashboard
-    type: dashboard
-    maturity: low
-    description: Evidence.dev dashboard (bakeoff)
-    depends_on:
-      - ref('issues')
-      - ref('open_by_category')
-      - ref('triage_health')
-      - ref('weekly_flow')
-    owner:
-      name: dataders
-
-  - name: ggsql_dashboard
-    type: dashboard
-    maturity: low
-    description: ggsql + Vega-Lite dashboard (bakeoff)
-    depends_on:
-      - ref('issues_opened_per_week')
-      - ref('open_vs_closed_by_category')
-      - ref('top_authors')
-      # Two charts read directly from the metrics/ layer (pre-existing models):
-      - ref('response_time_trends')
-      - ref('bug_fix_velocity')
+      - ref('metric_avg_time_to_close')
+      - ref('metric_open_issue_count')
     owner:
       name: dataders

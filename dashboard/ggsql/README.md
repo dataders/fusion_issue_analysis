@@ -1,4 +1,4 @@
-# ggsql spike
+# ggsql dashboard
 
 Tracking issue: [#49](https://github.com/dataders/fusion_issue_analysis/issues/49)
 
@@ -19,11 +19,15 @@ deps; no project install is needed.
 
 ## What's in here
 
-- `build.py` — connects to DuckDB, runs the canonical ggsql chart set against
-  the `transform/models/dashboard/` marts, and stitches per-chart Vega-Lite
-  embeds into a single static HTML page.
-- `index.html` — generated artifact. Pure HTML + vega-embed, safe to drop into
-  the PR preview deploy alongside the Prefab `app.html`.
+- `build.py` — renders the tile contract in `dashboard/tiles.yml`: section
+  questions, tile titles/subtitles, the freshness banner and KPI formatting
+  come from the manifest via `dashboard/tiles.py`; each tile's data comes from
+  one `queries/NN_<tile_id>.sql` file (numbered in tiles.yml order).
+- `queries/*.sql` — ggsql chart specs (`SELECT … VISUALISE … DRAW …`) over the
+  `transform/models/dashboard/` models, plus plain SELECTs for the KPI row
+  (`-- type: kpi`) and tables (`-- type: table`), which `build.py` renders
+  as HTML with rows linked to `issue_url`.
+- `index.html` — generated artifact. Pure HTML + vega-embed.
 
 ## Approach: build-time vs. in-browser
 
@@ -62,5 +66,14 @@ the spike is greenlit, the follow-up is to vendor the pre-built pkg and swap
   leading slash). Worked around by wrapping a `duckdb.Connection` with a
   custom reader that implements `execute_sql(sql) -> polars.DataFrame` +
   `register(name, df, …)`.
-- Our dbt models reference parquet sources with relative paths, so
-  `build.py` chdirs to `transform/` before opening the connection.
+- ggsql 0.3 rejects polars' Utf8View strings in discrete scales, so the reader
+  casts string columns to Categorical.
+- Discrete axes are always sorted alphabetically. `-- order: y` makes
+  `build.py` set the Vega-Lite domain to the query's row order (bars sorted
+  by `*_total`).
+- Stacks are also ordered alphabetically by fill value, so stacked series are
+  prefixed with their palette order (`'1 feature'`, `'1 0-7d'`) and
+  `RENAMING` restores the labels.
+- Dodged bars on a temporal axis render as hairlines; `weekly_flow` keeps the
+  week as a string so each week gets a band.
+- No tooltips: ggsql's Vega-Lite output uses internal field names.

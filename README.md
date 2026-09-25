@@ -2,7 +2,8 @@
 
 # Fusion Issue Analytics
 
-Static dashboard bakeoff for [dbt-labs/dbt-fusion](https://github.com/dbt-labs/dbt-fusion) issue analytics.
+Static dashboard bakeoff for dbt Fusion issue analytics — [`engine:v2` issues in dbt-labs/dbt-core](https://github.com/dbt-labs/dbt-core/issues?q=label%3Aengine%3Av2).
+Every framework renders the same question-driven tile set, defined once in [`dashboard/tiles.yml`](./dashboard/tiles.yml).
 
 Start here:
 

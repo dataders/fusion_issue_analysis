@@ -29,5 +29,7 @@ if [ ! -f "$MDV_CLI" ] || [ ! -d "$MDV_CACHE_DIR/node_modules" ]; then
   )
 fi
 
-uv run python3 "$HERE/generate_data.py"
+uv run python "$HERE/generate_data.py"
 node "$MDV_CLI" render "$HERE/dashboard.mdv" --out "$HERE/index.html"
+# Palette colors and issue links, which MDV v1 cannot express.
+uv run python "$HERE/postprocess.py" "$HERE/index.html"
