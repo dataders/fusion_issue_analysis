@@ -183,13 +183,13 @@ test.describe("dashboard UI controls", () => {
     await expectFrameToHaveText(page);
 
     const frame = page.frameLocator("#frame");
-    await expect(frame.getByText("Quick filter:")).toBeVisible();
+    await expect(frame.getByText("Issue type:")).toBeVisible();
 
-    const categoryDropdown = frame.getByRole("combobox").filter({ hasText: "Category" });
-    await categoryDropdown.click();
-    await expect(categoryDropdown).toHaveAttribute("aria-expanded", "true");
+    const weeksDropdown = frame.getByRole("combobox").filter({ hasText: "Weeks" });
+    await weeksDropdown.click();
+    await expect(weeksDropdown).toHaveAttribute("aria-expanded", "true");
     await page.keyboard.press("Escape");
-    await expect(frame.getByText(/Showing \d+ of \d+/).first()).toBeVisible();
+    await expect(frame.getByText(/Showing all types/).first()).toBeVisible();
 
     await expectRouteToExist(request, "evidence/build/");
     await page.locator('.main-tabs button[data-tab="evidence"]').click();
