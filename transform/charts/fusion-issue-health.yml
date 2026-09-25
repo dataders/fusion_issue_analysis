@@ -1,353 +1,360 @@
-title: "dbt-fusion Issue Health"
+title: "dbt Fusion issue health"
 description: >
-  CORE-22 canonical dashboard for the dbt-fusion GitHub repository.
-  Queries dbt dashboard models directly: summary_kpis, issue_triage_health,
-  triage_health, cumulative_flow, velocity, response_pctiles, age_distribution,
-  close_by_label, assignee_workload, community_priorities, oldest_untriaged.
+  Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted).
+  Renders the tile contract in dashboard/tiles.yml, one thin query per dbt
+  dashboard model (transform/models/dashboard/).
 
 source: fusion_issues
 
 queries:
-  # dbt owns all transformations and business logic. These deliberately remain
-  # thin relation reads because dbt Charts currently expects SQL query entries.
-  # --- Operational Triage KPIs ---
-  triage_health_kpis:
-    description: Single-row operational triage counts from issue_triage_health.
-    sql: SELECT * FROM fusion_issues.main.issue_triage_health
-
-  # --- Oldest Untriaged Bugs table ---
-  oldest_untriaged:
-    description: Top untriaged bugs ordered by age; issue_url used for hyperlinks.
-    sql: SELECT * FROM fusion_issues.main.oldest_untriaged
-
-  # --- Key Metrics KPIs ---
-  summary_kpis:
-    description: Single-row summary KPIs including the new net_flow_4w column.
-    sql: SELECT * FROM fusion_issues.main.summary_kpis
-
-  # --- Trends ---
-  cumulative_flow:
-    description: Weekly cumulative opened and closed issue counts for area chart.
-    sql: SELECT * FROM fusion_issues.main.cumulative_flow
-
-  velocity:
-    description: Median days to close by week and issue_category (bug vs enhancement).
-    sql: SELECT * FROM fusion_issues.main.velocity
-
-  response_pctiles:
-    description: >
-      Weekly time-to-first-response percentiles modeled by dbt. Each percentile
-      column is rendered as a distinct series.
-    sql: SELECT * FROM fusion_issues.main.response_pctiles
-
-  age_distribution:
-    description: >
-      Issue count by age bucket and category. Ordered by bucket_sort_order
-      so bars appear chronologically; all categories (bug, enhancement, task,
-      other) are included dynamically — no hardcoded list.
-    sql: SELECT * FROM fusion_issues.main.age_distribution
-
-  close_by_label:
-    description: Median days to close grouped by issue label.
-    sql: SELECT * FROM fusion_issues.main.close_by_label
-
-  # --- Triage Health KPIs ---
-  label_health_kpis:
-    description: Single-row triage-process quality percentages.
-    sql: SELECT * FROM fusion_issues.main.triage_health
-
-  # --- People ---
+  # dbt owns all metric logic. Each query is a direct model read ordered by
+  # the tile's tiles.yml `order_by`; scripts/build_dbt_charts_db.py parses
+  # these to materialize the serving DB, so keep them in this exact form.
+  dashboard_meta:
+    description: One row — as-of date and staleness of the data.
+    sql: select * from fusion_issues.main.dashboard_meta
+  headline_kpis:
+    description: One row of headline numbers (28-day windows).
+    sql: select * from fusion_issues.main.headline_kpis
+  backlog_weekly:
+    description: Open non-epic issues at each week's end, by type (long).
+    sql: select * from fusion_issues.main.backlog_weekly order by week
+  weekly_flow:
+    description: Issues opened vs closed per complete week.
+    sql: select * from fusion_issues.main.weekly_flow order by week
+  triage_pipeline:
+    description: Open issues by triage status x age bucket (long).
+    sql: select * from fusion_issues.main.triage_pipeline order by status_order, age_bucket_order
+  response_weekly:
+    description: Share of new issues answered within 48h, by week opened.
+    sql: select * from fusion_issues.main.response_weekly order by week
+  triage_queue:
+    description: Open issues still awaiting triage, oldest first.
+    sql: select * from fusion_issues.main.triage_queue order by age_days desc
+  open_by_area:
+    description: Open issues per area label, by type (long).
+    sql: select * from fusion_issues.main.open_by_area order by area_total desc, area
+  open_by_adapter:
+    description: Open issues per adapter label, by type (long).
+    sql: select * from fusion_issues.main.open_by_adapter order by adapter_total desc, adapter
+  epic_progress:
+    description: Open epics with sub-issues, most complete first.
+    sql: select * from fusion_issues.main.epic_progress order by pct_complete desc, child_open, epic_number
+  top_requested:
+    description: Open issues ranked by reactions, then comments.
+    sql: select * from fusion_issues.main.top_requested order by reactions desc, comments desc
   assignee_workload:
-    description: Open issues per assignee broken down into bugs and enhancements.
-    sql: SELECT * FROM fusion_issues.main.assignee_workload
-
-  community_priorities:
-    description: Community-voted high-priority issues; issue_url used for links.
-    sql: SELECT * FROM fusion_issues.main.community_priorities
+    description: Top 15 assignees by open issues, by type (long).
+    sql: select * from fusion_issues.main.assignee_workload order by assignee_total desc, assignee_login
 
 charts:
-  # ---- Operational Triage ----
-  slipped_through_kpi:
-    description: Count of bugs that slipped through without being triaged before first response.
-    query: triage_health_kpis
+  # ---- Header: freshness ----
+  data_as_of_kpi:
+    description: As-of date; days_stale turns red when > 3 (tiles.yml stale_after_days) — the extract has probably stopped.
+    query: dashboard_meta
     type: kpi
-    value: slipped_through_count
-    label: "Slipped Through (bugs)"
-
-  triage_queue_kpi:
-    description: Number of issues currently in the triage queue.
-    query: triage_health_kpis
-    type: kpi
-    value: triage_queue_count
-    label: "Triage Queue"
-    style:
-      value:
-        format: integer
-
-  hard_blockers_kpi:
-    description: Count of hard-blocker issues; subtext shows unreleased hard blockers.
-    query: triage_health_kpis
-    type: kpi
-    value: hard_blocker_count
-    label: "Hard Blockers"
+    variant: inline
+    value: as_of_date
+    label: "Data as of"
     support:
-      value: hard_blocker_unreleased
-      label: "unreleased"
+      value: days_stale
+      format: "d"
+      label: "days since latest activity (warning when > 3)"
+    conditional_formatting:
+      days_stale:
+        when:
+          - gt: 3
+            background: negative.bg
+            font: { color: negative.text, weight: "700" }
+            glyph: "⚠"
+            glyph_color: negative.solid
 
-  triage_stale_kpi:
-    description: Issues with no activity in 90+ days.
-    query: triage_health_kpis
-    type: kpi
-    value: stale_count
-    label: "Stale (90d+)"
-
-  needs_repro_kpi:
-    description: Bugs that need a reproduction case.
-    query: triage_health_kpis
-    type: kpi
-    value: needs_repro_count
-    label: "Needs Repro"
-    style:
-      value:
-        format: integer
-
-  repro_verified_kpi:
-    description: Bugs with a verified reproduction case.
-    query: triage_health_kpis
-    type: kpi
-    value: repro_verified_count
-    label: "Repro Verified"
-
-  total_open_kpi:
-    description: Total open issues (optional tile retained from original).
-    query: triage_health_kpis
-    type: kpi
-    value: total_open
-    label: "Total Open"
-    style:
-      value:
-        format: integer
-
-  oldest_untriaged_table:
-    description: Oldest untriaged bugs with clickable links via issue_url.
-    query: oldest_untriaged
-    type: table
-    link: issue_url
-    style:
-      columns:
-        issue_number:
-          label: "#"
-        title:
-          label: "Title"
-        age_days:
-          label: "Age (days)"
-
-  # ---- Key Metrics ----
-  open_issues_kpi:
-    description: Current total count of open issues.
-    query: summary_kpis
+  # ---- Where do things stand? ----
+  kpi_open_issues:
+    query: headline_kpis
     type: kpi
     value: open_issues
-    label: "Open Issues"
-    style:
-      value:
-        format: integer
+    label: "Open issues"
+    style: { value: { format: integer } }
+    support:
+      value: backlog_change_28d
+      format: "+d"
+      label: "in 28 days"
 
-  net_flow_kpi:
-    description: Net flow over last 4 weeks (closed - opened). Positive = backlog shrinking.
-    query: summary_kpis
+  kpi_opened_closed:
+    query: headline_kpis
     type: kpi
-    value: net_flow_4w
-    label: "Net Flow (4 wk)"
+    value: opened_28d
+    label: "Opened / closed (28d)"
+    style: { value: { format: { spec: "d", suffix: " opened" } } }
+    support:
+      value: closed_28d
+      format: "d"
+      label: "closed"
 
-  median_close_kpi:
-    description: Rolling 4-week median days to close an issue.
-    query: summary_kpis
+  kpi_awaiting_triage:
+    query: headline_kpis
     type: kpi
-    value: rolling_median_close_days
-    label: "Median Close (4 wk)"
+    value: awaiting_triage
+    label: "Awaiting triage"
+    style: { value: { format: integer } }
+    support:
+      value: awaiting_triage_median_age_days
+      format: ".0f"
+      label: "days median age"
 
-  response_sla_kpi:
-    description: Percentage of issues receiving a response within 48 hours.
-    query: summary_kpis
+  kpi_answered_48h:
+    query: headline_kpis
     type: kpi
-    value: pct_responded_48h
-    label: "48h Response SLA"
+    value: pct_responded_48h_28d
+    label: "Answered within 48h (28d)"
+    style: { value: { format: { spec: ".0f", suffix: "%" } } }
+    support:
+      value: median_hours_to_first_response_28d
+      format: ",.1~f"
+      label: "h median first reply"
 
-  summary_stale_kpi:
-    description: Issues with no activity in 30+ days.
-    query: summary_kpis
+  kpi_median_close:
+    query: headline_kpis
     type: kpi
-    value: stale_count
-    label: "Stale Issues (30d+)"
-    style:
-      value:
-        format: integer
+    value: median_days_to_close_28d
+    label: "Median days to close (28d)"
+    style: { value: { format: ",.1~f" } }
 
-  # ---- Trends ----
-  cumulative_flow_chart:
-    description: Cumulative opened vs closed issue counts over time (area chart).
-    query: cumulative_flow
+  kpi_customer_reported:
+    query: headline_kpis
+    type: kpi
+    value: open_customer_reported
+    label: "Customer-reported open"
+    style: { value: { format: integer } }
+    support:
+      value: open_hard_blockers
+      format: "d"
+      label: "hard blockers"
+
+  # ---- Is the backlog shrinking? ----
+  backlog_weekly_chart:
+    query: backlog_weekly
     type: area
+    title: "Open issues over time"
+    subtitle: "Open at the end of each week, by type"
     x: week
-    y:
-      - cumulative_opened
-      - cumulative_closed
-    title: "Cumulative Issue Flow"
-
-  velocity_chart:
-    description: Median days to close for bugs vs enhancements each week.
-    query: velocity
-    type: line
-    x: week
-    y: median_days
+    y: open_issues
     color: issue_category
-    title: "Median Days to Close: Bugs vs Enhancements"
+    x_label: "Week"
+    y_label: "Open issues"
+    style:
+      stack: zero
+      color:
+        categorical:
+          palette: &issue_category_palette ["#eb6834", "#2a78d6", "#898781", "#1baf7a"]
+      endpoint_labels: { visible: true }
 
-  response_pctiles_chart:
-    description: Time to first response at p25/p50/p75 each week.
-    query: response_pctiles
-    type: line
-    x: week
-    y:
-      - p25
-      - p50
-      - p75
-    title: "Time to First Response (hours)"
-
-  age_distribution_chart:
-    description: >
-      Stacked bar of open issues by age bucket and category.
-      Ordered by bucket_sort_order from the model — no hardcoded bucket list.
-    query: age_distribution
+  weekly_flow_chart:
+    query: weekly_flow
     type: bar
-    x: age_bucket
+    title: "Opened vs closed per week"
+    subtitle: "Complete weeks; when closed > opened the backlog shrank"
+    x: week
+    y: [opened, closed]
+    x_label: "Week"
+    y_label: "Issues"
+    style:
+      orientation: vertical
+      stack: none
+      color:
+        categorical:
+          # stops follow the alphabetical domain: closed, opened
+          palette: ["#2a78d6", "#eb6834"]
+
+  # ---- Are we keeping up with triage? ----
+  triage_pipeline_chart:
+    query: triage_pipeline
+    type: bar
+    title: "Open issues by triage status and age"
+    subtitle: "How much is waiting, and for how long"
+    x: status_label
     y: issue_count
-    color: issue_category
-    sort:
-      by: bucket_sort_order
-      order: asc
-    title: "Open Issue Age by Type"
+    color: age_bucket
+    sort: { by: status_order, order: asc }
+    y_label: "Open issues"
     style:
+      orientation: horizontal
       stack: zero
+      stack_order: data
+      color:
+        categorical:
+          # stops follow the alphabetical domain: 0-7d, 180d+, 31-90d, 8-30d, 91-180d
+          palette: ["#b7d3f6", "#104281", "#5598e7", "#86b6ef", "#256abf"]
+      endpoint_labels: { visible: false }
+      legend:
+        position: top
+        values: ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
 
-  close_by_label_chart:
-    description: Median days to close broken out by issue label.
-    query: close_by_label
-    type: bar
-    x: label_name
-    y: median_days_to_close
-    sort:
-      by: median_days_to_close
-      order: desc
-    title: "Median Days to Close by Label"
-
-  # ---- Triage Health ----
-  pct_labeled_kpi:
-    description: Percentage of open issues that have at least one label.
-    query: label_health_kpis
-    type: kpi
-    value: pct_labeled
-    label: "% Labeled"
-
-  pct_typed_kpi:
-    description: Percentage of open issues classified as bug/enhancement/task.
-    query: label_health_kpis
-    type: kpi
-    value: pct_typed
-    label: "% Typed"
-
-  pct_assigned_kpi:
-    description: Percentage of open issues with an assignee.
-    query: label_health_kpis
-    type: kpi
-    value: pct_assigned
-    label: "% Assigned"
-
-  pct_milestoned_kpi:
-    description: Percentage of open issues linked to a milestone.
-    query: label_health_kpis
-    type: kpi
-    value: pct_milestoned
-    label: "% Milestoned"
-
-  # ---- People ----
-  assignee_workload_chart:
-    description: Open bugs and enhancements per assignee, stacked.
-    query: assignee_workload
-    type: bar
-    x: assignee_login
-    y:
-      - bugs
-      - enhancements
-    title: "Open Issues by Assignee"
+  response_weekly_chart:
+    query: response_weekly
+    type: line
+    title: "New issues answered within 48 hours"
+    subtitle: "By week opened; unanswered issues count as misses"
+    x: week
+    y: pct_responded_48h
+    x_label: "Week opened"
+    y_label: "% answered within 48h"
     style:
-      stack: zero
+      color:
+        static: "#2a78d6"
 
-  community_priorities_table:
-    description: Top community-priority issues with reaction counts and links via issue_url.
-    query: community_priorities
+  triage_queue_table:
+    query: triage_queue
     type: table
-    link: issue_url
+    title: "Triage queue — oldest first"
+    subtitle: "Open issues still labeled status:triage"
     style:
       columns:
-        issue_number:
-          label: "#"
-        title:
-          label: "Title"
-        issue_category:
-          label: "Type"
-        reactions_total_count:
-          label: "Reactions"
-        comments_total_count:
-          label: "Comments"
-        age_days:
-          label: "Age (days)"
+        issue_number: { label: "#", format: "d", link: "{{ issue_url }}" }
+        title: { label: "Title", link: "{{ issue_url }}" }
+        issue_category: { label: "Type" }
+        age_days: { label: "Age (days)", format: integer }
+        days_idle: { label: "Idle (days)", format: integer }
+        reactions: { label: "Reactions", format: integer }
+        comments: { label: "Comments", format: integer }
+        is_customer_reported: { label: "Customer" }
+
+  # ---- Where is the work? ----
+  open_by_area_chart:
+    query: open_by_area
+    type: bar
+    title: "Open issues by area"
+    subtitle: "Issues with several areas count in each"
+    x: area
+    y: issue_count
+    color: issue_category
+    sort: { by: area_total, order: desc }
+    y_label: "Open issues"
+    style:
+      orientation: horizontal
+      stack: zero
+      stack_order: alphabetical
+      color:
+        categorical:
+          palette: *issue_category_palette
+      endpoint_labels: { visible: false }
+      legend: { position: top, values: [feature, bug, task, other] }
+
+  open_by_adapter_chart:
+    query: open_by_adapter
+    type: bar
+    title: "Open issues by adapter"
+    subtitle: "(none) = adapter-agnostic"
+    x: adapter
+    y: issue_count
+    color: issue_category
+    sort: { by: adapter_total, order: desc }
+    y_label: "Open issues"
+    style:
+      orientation: horizontal
+      stack: zero
+      stack_order: alphabetical
+      color:
+        categorical:
+          palette: *issue_category_palette
+      endpoint_labels: { visible: false }
+      legend: { position: top, values: [feature, bug, task, other] }
+
+  # ---- How close are the epics? ----
+  epic_progress_table:
+    query: epic_progress
+    type: table
+    title: "Open epics by % of sub-issues closed"
+    subtitle: "Top of the list can be closed out soon"
+    style:
+      columns:
+        epic_number: { label: "#", format: "d", link: "{{ issue_url }}" }
+        title: { label: "Epic", link: "{{ issue_url }}" }
+        child_closed: { label: "Closed", format: integer }
+        child_total: { label: "Sub-issues", format: integer }
+        pct_complete:
+          label: "% complete"
+          format: { spec: ".0f", suffix: "%" }
+          scale:
+            background:
+              palette: ["#ffffff", "#2a78d6"]
+              min: 0
+              max: 100
+        milestone_title: { label: "Milestone" }
+
+  # ---- What should we work on, and who is on it? ----
+  top_requested_table:
+    query: top_requested
+    type: table
+    title: "Most-requested open issues"
+    subtitle: "Ranked by reactions, then comments"
+    style:
+      columns:
+        issue_number: { label: "#", format: "d", link: "{{ issue_url }}" }
+        title: { label: "Title", link: "{{ issue_url }}" }
+        issue_category: { label: "Type" }
+        areas: { label: "Areas" }
+        triage_status: { label: "Triage" }
+        reactions: { label: "Reactions", format: integer }
+        comments: { label: "Comments", format: integer }
+        age_days: { label: "Age (days)", format: integer }
+        is_customer_reported: { label: "Customer" }
+
+  assignee_workload_chart:
+    query: assignee_workload
+    type: bar
+    title: "Open issues by assignee"
+    subtitle: "Top 15, including unassigned"
+    x: assignee_login
+    y: issue_count
+    color: issue_category
+    sort: { by: assignee_total, order: desc }
+    y_label: "Open issues"
+    style:
+      orientation: horizontal
+      stack: zero
+      stack_order: alphabetical
+      color:
+        categorical:
+          palette: *issue_category_palette
+      endpoint_labels: { visible: false }
+      legend: { position: top, values: [feature, bug, task, other] }
 
 rows:
-  - title: "Operational Triage"
-    description: Bug triage queue health and actionable counts.
+  - data_as_of_kpi
+
+  - title: "Where do things stand?"
     cols:
-      - slipped_through_kpi
-      - triage_queue_kpi
-      - hard_blockers_kpi
-      - triage_stale_kpi
-      - needs_repro_kpi
-      - repro_verified_kpi
-      - total_open_kpi
+      - kpi_open_issues
+      - kpi_opened_closed
+      - kpi_awaiting_triage
+      - kpi_answered_48h
+      - kpi_median_close
+      - kpi_customer_reported
 
-  - oldest_untriaged_table
-
-  - title: "Key Metrics"
-    description: Summary KPIs for the overall issue backlog.
+  - title: "Is the backlog shrinking?"
     cols:
-      - open_issues_kpi
-      - net_flow_kpi
-      - median_close_kpi
-      - response_sla_kpi
-      - summary_stale_kpi
+      - backlog_weekly_chart
+      - weekly_flow_chart
 
-  - title: "Trends"
-    description: Week-over-week issue flow, velocity, and response-time trends.
+  - title: "Are we keeping up with triage?"
     rows:
       - cols:
-          - cumulative_flow_chart
-          - velocity_chart
-      - cols:
-          - response_pctiles_chart
-          - age_distribution_chart
-      - close_by_label_chart
+          - triage_pipeline_chart
+          - response_weekly_chart
+      - triage_queue_table
 
-  - title: "Triage Health"
-    description: Process-quality percentages measuring labeling and assignment completeness.
+  - title: "Where is the work?"
     cols:
-      - pct_labeled_kpi
-      - pct_typed_kpi
-      - pct_assigned_kpi
-      - pct_milestoned_kpi
+      - open_by_area_chart
+      - open_by_adapter_chart
 
-  - title: "People"
-    description: Workload distribution and community-driven priorities.
+  - title: "How close are the epics?"
     rows:
+      - epic_progress_table
+
+  - title: "What should we work on, and who is on it?"
+    rows:
+      - top_requested_table
       - assignee_workload_chart
-      - community_priorities_table

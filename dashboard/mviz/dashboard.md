@@ -1,127 +1,93 @@
 ---
-title: dbt-fusion Issue Health
-theme: dark
+title: dbt Fusion issue health
+theme: light
 continuous: true
 ---
 
-# dbt-fusion Issue Health
+# dbt Fusion issue health
 
-Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
-
-## Daily Triage Queue
-
-```big_value size=[3,2] file=data/kpi_slipped_through.json
-```
-```big_value size=[3,2] file=data/kpi_triage_queue.json
-```
-```big_value size=[3,2] file=data/kpi_hard_blocker.json
-```
-```big_value size=[3,2] file=data/kpi_op_stale.json
-```
-```big_value size=[2,2] file=data/kpi_needs_repro.json
-```
-```big_value size=[2,2] file=data/kpi_repro_verified.json
+```text size=[16,1] file=data/subtitle.json
 ```
 
-```table size=[16,8] file=data/oldest_untriaged.json
-{
-  "title": "Oldest Untriaged Issues — Zero-Signal Action Queue",
-  "columns": [
-    {"id": "issue_number", "title": "#", "bold": true, "href": "issue_url"},
-    {"id": "title", "title": "Title", "href": "issue_url"},
-    {"id": "age_days", "title": "Age (days)", "bold": true}
-  ]
-}
+```note size=[16,1] file=data/dashboard_meta.json
 ```
 
-## Key Metrics
+## Where do things stand?
 
-```big_value size=[3,2] file=data/kpi_net_flow.json
+```textarea size=[5,3] file=data/headline_kpis_1.json
 ```
-```big_value size=[3,2] file=data/kpi_open_issues.json
+```textarea size=[5,3] file=data/headline_kpis_2.json
 ```
-```big_value size=[3,2] file=data/kpi_median_close.json
-```
-```big_value size=[3,2] file=data/kpi_sla.json
-```
-```big_value size=[4,2] file=data/kpi_stale.json
+```textarea size=[6,3] file=data/headline_kpis_3.json
 ```
 
-## Cumulative Issue Flow
-
-```area size=[16,6] file=data/cumulative_flow.json
-{
-  "title": "Cumulative Issue Flow",
-  "x": "week",
-  "y": ["cumulative_opened", "cumulative_closed"]
-}
+```textarea size=[5,3] file=data/headline_kpis_4.json
+```
+```textarea size=[5,3] file=data/headline_kpis_5.json
+```
+```textarea size=[6,3] file=data/headline_kpis_6.json
 ```
 
-## Velocity & Response
+## Is the backlog shrinking?
 
-```line size=[8,6] file=data/velocity.json
-{
-  "title": "Median Days to Close: Bugs vs Enhancements",
-  "x": "week",
-  "y": ["bug", "enhancement"]
-}
+```text size=[8,1] file=data/backlog_weekly_subtitle.json
 ```
-```line size=[8,6] file=data/response_pctiles.json
-{
-  "title": "Time to First Response (hours) — p25/p50/p75",
-  "x": "week",
-  "y": ["p25", "p50", "p75"]
-}
+```text size=[8,1] file=data/weekly_flow_subtitle.json
 ```
 
-## Issue Distribution
-
-```bar size=[8,6] file=data/age_distribution.json
-{
-  "title": "Open Issue Age by Type",
-  "x": "age_bucket",
-  "y": ["bug", "enhancement", "task", "other"]
-}
+```area size=[8,7] file=data/backlog_weekly.json
 ```
-```bar size=[8,6] file=data/close_by_label.json
-{
-  "title": "Median Days to Close by Label",
-  "x": "label_name",
-  "y": "median_days_to_close"
-}
+```bar size=[8,7] file=data/weekly_flow.json
 ```
 
-## Triage Health
+## Are we keeping up with triage?
 
-```big_value size=[4,2] file=data/kpi_triage_labeled.json
+```text size=[8,1] file=data/triage_pipeline_subtitle.json
 ```
-```big_value size=[4,2] file=data/kpi_triage_typed.json
-```
-```big_value size=[4,2] file=data/kpi_triage_assigned.json
-```
-```big_value size=[4,2] file=data/kpi_triage_milestoned.json
+```text size=[8,1] file=data/response_weekly_subtitle.json
 ```
 
-## Workload & Priorities
-
-```bar size=[16,6] file=data/assignee_workload.json
-{
-  "title": "Open Issues by Assignee",
-  "x": "assignee_login",
-  "y": ["bugs", "enhancements"]
-}
+```heatmap size=[8,7] file=data/triage_pipeline.json
+```
+```line size=[8,7] file=data/response_weekly.json
 ```
 
-```table size=[16,6] file=data/community_priorities.json
-{
-  "title": "Community Priorities — Most-Reacted Open Issues",
-  "columns": [
-    {"id": "issue_number", "title": "#", "bold": true, "href": "issue_url"},
-    {"id": "title", "title": "Title", "href": "issue_url"},
-    {"id": "issue_category", "title": "Type"},
-    {"id": "reactions_total_count", "title": "Reactions", "bold": true},
-    {"id": "comments_total_count", "title": "Comments"},
-    {"id": "age_days", "title": "Age (days)"}
-  ]
-}
+```text size=[16,1] file=data/triage_queue_subtitle.json
+```
+
+```table size=[16,10] file=data/triage_queue.json
+```
+
+## Where is the work?
+
+```text size=[8,1] file=data/open_by_area_subtitle.json
+```
+```text size=[8,1] file=data/open_by_adapter_subtitle.json
+```
+
+```bar size=[8,9] file=data/open_by_area.json
+```
+```bar size=[8,9] file=data/open_by_adapter.json
+```
+
+## How close are the epics?
+
+```text size=[16,1] file=data/epic_progress_subtitle.json
+```
+
+```table size=[16,10] file=data/epic_progress.json
+```
+
+## What should we work on, and who is on it?
+
+```text size=[16,1] file=data/top_requested_subtitle.json
+```
+
+```table size=[16,10] file=data/top_requested.json
+```
+
+```text size=[16,1] file=data/assignee_workload_subtitle.json
+```
+
+```bar size=[16,9] file=data/assignee_workload.json
 ```

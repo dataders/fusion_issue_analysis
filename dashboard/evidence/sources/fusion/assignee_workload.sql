@@ -1,1 +1,1 @@
-SELECT * FROM assignee_workload
+select * from assignee_workload

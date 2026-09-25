@@ -1,141 +1,160 @@
 """
-Generate JSON data files for the mviz dashboard.
-Connects to DuckDB (local or MotherDuck) and exports query results.
+Generate the mviz component specs (data/*.json) and palette theme.
+
+dashboard.md is pure layout; every component reads one spec file from data/.
+Tiles follow dashboard/tiles.yml and read only the dbt dashboard models via
+the shared tiles helper. This script only selects, sorts, renames, formats
+and pivots — no metrics.
 """
 
+from __future__ import annotations
+
+import html
 import json
-import os
+import sys
+from pathlib import Path
 
-import duckdb
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+import tiles  # noqa: E402
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-HERE = os.path.dirname(__file__)
-DATA_DIR = os.path.join(HERE, "data")
-
-if os.environ.get("FUSION_DB"):
-    DB_PATH = os.environ["FUSION_DB"]
-elif os.environ.get("MOTHERDUCK_TOKEN"):
-    DB_PATH = "md:fusion_issues"
-else:
-    DB_PATH = os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
+HERE = Path(__file__).resolve().parent
+DATA_DIR = HERE / "data"
+CATEGORIES = tiles.categories("issue_category")  # feature, bug, task, other
+CATEGORY_LABELS = [tiles.label("issue_category", c) for c in CATEGORIES]
 
 
-def get_connection():
-    con = duckdb.connect(DB_PATH, read_only=True)
-    if not DB_PATH.startswith("md:"):
-        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
-        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
-    return con
+def write_json(filename: str, data) -> None:
+    path = DATA_DIR / filename
+    path.write_text(json.dumps(data, default=str))
+    print(f"  wrote {path}")
 
 
-def query(con, sql: str) -> list[dict]:
-    return json.loads(con.execute(sql).fetchdf().to_json(orient="records"))
+def write_theme() -> None:
+    """mviz colors series by index from one global palette, so every chart
+    lists its series in this order: feature / closed / single series = blue,
+    bug / opened = orange, task = green, other = grey (tiles.yml, light)."""
+    palette = [tiles.color("issue_category", c) for c in CATEGORIES]
+    assert tiles.color("flow", "closed") == palette[0] == tiles.MANIFEST["palette"]["single_series"]
+    assert tiles.color("flow", "opened") == palette[1]
+    lines = ["extends: light", "palette:", *[f'  - "{c}"' for c in palette]]
+    (DATA_DIR / "theme.yaml").write_text("\n".join(lines) + "\n")
 
 
-def write_json(filename: str, data):
-    path = os.path.join(DATA_DIR, filename)
-    with open(path, "w") as f:
-        json.dump(data, f)
-    print(f"  wrote {path} ({len(data) if isinstance(data, list) else 1} records)")
+def link(row: dict, text) -> str:
+    # mviz inserts string cells as raw HTML, so escape and wrap in an anchor.
+    return f'<a href="{html.escape(row["issue_url"])}" target="_blank">{html.escape(str(text))}</a>'
 
 
-def pct0_value(value):
-    return round(value / 100, 2) if value else 0
+def spec(tile_id: str, **fields) -> None:
+    """One tile: its subtitle (a text component) and its chart/table spec."""
+    t = tiles.tile(tile_id)
+    write_json(f"{tile_id}_subtitle.json", {"content": t["subtitle"]})
+    write_json(f"{tile_id}.json", {"title": t["title"], **fields})
 
 
-def main():
-    os.makedirs(DATA_DIR, exist_ok=True)
-    con = get_connection()
+def category_bars(tile_id: str, index: str) -> None:
+    """Long (index, issue_category, issue_count) -> wide stacked horizontal bars.
 
-    # -- Summary stats --
-    summary = query(con, "SELECT * FROM summary_kpis")[0]
-    net_flow = summary["net_flow_4w"]
-    median_close = summary["rolling_median_close_days"]
-    sla_pct = summary["pct_responded_48h"]
+    Rows arrive sorted by the *_total column, largest first; ECharts draws the
+    first category at the bottom, so reverse to put the largest on top.
+    """
+    wide = tiles.pivot(tiles.tile_rows(tile_id), index=index, column="issue_category", value="issue_count")
+    data = [{index: r[index], **{tiles.label("issue_category", c): r.get(c, 0) for c in CATEGORIES}} for r in wide]
+    spec(tile_id, x=index, y=CATEGORY_LABELS, stacked=True, horizontal=True, format="num0",
+         data=list(reversed(data)))
 
-    # mviz big_value requires a numeric value (a "+5"-style string fails lint),
-    # so positive net flow renders unsigned — a framework limitation.
-    write_json("kpi_net_flow.json", {"value": int(net_flow), "label": "Net Flow (4wk)"})
-    write_json("kpi_open_issues.json", {"value": summary["open_issues"], "label": "Open Issues"})
-    write_json("kpi_median_close.json", {
-        "value": float(median_close) if median_close else 0,
-        "label": "Median Close (4wk, days)",
+
+def issue_table(tile_id: str, number_col: str, columns: list[tuple[str, str, dict]], row_fn) -> None:
+    cols = [{"id": "issue", "title": "#", "bold": True}, {"id": "title", "title": "Title"}]
+    cols += [{"id": cid, "title": title, **opts} for cid, title, opts in columns]
+    data = [{"issue": link(r, f"#{r[number_col]}"), "title": link(r, r["title"]), **row_fn(r)}
+            for r in tiles.tile_rows(tile_id)]
+    spec(tile_id, columns=cols, data=data, sortable=True, compact=True)
+
+
+def issue_type(r: dict) -> str:
+    return tiles.label("issue_category", r["issue_category"])
+
+
+def yes(value) -> str:
+    return "yes" if value else ""
+
+
+def main() -> None:
+    DATA_DIR.mkdir(parents=True, exist_ok=True)
+    write_theme()
+
+    # -- Header: freshness banner; a warning note when the extract looks stopped --
+    meta = tiles.one("dashboard_meta")
+    stale = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
+    write_json("dashboard_meta.json", {
+        "content": tiles.freshness_note(meta),
+        "noteType": "warning" if stale else "tip",
+        "label": "Stale data:" if stale else "Fresh:",
     })
-    write_json("kpi_sla.json", {
-        "value": pct0_value(sla_pct),
-        "label": "48h Response SLA",
-        "format": "pct0",
-    })
-    write_json("kpi_stale.json", {"value": summary["stale_count"], "label": "Stale Issues (30d+)"})
+    write_json("subtitle.json", {"content": tiles.MANIFEST["subtitle"]})
 
-    # -- Cumulative flow --
-    write_json("cumulative_flow.json", query(con, "SELECT * FROM cumulative_flow"))
+    # -- Where do things stand? headline_kpis, formatted per tiles.yml. mviz
+    # big_value only takes a single number, so cards are small markdown blocks.
+    for i, kpi in enumerate(tiles.kpis(), start=1):
+        context = f"\n\n*{kpi['context']}*" if kpi["context"] else ""
+        write_json(f"headline_kpis_{i}.json", {"content": f"### {kpi['value']}\n**{kpi['label']}**{context}"})
 
-    # -- Velocity: pivot velocity model (bugs vs enhancements) --
-    velocity_rows = query(con, "SELECT week, issue_category, median_days FROM velocity ORDER BY week, issue_category")
-    velocity_map = {}
-    velocity_cats = sorted({r["issue_category"] for r in velocity_rows})
-    for r in velocity_rows:
-        week = r["week"]
-        cat = r["issue_category"]
-        if week not in velocity_map:
-            velocity_map[week] = {"week": week}
-        velocity_map[week][cat] = r["median_days"]
-    # mviz lint requires every y-field present in every row; weeks where a
-    # category missed the >=2-closure threshold get an explicit null (gap).
-    velocity_data = sorted(velocity_map.values(), key=lambda x: x["week"])
-    for row in velocity_data:
-        for cat in velocity_cats:
-            row.setdefault(cat, None)
-    write_json("velocity.json", velocity_data)
+    # -- Is the backlog shrinking? --
+    backlog = tiles.pivot(tiles.tile_rows("backlog_weekly"), index="week", column="issue_category", value="open_issues")
+    spec("backlog_weekly", x="week", y=CATEGORY_LABELS, stacked=True, format="num0",
+         data=[{"week": r["week"], **{tiles.label("issue_category", c): r[c] for c in CATEGORIES}} for r in backlog])
 
-    # -- Response time percentiles --
-    write_json("response_pctiles.json", query(con, "SELECT * FROM response_pctiles"))
+    closed, opened = tiles.label("flow", "closed"), tiles.label("flow", "opened")
+    spec("weekly_flow", x="week", y=[closed, opened], format="num0",
+         data=[{"week": r["week"], closed: r["closed"], opened: r["opened"]} for r in tiles.tile_rows("weekly_flow")])
 
-    # -- Issue age distribution (pivoted via age_distribution_wide, ordered by bucket_sort_order) --
-    # Use age_distribution_wide which includes all categories (bug, enhancement, task, other).
-    # Category columns are derived from data, not hardcoded, so new categories appear automatically.
-    age_wide_rows = query(con, "SELECT * FROM age_distribution_wide ORDER BY bucket_sort_order")
-    # Determine category columns from the first row, excluding non-category keys
-    non_cat_keys = {"age_bucket", "bucket_sort_order"}
-    cat_cols = [k for k in age_wide_rows[0].keys() if k not in non_cat_keys] if age_wide_rows else []
-    age_chart_data = []
-    for row in age_wide_rows:
-        out = {"age_bucket": row["age_bucket"]}
-        for cat in cat_cols:
-            out[cat] = row.get(cat, 0) or 0
-        age_chart_data.append(out)
-    write_json("age_distribution.json", age_chart_data)
+    # -- Are we keeping up with triage? --
+    # mviz has a single global palette (the issue-category colors), so the
+    # status x age stacked bar is drawn as a status x age heatmap instead.
+    pipeline = tiles.tile_rows("triage_pipeline")
+    buckets = list(dict.fromkeys(r["age_bucket"] for r in pipeline))
+    statuses = list(dict.fromkeys(r["status_label"] for r in pipeline))[::-1]  # first status on top
+    spec("triage_pipeline", xCategories=buckets, yCategories=statuses, format="num0",
+         data=[[buckets.index(r["age_bucket"]), statuses.index(r["status_label"]), r["issue_count"]]
+               for r in pipeline])
 
-    # -- Close time by label --
-    write_json("close_by_label.json", query(con, "SELECT * FROM close_by_label"))
+    spec("response_weekly", x="week", y="answered_48h", format="pct0", yMin=0, yMax=1,
+         data=[{"week": r["week"], "answered_48h": None if r["pct_responded_48h"] is None else r["pct_responded_48h"] / 100}
+               for r in tiles.tile_rows("response_weekly")])
 
-    # -- Assignee workload --
-    write_json("assignee_workload.json", query(con, "SELECT * FROM assignee_workload"))
+    issue_table("triage_queue", "issue_number", [
+        ("type", "Type", {}), ("age_days", "Age (d)", {"fmt": "num0"}), ("days_idle", "Idle (d)", {"fmt": "num0"}),
+        ("reactions", "Reactions", {"fmt": "num0"}), ("comments", "Comments", {"fmt": "num0"}),
+        ("customer", "Customer", {}),
+    ], lambda r: {"type": issue_type(r), "age_days": r["age_days"], "days_idle": r["days_idle"],
+                  "reactions": r["reactions"], "comments": r["comments"], "customer": yes(r["is_customer_reported"])})
 
-    # -- Operational triage (daily) --
-    op_triage = query(con, "SELECT * FROM issue_triage_health")[0]
-    write_json("kpi_slipped_through.json", {"value": op_triage["slipped_through_count"], "label": "Slipped through (bugs)"})
-    write_json("kpi_triage_queue.json", {"value": op_triage["triage_queue_count"], "label": "Triage Queue"})
-    write_json("kpi_hard_blocker.json", {"value": op_triage["hard_blocker_count"], "label": "Hard Blockers"})
-    write_json("kpi_op_stale.json", {"value": op_triage["stale_count"], "label": "Stale (90d+)"})
-    write_json("kpi_needs_repro.json", {"value": op_triage["needs_repro_count"], "label": "Needs Repro"})
-    write_json("kpi_repro_verified.json", {"value": op_triage["repro_verified_count"], "label": "Repro Verified"})
+    # -- Where is the work? --
+    category_bars("open_by_area", "area")
+    category_bars("open_by_adapter", "adapter")
 
-    write_json("oldest_untriaged.json", query(con, "SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged"))
+    # -- How close are the epics? --
+    issue_table("epic_progress", "epic_number", [
+        ("closed", "Closed", {"fmt": "num0"}), ("total", "Sub-issues", {"fmt": "num0"}),
+        ("pct_complete", "% closed", {"type": "sparkline", "sparkType": "pct_bar"}),
+        ("milestone", "Milestone", {}),
+    ], lambda r: {"closed": r["child_closed"], "total": r["child_total"],
+                  "pct_complete": (r["pct_complete"] or 0) / 100,  # pct_bar wants 0-1
+                  "milestone": r["milestone_title"]})
 
-    # -- Triage health --
-    triage = query(con, "SELECT * FROM triage_health")[0]
-    write_json("kpi_triage_labeled.json", {"value": pct0_value(triage["pct_labeled"]), "label": "% Labeled", "format": "pct0"})
-    write_json("kpi_triage_typed.json", {"value": pct0_value(triage["pct_typed"]), "label": "% Typed", "format": "pct0"})
-    write_json("kpi_triage_assigned.json", {"value": pct0_value(triage["pct_assigned"]), "label": "% Assigned", "format": "pct0"})
-    write_json("kpi_triage_milestoned.json", {"value": pct0_value(triage["pct_milestoned"]), "label": "% Milestoned", "format": "pct0"})
+    # -- What should we work on, and who is on it? --
+    issue_table("top_requested", "issue_number", [
+        ("type", "Type", {}), ("areas", "Areas", {}), ("triage", "Triage", {}),
+        ("reactions", "Reactions", {"fmt": "num0"}), ("comments", "Comments", {"fmt": "num0"}),
+        ("age_days", "Age (d)", {"fmt": "num0"}), ("customer", "Customer", {}),
+    ], lambda r: {"type": issue_type(r), "areas": r["areas"], "triage": r["triage_status"],
+                  "reactions": r["reactions"], "comments": r["comments"], "age_days": r["age_days"],
+                  "customer": yes(r["is_customer_reported"])})
 
-    # -- Community priorities (include issue_url for links) --
-    write_json("community_priorities.json", query(con, "SELECT * FROM community_priorities"))
+    category_bars("assignee_workload", "assignee_login")
 
-    con.close()
-    print("\nDone. All data files written to mviz/data/")
+    print("\nDone. All specs written to mviz/data/")
 
 
 if __name__ == "__main__":

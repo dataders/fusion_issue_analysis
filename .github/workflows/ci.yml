@@ -55,6 +55,9 @@ jobs:
       - name: Test extract helpers
         run: uv run --with pytest pytest extract/tests/ -v
 
+      - name: Check dashboard tile contract
+        run: uv run --with pytest pytest tests/test_tiles_contract.py -v
+
       # ── dlt smoke-test: real GraphQL call, local parquet, no MotherDuck ──
       - name: Smoke-test dlt extract (incremental, --limit 5)
         env:

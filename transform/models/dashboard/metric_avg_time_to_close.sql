@@ -9,6 +9,6 @@ select
     round(median(hours_to_close) / 24.0, 2) as median_days_to_close
 from {{ ref('fct_issues') }}
 where closed_at is not null
-  and issue_category in ('bug', 'enhancement', 'task', 'other')
+  and issue_category in ('bug', 'feature', 'task', 'other')
 group by 1, 2
 order by 1, 2

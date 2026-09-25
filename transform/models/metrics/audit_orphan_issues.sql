@@ -2,7 +2,7 @@ select
     issue_number,
     issue_url,
     title,
-    issue_type,
+    issue_category,
     state,
     created_at,
     (current_date - created_at::date) as age_days

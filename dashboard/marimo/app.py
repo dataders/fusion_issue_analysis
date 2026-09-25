@@ -1,293 +1,327 @@
 import marimo
 
 __generated_with = "0.23.2"
-app = marimo.App()
+app = marimo.App(width="medium")
 
 
 @app.cell
 def _():
+    import sys
+    from pathlib import Path
+
     import marimo as mo
-    import duckdb
+    import pandas as pd
     import plotly.express as px
     import plotly.graph_objects as go
-    import pandas as pd
-    import os
 
-    return duckdb, mo, os, px
+    # dashboard/tiles.py: the tile contract (tiles.yml) + dbt model reader.
+    sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+    import tiles
 
-
-@app.cell
-def _():
-    def fmt_pct(value):
-        # dbt ratios (e.g. responded / total) are NULL when the denominator is
-        # zero, which pandas surfaces as NaN — int(NaN) raises, so guard first.
-        if value is None or value != value:
-            return "N/A"
-        return f"{int(value)}%"
-
-    def fmt_or_na(value):
-        if value is None or value != value:
-            return "N/A"
-        return value
-
-    return fmt_or_na, fmt_pct
+    return go, mo, pd, px, tiles
 
 
 @app.cell
-def _(mo):
-    mo.md("""
-    # dbt-fusion Issue Health · Marimo
-    Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)
-    """)
-    return
+def _(mo, pd, px, tiles):
+    CATEGORIES = tiles.categories("issue_category")
+    CATEGORY_COLORS = {c: tiles.color("issue_category", c) for c in CATEGORIES}
+    CATEGORY_LABELS = {c: tiles.label("issue_category", c) for c in CATEGORIES}
+
+    def frame(tile_id):
+        """A tile's model rows, in the order tiles.yml specifies."""
+        return pd.DataFrame(tiles.tile_rows(tile_id))
+
+    def heading(tile_id):
+        t = tiles.tile(tile_id)
+        return mo.md(f"### {t['title']}\n{t.get('subtitle', '')}")
+
+    def style(fig, height=320, hovermode="x unified"):
+        fig.update_layout(
+            template="plotly_white",
+            height=height,
+            margin=dict(l=10, r=10, t=10, b=10),
+            legend=dict(orientation="h", yanchor="bottom", y=1.02, x=0, title=None),
+            hovermode=hovermode,
+        )
+        return fig
+
+    def category_bar(tile_id, y, total):
+        """Horizontal bar of issue_count stacked by issue_category, largest total on top."""
+        df = frame(tile_id)
+        order = list(dict.fromkeys(df[y]))  # order_by sorts by {total} desc
+        fig = px.bar(
+            df,
+            x="issue_count",
+            y=y,
+            color="issue_category",
+            orientation="h",
+            category_orders={"issue_category": CATEGORIES, y: order},
+            color_discrete_map=CATEGORY_COLORS,
+            hover_data={total: True},
+            labels={"issue_count": "Open issues", y: "", "issue_category": "Type", total: "Total"},
+        )
+        fig.for_each_trace(lambda tr: tr.update(name=CATEGORY_LABELS.get(tr.name, tr.name)))
+        fig.update_layout(barmode="stack")
+        return style(fig, height=max(280, 26 * len(order) + 80), hovermode="closest")
+
+    def link(url):
+        return mo.Html(f'<a href="{url}" target="_blank" rel="noopener">open ↗</a>') if url else ""
+
+    def issue_table(tile_id, rename, extra_format=None):
+        """Contract columns in contract order, renamed for display, linked to issue_url."""
+        t = tiles.tile(tile_id)
+        df = frame(tile_id)[t["columns"] + [t["link"]]]
+        return mo.ui.table(
+            df.rename(columns={**rename, t["link"]: "Link"}),
+            selection=None,
+            page_size=15,
+            show_column_summaries=False,
+            format_mapping={
+                "Link": link,
+                "#": str,  # issue numbers, not quantities: no thousands separator
+                "Customer": lambda v: "yes" if v else "",
+                **(extra_format or {}),
+            },
+        )
+
+    return (
+        CATEGORIES,
+        CATEGORY_COLORS,
+        CATEGORY_LABELS,
+        category_bar,
+        frame,
+        heading,
+        issue_table,
+        style,
+    )
 
 
 @app.cell
-def _(os):
-    PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    DB_PATH = os.environ.get("FUSION_DB") or ("md:fusion_issues" if os.environ.get("MOTHERDUCK_TOKEN") else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb"))
-    return DB_PATH, PROJECT_ROOT
-
-
-@app.cell
-def _(DB_PATH, PROJECT_ROOT, duckdb, os):
-    def query(sql):
-        con = duckdb.connect(DB_PATH, read_only=True)
-        if not DB_PATH.startswith("md:"):
-            file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
-            con.execute(f"SET file_search_path = '{file_search_root}/transform'")
-        df = con.execute(sql).fetchdf()
-        con.close()
-        return df
-    summary = query("SELECT * FROM summary_kpis").iloc[0]
-    return query, summary
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Operational Triage
-    Daily action queue: bugs that slipped past triage, hard blockers, and the oldest zero-signal issues.
-    """)
-    return
-
-
-@app.cell
-def _(mo, query):
-    ops = query("SELECT * FROM issue_triage_health").iloc[0]
-    mo.hstack([
-        mo.stat(label="Slipped through (bugs)", value=str(int(ops['slipped_through_count'])), caption="zero triage signal", bordered=True),
-        mo.stat(label="Triage Queue", value=str(int(ops['triage_queue_count'])), bordered=True),
-        mo.stat(label="Hard Blockers", value=str(int(ops['hard_blocker_count'])), caption=f"{int(ops['hard_blocker_unreleased'])} unreleased", bordered=True),
-        mo.stat(label="Needs Repro", value=str(int(ops['needs_repro_count'])), bordered=True),
-        mo.stat(label="Repro Verified", value=str(int(ops['repro_verified_count'])), bordered=True),
-        mo.stat(label="Stale (90d+)", value=str(int(ops['stale_count'])), bordered=True),
-        mo.stat(label="Total Open", value=str(int(ops['total_open'])), bordered=True),
+def _(mo, tiles):
+    _meta = tiles.one(tiles.MANIFEST["meta"]["model"])  # dashboard_meta
+    _stale = _meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
+    _note = tiles.freshness_note(_meta)
+    mo.vstack([
+        mo.md(f"# {tiles.MANIFEST['title']} · Marimo\n{tiles.MANIFEST['subtitle']}"),
+        mo.callout(mo.md(_note), kind="warn") if _stale else mo.md(f"*{_note}*"),
     ])
     return
 
 
 @app.cell
-def _(mo):
-    mo.md("""
-    ### Oldest Untriaged Bugs
-    Top 25 open bugs with zero triage signal, ordered by age.
-    """)
+def _(mo, tiles):
+    SECTIONS = {s["id"]: s for s in tiles.sections()}
+
+    def section(section_id):
+        return mo.md(f"## {SECTIONS[section_id]['question']}")
+
+    return (section,)
+
+
+@app.cell
+def _(section):
+    section("status")
     return
 
 
 @app.cell
-def _(mo, query):
-    untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged")
-    mo.ui.table(
-        untriaged,
-        selection=None,
-        page_size=25,
-        format_mapping={
-            "issue_url": lambda url: mo.Html(f'<a href="{url}" target="_blank">{url}</a>') if url else "",
+def _(mo, tiles):
+    # headline_kpis, formatted per tiles.yml (values, context lines, '—' for nulls)
+    mo.hstack(
+        [mo.stat(label=k["label"], value=k["value"], caption=k["context"] or None, bordered=True)
+         for k in tiles.kpis()],
+        wrap=True,
+        justify="start",
+    )
+    return
+
+
+@app.cell
+def _(section):
+    section("backlog")
+    return
+
+
+@app.cell
+def _(
+    CATEGORIES,
+    CATEGORY_COLORS,
+    CATEGORY_LABELS,
+    frame,
+    heading,
+    mo,
+    px,
+    style,
+):
+    _df = frame("backlog_weekly")  # backlog_weekly, long format
+    _fig = px.area(
+        _df,
+        x="week",
+        y="open_issues",
+        color="issue_category",
+        category_orders={"issue_category": CATEGORIES},
+        color_discrete_map=CATEGORY_COLORS,
+        labels={"week": "Week", "open_issues": "Open issues", "issue_category": "Type"},
+    )
+    _fig.for_each_trace(lambda tr: tr.update(name=CATEGORY_LABELS.get(tr.name, tr.name)))
+    mo.vstack([heading("backlog_weekly"), style(_fig)])
+    return
+
+
+@app.cell
+def _(frame, go, heading, mo, style, tiles):
+    _df = frame("weekly_flow")  # weekly_flow
+    _fig = go.Figure([
+        go.Bar(
+            x=_df["week"],
+            y=_df[_s],
+            name=tiles.label("flow", _s),
+            marker_color=tiles.color("flow", _s),
+            customdata=_df[["net_change"]],
+            hovertemplate="%{y} " + _s + " · net change %{customdata[0]:+}<extra></extra>",
+        )
+        for _s in tiles.tile("weekly_flow")["series"]
+    ])
+    _fig.update_layout(barmode="group", xaxis_title="Week", yaxis_title="Issues")
+    mo.vstack([heading("weekly_flow"), style(_fig)])
+    return
+
+
+@app.cell
+def _(section):
+    section("triage")
+    return
+
+
+@app.cell
+def _(frame, heading, mo, px, style, tiles):
+    _df = frame("triage_pipeline")  # sorted by status_order, age_bucket_order
+    _fig = px.bar(
+        _df,
+        x="issue_count",
+        y="status_label",
+        color="age_bucket",
+        orientation="h",
+        category_orders={
+            "status_label": list(dict.fromkeys(_df["status_label"])),
+            "age_bucket": list(dict.fromkeys(_df["age_bucket"])),
+        },
+        color_discrete_map={b: tiles.color("age_bucket", b) for b in tiles.categories("age_bucket")},
+        labels={"issue_count": "Open issues", "status_label": "", "age_bucket": "Age"},
+    )
+    _fig.update_layout(barmode="stack")
+    mo.vstack([heading("triage_pipeline"), style(_fig, height=300, hovermode="closest")])
+    return
+
+
+@app.cell
+def _(frame, heading, mo, px, style, tiles):
+    _df = frame("response_weekly")  # response_weekly
+    _fig = px.line(
+        _df,
+        x="week",
+        y="pct_responded_48h",
+        markers=True,
+        hover_data=["issues_opened", "responded_48h", "median_hours_to_first_response"],
+        labels={
+            "week": "Week opened",
+            "pct_responded_48h": "% answered within 48h",
+            "issues_opened": "Opened",
+            "responded_48h": "Answered in 48h",
+            "median_hours_to_first_response": "Median hours to first reply",
         },
     )
+    _fig.update_traces(line_color=tiles.MANIFEST["palette"]["single_series"])
+    _fig.update_yaxes(range=[0, 100], ticksuffix="%")
+    mo.vstack([heading("response_weekly"), style(_fig, hovermode="closest")])
     return
 
 
 @app.cell
-def _(fmt_or_na, fmt_pct, mo, summary):
-    net = int(summary['net_flow_4w'])
-    sla = summary.get('pct_responded_48h')
-    mo.hstack([
-        mo.stat(label="Open Issues", value=str(int(summary['open_issues'])), bordered=True),
-        mo.stat(label="Net Flow (4 wk)", value=f"{'+' if net >= 0 else ''}{net}", bordered=True),
-        mo.stat(label="Median Close (4 wk)", value=str(fmt_or_na(summary['rolling_median_close_days'])), bordered=True),
-        mo.stat(label="48h Response SLA", value=fmt_pct(sla), bordered=True),
-        mo.stat(label="Stale Issues (30d+)", value=str(int(summary['stale_count'])), bordered=True),
+def _(heading, issue_table, mo):
+    mo.vstack([
+        heading("triage_queue"),
+        issue_table("triage_queue", {
+            "issue_number": "#", "title": "Title", "issue_category": "Type", "age_days": "Age (days)",
+            "days_idle": "Idle (days)", "reactions": "Reactions", "comments": "Comments",
+            "is_customer_reported": "Customer",
+        }),
     ])
     return
 
 
 @app.cell
-def _(mo):
-    mo.md("""
-    ## Cumulative Issue Flow
-    """)
+def _(section):
+    section("where")
     return
 
 
 @app.cell
-def _(px, query):
-    cum_df = query("SELECT * FROM cumulative_flow")
-    fig_cum = px.area(
-        cum_df.melt(id_vars='week', value_vars=['cumulative_opened', 'cumulative_closed'],
-                    var_name='series', value_name='count'),
-        x='week', y='count', color='series',
-        color_discrete_map={'cumulative_opened': '#f38ba8', 'cumulative_closed': '#a6e3a1'},
-        labels={'series': '', 'count': 'Issues', 'week': 'Week'},
-        title='Cumulative Issue Flow',
-    )
-    fig_cum.update_layout(template='plotly_dark', height=300)
-    fig_cum
+def _(category_bar, heading, mo):
+    mo.vstack([heading("open_by_area"), category_bar("open_by_area", "area", "area_total")])
     return
 
 
 @app.cell
-def _(mo):
-    mo.md("""
-    ## Velocity & Response
-    """)
+def _(category_bar, heading, mo):
+    mo.vstack([heading("open_by_adapter"), category_bar("open_by_adapter", "adapter", "adapter_total")])
     return
 
 
 @app.cell
-def _(px, query):
-    vel_df = query("SELECT * FROM velocity")
-    fig_vel = px.line(
-        vel_df, x='week', y='median_days', color='issue_category',
-        color_discrete_map={'bug': '#f38ba8', 'enhancement': '#89b4fa'},
-        labels={'issue_category': 'Type', 'median_days': 'Median Days', 'week': 'Week'},
-        title='Median Days to Close: Bugs vs Enhancements',
-        markers=True,
-    )
-    fig_vel.update_layout(template='plotly_dark', height=300)
-    fig_vel
+def _(section):
+    section("epics")
     return
 
 
 @app.cell
-def _(px, query):
-    resp_df = query("SELECT * FROM response_pctiles")
-    fig_resp = px.line(
-        resp_df.melt(id_vars='week', value_vars=['p25', 'p50', 'p75'],
-                     var_name='percentile', value_name='hours'),
-        x='week', y='hours', color='percentile',
-        color_discrete_map={'p25': '#a6e3a1', 'p50': '#89b4fa', 'p75': '#f38ba8'},
-        labels={'percentile': '', 'hours': 'Hours', 'week': 'Week'},
-        title='Time to First Response (hours)',
-    )
-    fig_resp.update_layout(template='plotly_dark', height=300)
-    fig_resp
-    return
+def _(heading, issue_table, mo, tiles):
+    _bar = tiles.MANIFEST["palette"]["single_series"]
 
+    def _pct_bar(pct):
+        if pct is None or pct != pct:
+            return "—"
+        return mo.Html(
+            f'<div style="display:flex;align-items:center;gap:6px;min-width:140px">'
+            f'<div style="flex:1;background:#e8e8e6;height:8px;border-radius:4px">'
+            f'<div style="width:{pct:.0f}%;background:{_bar};height:8px;border-radius:4px"></div></div>'
+            f"<span>{pct:.0f}%</span></div>"
+        )
 
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Issue Distribution
-    """)
-    return
-
-
-@app.cell
-def _(px, query):
-    age_df = query("SELECT * FROM age_distribution ORDER BY bucket_sort_order")
-    bucket_order = age_df[['age_bucket', 'bucket_sort_order']].drop_duplicates().sort_values('bucket_sort_order')['age_bucket'].tolist()
-    fig_age = px.bar(
-        age_df,
-        x='age_bucket', y='issue_count', color='issue_category',
-        color_discrete_map={'bug': '#f38ba8', 'enhancement': '#89b4fa', 'task': '#cba6f7', 'other': '#a6adc8'},
-        category_orders={'age_bucket': bucket_order},
-        labels={'issue_category': 'Type', 'issue_count': 'Issues', 'age_bucket': 'Age'},
-        title='Open Issue Age by Type',
-        barmode='stack',
-    )
-    fig_age.update_layout(template='plotly_dark', height=300)
-    fig_age
-    return
-
-
-@app.cell
-def _(px, query):
-    lbl_df = query("SELECT * FROM close_by_label")
-    fig_lbl = px.bar(
-        lbl_df.sort_values('median_days_to_close'),
-        x='median_days_to_close', y='label_name',
-        orientation='h',
-        labels={'median_days_to_close': 'Median Days', 'label_name': 'Label'},
-        title='Median Days to Close by Label',
-    )
-    fig_lbl.update_layout(template='plotly_dark', height=400)
-    fig_lbl
-    return
-
-
-@app.cell
-def _(mo):
-    mo.md("""
-    ## Triage Health
-    """)
-    return
-
-
-@app.cell
-def _(fmt_pct, mo, query):
-    triage = query("SELECT * FROM triage_health").iloc[0]
-    mo.hstack([
-        mo.stat(label="% Labeled", value=fmt_pct(triage['pct_labeled']), bordered=True),
-        mo.stat(label="% Typed", value=fmt_pct(triage.get('pct_typed', 0)), bordered=True),
-        mo.stat(label="% Assigned", value=fmt_pct(triage['pct_assigned']), bordered=True),
-        mo.stat(label="% Milestoned", value=fmt_pct(triage['pct_milestoned']), bordered=True),
+    mo.vstack([
+        heading("epic_progress"),  # epic_progress
+        issue_table(
+            "epic_progress",
+            {"epic_number": "#", "title": "Epic", "child_closed": "Closed", "child_total": "Sub-issues",
+             "pct_complete": "% complete", "milestone_title": "Milestone"},
+            extra_format={"% complete": _pct_bar},
+        ),
     ])
     return
 
 
 @app.cell
-def _(mo):
-    mo.md("""
-    ## Workload & Priorities
-    """)
+def _(section):
+    section("next")
     return
 
 
 @app.cell
-def _(px, query):
-    workload = query("SELECT * FROM assignee_workload")
-    fig_wl = px.bar(
-        workload.melt(id_vars='assignee_login', value_vars=['bugs', 'enhancements'],
-                      var_name='type', value_name='count'),
-        x='count', y='assignee_login', color='type',
-        color_discrete_map={'bugs': '#f38ba8', 'enhancements': '#89b4fa'},
-        orientation='h',
-        labels={'type': 'Type', 'count': 'Open Issues', 'assignee_login': 'Assignee'},
-        title='Open Issues by Assignee',
-        barmode='stack',
-    )
-    fig_wl.update_layout(template='plotly_dark', height=400, yaxis={'categoryorder': 'total ascending'})
-    fig_wl
+def _(heading, issue_table, mo):
+    mo.vstack([
+        heading("top_requested"),
+        issue_table("top_requested", {
+            "issue_number": "#", "title": "Title", "issue_category": "Type", "areas": "Areas",
+            "triage_status": "Triage", "reactions": "Reactions", "comments": "Comments",
+            "age_days": "Age (days)", "is_customer_reported": "Customer",
+        }),
+    ])
     return
 
 
 @app.cell
-def _(px, query):
-    top = query("SELECT * FROM community_priorities")
-    top['label'] = top.apply(lambda r: f"#{r['issue_number']} {r['title'][:45]}", axis=1)
-    fig_top = px.bar(
-        top, x='reactions_total_count', y='label',
-        color='issue_category',
-        color_discrete_map={'bug': '#f38ba8', 'enhancement': '#89b4fa', 'other': '#a6adc8'},
-        orientation='h',
-        labels={'issue_category': 'Type', 'reactions_total_count': 'Reactions', 'label': ''},
-        title='Community Priorities',
-    )
-    fig_top.update_layout(template='plotly_dark', height=500, yaxis={'categoryorder': 'total ascending'})
-    fig_top
+def _(category_bar, heading, mo):
+    mo.vstack([heading("assignee_workload"), category_bar("assignee_workload", "assignee_login", "assignee_total")])
     return
 
 

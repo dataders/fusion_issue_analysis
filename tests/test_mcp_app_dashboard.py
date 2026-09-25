@@ -52,29 +52,12 @@ class McpAppDashboardTests(unittest.TestCase):
         self.assertIn('"show_issue_health"', app)
         self.assertIn("app.connect()", app)
 
-    def test_data_builder_reads_canonical_dashboard_models(self) -> None:
+    def test_data_builder_reads_tiles_through_shared_helper(self) -> None:
+        # Tile coverage itself is enforced by tests/test_tiles_contract.py.
         builder = BUILD_DATA.read_text()
-        for model in [
-            "summary_kpis",
-            "triage_health",
-            "issue_triage_health",
-            "oldest_untriaged",
-            "weekly_flow",
-            "open_vs_closed_by_category",
-            "community_priorities",
-            "epic_list",
-        ]:
-            self.assertIn(f"main.{model}", builder)
-
-    def test_data_builder_source_database_follows_dashboard_precedence(self) -> None:
-        with patch.dict(os.environ, {"FUSION_DB": "custom.duckdb", "MOTHERDUCK_TOKEN": "token"}, clear=True):
-            self.assertEqual(load_build_data_module().SOURCE_DB, "custom.duckdb")
-
-        with patch.dict(os.environ, {"MOTHERDUCK_TOKEN": "token"}, clear=True):
-            self.assertEqual(load_build_data_module().SOURCE_DB, "md:fusion_issues")
-
-        with patch.dict(os.environ, {}, clear=True):
-            self.assertEqual(load_build_data_module().SOURCE_DB, str(REPO_ROOT / "data" / "fusion_issues.duckdb"))
+        self.assertIn("tiles.tile_rows", builder)
+        self.assertIn("tiles.kpis()", builder)
+        self.assertNotIn("duckdb.connect", builder)
 
     def test_http_server_defaults_to_loopback_and_local_cors(self) -> None:
         main = (MCP_APP_DIR / "main.ts").read_text()
@@ -86,61 +69,6 @@ class McpAppDashboardTests(unittest.TestCase):
         self.assertIn('"127.0.0.1"', main)
         self.assertIn('"::1"', main)
         self.assertNotIn("app.use(cors());", main)
-
-    def test_data_builder_enriches_agent_command_center_payload(self) -> None:
-        build_data = load_build_data_module()
-
-        payload = build_data.enrich_payload({
-            "summary_kpis": {
-                "opened_4w": 20,
-                "closed_4w": 30,
-                "open_issues": 100,
-                "pct_responded_48h": 45,
-                "stale_count": 12,
-            },
-            "triage_health": {
-                "pct_labeled": 90,
-                "pct_typed": 92,
-                "pct_assigned": 19,
-                "pct_milestoned": 4,
-                "unlabeled_count": 5,
-                "unassigned_count": 40,
-            },
-            "operational_triage": {
-                "slipped_through_count": 7,
-                "triage_queue_count": 9,
-                "hard_blocker_count": 2,
-                "hard_blocker_unreleased": 1,
-                "needs_repro_count": 8,
-                "repro_verified_count": 4,
-                "awaiting_release_count": 3,
-                "stale_count": 11,
-            },
-            "oldest_untriaged": [
-                {"issue_number": 123, "title": "First zero-signal bug", "age_days": 45, "issue_url": "https://example.test/123"},
-            ],
-        })
-
-        self.assertEqual(payload["issue_pulse"]["state"], "cooling")
-        self.assertEqual(payload["issue_pulse"]["net_closed_4w"], 10)
-        self.assertIn("10 more closed than opened", payload["agent_brief"]["headline"])
-        self.assertEqual(payload["attention_queues"][0]["id"], "slipped-through")
-        self.assertEqual(payload["attention_queues"][0]["severity"], "critical")
-        self.assertEqual(payload["attention_queues"][0]["count"], 7)
-        self.assertIn("#123", payload["agent_brief"]["bullets"][-1])
-
-    def test_app_renders_agent_command_center_surfaces(self) -> None:
-        html = ISSUE_HEALTH_HTML.read_text()
-        app = APP_TS.read_text()
-
-        self.assertIn('id="agent-brief"', html)
-        self.assertIn('id="issue-pulse"', html)
-        self.assertIn('id="attention-queues"', html)
-        self.assertIn('id="oldest-untriaged"', html)
-        self.assertIn("renderAgentBrief", app)
-        self.assertIn("renderIssuePulse", app)
-        self.assertIn("renderAttentionQueues", app)
-        self.assertIn("renderOldestUntriaged", app)
 
     def test_makefile_has_local_mcp_app_targets(self) -> None:
         makefile = MAKEFILE.read_text()

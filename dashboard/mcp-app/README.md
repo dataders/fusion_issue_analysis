@@ -5,10 +5,13 @@ Layer 7 question from the About page: an agent can open an issue-health command
 center while the data path stays deterministic.
 
 The app registers one MCP tool, `show_issue_health`, and links it to one UI
-resource, `ui://fusion-issues/issue-health.html`. The tool returns an agent
-briefing for the model plus `structuredContent.dashboard` for the iframe UI:
-issue pulse, attention queues, oldest zero-signal bugs, epics, flow, and
-community-priority tables.
+resource, `ui://fusion-issues/issue-health.html`. The tool returns the
+formatted KPI row and freshness note as text for the model, plus
+`structuredContent.dashboard` for the iframe UI: the `dashboard/tiles.yml`
+manifest and the rows of every tile model. The widget renders every section
+and tile from that manifest generically (KPI row, stacked area, grouped bar,
+line, horizontal stacked bars, tables), follows the host light/dark theme, and
+uses the manifest palette.
 
 ```bash
 make mcp-app
@@ -20,10 +23,12 @@ make mcp-app-serve
 `dashboard/mcp-app/dist/issue-health.html`.
 
 Fresh worktrees usually do not have `data/fusion_issues.duckdb`. Either run
-`make dbt` first, or point the app at a checkout with data:
+`make dbt` first, or point the app at a DuckDB file with the dashboard models
+(`build_data.py` resolves the database via `dashboard/tiles.py`: `FUSION_DB`,
+then MotherDuck when `MOTHERDUCK_TOKEN` is set, then the local dev DB):
 
 ```bash
-FUSION_PROJECT_ROOT=/Users/dataders/Developer/fusion_issue_analysis make mcp-app
+FUSION_DB=/Users/dataders/Developer/fusion_issue_analysis/data/fusion_issues.duckdb make mcp-app
 ```
 
 To try it in Claude Desktop, add this to `claude_desktop_config.json` after

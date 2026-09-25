@@ -1,7 +1,7 @@
 """Source that load github issues, pull requests and reactions for a specific repository via customizable graphql query. Loads events incrementally."""
 
 import urllib.parse
-from typing import Iterator, Optional, Sequence
+from typing import Iterator, List, Optional, Sequence
 
 import dlt
 from dlt.common.typing import TDataItems
@@ -17,6 +17,7 @@ def github_reactions(
     access_token: str = dlt.secrets.value,
     items_per_page: int = 100,
     max_items: Optional[int] = None,
+    labels: Optional[List[str]] = None,
 ) -> Sequence[DltResource]:
     """Get reactions associated with issues, pull requests and comments in the repo `name` with owner `owner`.
 
@@ -32,6 +33,7 @@ def github_reactions(
         access_token (str): The classic access token. Will be injected from secrets if not provided.
         items_per_page (int, optional): How many issues/pull requests to get in single page. Defaults to 100.
         max_items (int, optional): How many issues/pull requests to get in total. None means All.
+        labels (List[str], optional): Only fetch issues carrying any of these labels (server-side, OR semantics).
 
     Returns:
         Sequence[DltResource]: Two DltResources: `issues` with issues and `pull_requests` with pull requests
@@ -54,6 +56,7 @@ def github_reactions(
         yield from get_reactions_data(
             "issues", owner, name, access_token, items_per_page, max_items,
             since=updated_at.last_value,
+            labels=labels,
         )
 
     @dlt.resource(primary_key="number", write_disposition="merge")
@@ -147,6 +150,7 @@ def github_stargazers(
         access_token (str): The classic access token. Will be injected from secrets if not provided.
         items_per_page (int, optional): How many issues/pull requests to get in single page. Defaults to 100.
         max_items (int, optional): How many issues/pull requests to get in total. None means All.
+        labels (List[str], optional): Only fetch issues carrying any of these labels (server-side, OR semantics).
 
     Returns:
         Sequence[DltResource]: One DltResource: `stargazers`

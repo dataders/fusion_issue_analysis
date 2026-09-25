@@ -3,225 +3,232 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>dbt-fusion Issue Health · DuckDB WASM</title>
+  <title>dbt Fusion issue health · DuckDB WASM</title>
   <style>
-    *, *::before, *::after { box-sizing: border-box; }
-    body { background: #1e1e2e; color: #cdd6f4; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; margin: 0; padding: 20px 24px 40px; max-width: 960px; }
-    h1 { font-size: 1.15rem; font-weight: 600; margin: 0 0 2px; }
-    h2 { font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: .06em; color: #7f849c; margin: 24px 0 10px; }
-    #status { color: #a6adc8; font-size: 0.8rem; margin: 0 0 20px; }
-    .error { color: #f38ba8 !important; }
-    .kpi-grid { display: grid; gap: 10px; margin-bottom: 8px; }
-    .kpi-grid.cols-6 { grid-template-columns: repeat(6, 1fr); }
-    .kpi-grid.cols-5 { grid-template-columns: repeat(5, 1fr); }
-    .kpi-grid.cols-4 { grid-template-columns: repeat(4, 1fr); }
-    .kpi-card { background: #313244; border-radius: 8px; padding: 14px 12px 12px; text-align: center; }
-    .kpi-value { font-size: 1.9rem; font-weight: 700; line-height: 1; }
-    .kpi-label { color: #a6adc8; font-size: 0.68rem; margin-top: 6px; }
-    .chart-wrap { overflow-x: auto; margin-bottom: 4px; }
-    .chart-wrap svg { max-width: 100%; display: block; }
-    table { width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 8px; }
-    th { border-bottom: 1px solid #313244; color: #a6adc8; text-align: left; padding: 6px 8px; }
-    td { border-bottom: 1px solid #1e1e2e; padding: 6px 8px; }
-    td a { color: #89b4fa; }
-    td.num { text-align: right; color: #f38ba8; font-weight: 600; }
-    .cols-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-    @media (max-width: 680px) {
-      .kpi-grid.cols-6 { grid-template-columns: repeat(3, 1fr); }
-      .kpi-grid.cols-5 { grid-template-columns: repeat(3, 1fr); }
-      .cols-2 { grid-template-columns: 1fr; }
+    :root {
+      --bg: #f7f7f5; --card: #ffffff; --border: #e3e2de; --text: #1f1f1d; --muted: #6b6a66;
+      --link: #1d5fb0; --warn-bg: #fff4e5; --warn: #8a4b00; --grid: #e3e2de;
     }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #1e1e2e; --card: #262637; --border: #313244; --text: #cdd6f4; --muted: #a6adc8;
+              --link: #89b4fa; --warn-bg: #3b2a1e; --warn: #fab387; --grid: #313244; }
+    }
+    *, *::before, *::after { box-sizing: border-box; }
+    body { background: var(--bg); color: var(--text); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+           margin: 0 auto; padding: 20px 16px 40px; max-width: 1040px; }
+    h1 { font-size: 1.25rem; font-weight: 650; margin: 0 0 2px; }
+    .sub, .asof, #status { color: var(--muted); font-size: 0.82rem; margin: 2px 0; }
+    .stale { background: var(--warn-bg); color: var(--warn); border: 1px solid var(--warn); border-radius: 6px;
+             padding: 8px 12px; font-weight: 600; font-size: 0.85rem; margin: 8px 0; }
+    .error { color: var(--warn) !important; }
+    h2.question { font-size: 1rem; font-weight: 650; margin: 28px 0 10px; }
+    .kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
+    .kpi, .tile { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .kpi-label { color: var(--muted); font-size: 0.75rem; }
+    .kpi-value { font-size: 1.8rem; font-weight: 700; line-height: 1.2; font-variant-numeric: tabular-nums; }
+    .kpi-context { color: var(--muted); font-size: 0.72rem; }
+    .tiles { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 14px; }
+    .tiles.one { grid-template-columns: 1fr; }
+    .tile h3 { font-size: 0.9rem; margin: 0; }
+    .tile .tile-sub { color: var(--muted); font-size: 0.75rem; margin: 2px 0 10px; }
+    .tile svg { max-width: 100%; height: auto; }
+    .table-wrap { max-height: 460px; overflow: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
+    th { position: sticky; top: 0; background: var(--card); color: var(--muted); text-align: left; font-weight: 600;
+         padding: 6px 8px; border-bottom: 1px solid var(--border); }
+    td { padding: 5px 8px; border-bottom: 1px solid var(--border); vertical-align: top; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    td a { color: var(--link); text-decoration: none; }
+    td a:hover { text-decoration: underline; }
+    .bar { display: flex; align-items: center; gap: 6px; min-width: 150px; }
+    .bar .track { flex: 1; height: 0.7rem; background: var(--grid); border-radius: 3px; overflow: hidden; }
+    .bar .track > div { height: 100%; }
+    .bar > span { font-size: 0.75rem; min-width: 2.6em; text-align: right; font-variant-numeric: tabular-nums; }
+    @media (max-width: 720px) { .kpis { grid-template-columns: repeat(2, 1fr); } .tiles { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
-  <h1>dbt-fusion Issue Health · DuckDB WASM + MotherDuck</h1>
+  <header id="header"><h1>dbt Fusion issue health · DuckDB WASM + MotherDuck</h1></header>
   <p id="status">Connecting…</p>
   <div id="root"></div>
 
   <script type="module">
+    // Tiles come from dashboard/tiles.yml; data is queried live from the dbt
+    // dashboard models in MotherDuck as `SELECT * FROM <model> ORDER BY <order_by>`.
+    // The page only selects, renames, formats and lightly pivots model columns.
     import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
     import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
+    import yaml from 'https://esm.sh/js-yaml@4.1.0';
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
     const status = document.getElementById('status');
-    const root   = document.getElementById('root');
+    const root = document.getElementById('root');
+    const header = document.getElementById('header');
+
+    // Every dbt dashboard model this page reads; dashboard_meta feeds the header.
+    const MODELS = [
+      'dashboard_meta', 'headline_kpis', 'backlog_weekly', 'weekly_flow', 'triage_pipeline',
+      'response_weekly', 'triage_queue', 'open_by_area', 'open_by_adapter', 'epic_progress',
+      'top_requested', 'assignee_workload',
+    ];
 
     if (!TOKEN || TOKEN.startsWith('__')) {
-      status.textContent = 'Token not injected — run deploy workflow to embed MOTHERDUCK_READ_TOKEN.';
+      status.textContent = 'Token not injected — run the deploy workflow to embed MOTHERDUCK_READ_TOKEN.';
       status.className = 'error';
     } else {
       main().catch(err => { status.textContent = `Error: ${err.message}`; status.className = 'error'; console.error(err); });
     }
 
-    async function loadSql(name) {
-      const r = await fetch(`queries/${name}.sql`);
-      if (!r.ok) throw new Error(`queries/${name}.sql: ${r.status}`);
-      return r.text();
-    }
-
     const TTL = 60 * 60 * 1000;
-    async function q(conn, sqlText) {
-      const key = `md:${btoa(sqlText).slice(0, 40)}`;
-      const hit = sessionStorage.getItem(key);
-      if (hit) { const {rows, ts} = JSON.parse(hit); if (Date.now() - ts < TTL) return rows; }
-      const result = await conn.evaluateQuery(sqlText);
-      const rows = result.data.toRows();
-      sessionStorage.setItem(key, JSON.stringify({rows, ts: Date.now()}, (_, v) => typeof v === 'bigint' ? Number(v) : v));
+    async function q(conn, sql) {
+      const key = `md:${sql}`;
+      try {
+        const hit = sessionStorage.getItem(key);
+        if (hit) { const {rows, ts} = JSON.parse(hit); if (Date.now() - ts < TTL) return rows; }
+      } catch {}
+      const result = await conn.evaluateQuery(sql);
+      const rows = JSON.parse(JSON.stringify(result.data.toRows(), (_, v) => typeof v === 'bigint' ? Number(v) : v));
+      try { sessionStorage.setItem(key, JSON.stringify({rows, ts: Date.now()})); } catch {}
       return rows;
     }
 
-    const S = {background: 'transparent', color: '#cdd6f4', fontSize: '11px'};
-    function section(title) { const h = document.createElement('h2'); h.textContent = title; root.append(h); }
-    function kpis(items, cols = 6) {
-      const g = document.createElement('div'); g.className = `kpi-grid cols-${cols}`;
-      g.innerHTML = items.map(([v, color, label]) =>
-        `<div class="kpi-card"><div class="kpi-value" style="color:${color}">${v ?? '—'}</div><div class="kpi-label">${label}</div></div>`
-      ).join(''); root.append(g);
+    // ── Formatting helpers ────────────────────────────────────────────────────
+    const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'}[c]));
+    const num = v => v == null ? '—' : Number(v).toLocaleString('en-US', {maximumFractionDigits: 1});
+    const isoDay = v => v instanceof Date || typeof v === 'number' ? new Date(v).toISOString().slice(0, 10) : String(v).slice(0, 10);
+    const toDate = v => new Date(`${isoDay(v)}T00:00:00Z`);
+    function fill(template, row) {  // bare column or "{col}" / "{col:+}" template; nulls -> "—"
+      const t = String(template), tpl = t.includes('{') ? t : `{${t}}`;
+      if ([...tpl.matchAll(/\{(\w+)(?::\+)?\}/g)].some(([, c]) => row[c] == null)) return '—';
+      return tpl.replace(/\{(\w+)(:\+)?\}/g, (_, c, sign) => (sign && row[c] > 0 ? '+' : '') + num(row[c]));
     }
-    function chart(plot, id) {
-      const d = document.createElement('div'); d.className = 'chart-wrap'; if (id) d.id = id;
-      d.append(plot); root.append(d);
-    }
-    function cols2(left, right) {
-      const g = document.createElement('div'); g.className = 'cols-2';
-      const l = document.createElement('div'); l.append(left);
-      const r = document.createElement('div'); r.append(right);
-      g.append(l, r); root.append(g);
-    }
-    function toDate(v) { return v instanceof Date ? v : new Date(v); }
+    const COLUMN_LABELS = {
+      issue_number: '#', epic_number: '#', title: 'Title', issue_category: 'Type', areas: 'Areas',
+      triage_status: 'Triage', reactions: 'Reactions', comments: 'Comments', age_days: 'Age (d)',
+      days_idle: 'Idle (d)', is_customer_reported: 'Customer', child_closed: 'Closed',
+      child_total: 'Sub-issues', pct_complete: '% complete', milestone_title: 'Milestone',
+    };
+    const NUMERIC = new Set(['reactions', 'comments', 'age_days', 'days_idle', 'child_closed', 'child_total', 'pct_complete']);
+
+    function el(tag, cls, html) { const e = document.createElement(tag); if (cls) e.className = cls; if (html != null) e.innerHTML = html; return e; }
 
     async function main() {
-      const conn = MDConnection.create({mdToken: TOKEN});
-      await conn.isInitialized();
+      const [contract, conn] = await Promise.all([
+        fetch('../tiles.yml').then(r => { if (!r.ok) throw new Error(`tiles.yml: ${r.status}`); return r.text(); }).then(yaml.load),
+        (async () => { const c = MDConnection.create({mdToken: TOKEN}); await c.isInitialized(); return c; })(),
+      ]);
       status.textContent = 'Loading data…';
 
-      const sqls = await Promise.all([
-        'triage_health','summary_kpis','triage_pcts','oldest_untriaged',
-        'cumulative_flow','velocity','response_pctiles','age_distribution',
-        'close_by_label','assignee_workload','community_priorities',
-      ].map(loadSql));
+      const tiles = new Map(contract.sections.flatMap(s => s.tiles.map(t => [t.id, t])));
+      const orderBy = Object.fromEntries([...tiles.values()].map(t => [t.model, t.order_by]));
+      const rowsList = await Promise.all(MODELS.map(m =>
+        q(conn, `SELECT * FROM fusion_issues.main.${m}` + (orderBy[m] ? ` ORDER BY ${orderBy[m]}` : ''))));
+      const data = Object.fromEntries(MODELS.map((m, i) => [m, rowsList[i]]));
 
-      const [triage, summary, triagePcts, oldest,
-             cumFlow, velocityRaw, respPct, ageDist,
-             closeLabel, workload, community] = await Promise.all(sqls.map(s => q(conn, s)));
+      // ── Palette (dark values when the page is dark) ─────────────────────────
+      const mode = matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      const css = getComputedStyle(document.documentElement);
+      const TEXT = css.getPropertyValue('--text').trim();
+      const keys = k => Object.keys(contract.palette[k]);
+      const color = (k, n) => { const e = contract.palette[k][n]; return typeof e === 'string' ? e : e[mode]; };
+      const label = (k, n) => contract.palette[k]?.[n]?.label ?? n;
+      const scale = k => ({domain: keys(k), range: keys(k).map(n => color(k, n)), legend: true, tickFormat: n => label(k, n)});
+      const SINGLE = contract.palette.single_series;
+      const style = {background: 'transparent', color: TEXT, fontSize: '11px'};
+      const tipChannels = t => Object.fromEntries((t.tooltip ?? []).map(c => [c, c]));
 
-      const t = triage[0] ?? {}, sm = summary[0] ?? {}, tp = triagePcts[0] ?? {};
-      const vel = velocityRaw.map(r => ({...r, week: toDate(r.week)}));
-      const cum = cumFlow.map(r => ({...r, week: toDate(r.week)}));
-      const rp  = respPct.map(r => ({...r, week: toDate(r.week)}));
+      // ── Chart forms (tiles.yml `form`) ──────────────────────────────────────
+      const W = 480;
+      const FORMS = {
+        stacked_area: (t, rows) => Plot.plot({
+          style, width: W, height: 260,
+          x: {type: 'utc', label: null}, y: {label: 'Open issues', grid: true},
+          color: scale(t.color),
+          marks: [Plot.areaY(rows, {x: d => toDate(d[t.x]), y: t.y, fill: t.color, order: keys(t.color), tip: true}), Plot.ruleY([0])],
+        }),
+        grouped_bar: (t, rows) => Plot.plot({  // light pivot: series columns -> long rows
+          style, width: W, height: 260,
+          fx: {label: null, interval: 'week', tickFormat: '%b %d', ticks: 5},
+          x: {axis: null, domain: t.series}, y: {label: 'Issues', grid: true},
+          color: scale('flow'),
+          marks: [
+            Plot.barY(rows.flatMap(d => t.series.map(s => ({week: toDate(d[t.x]), series: s, issues: d[s],
+              ...Object.fromEntries((t.tooltip ?? []).map(c => [c, d[c]]))}))),
+              {fx: 'week', x: 'series', y: 'issues', fill: 'series', tip: {channels: tipChannels(t)}}),
+            Plot.ruleY([0]),
+          ],
+        }),
+        horizontal_stacked_bar: (t, rows) => {
+          const domain = [...new Set(rows.map(d => d[t.y]))];  // rows arrive in order_by order
+          return Plot.plot({
+            style, width: W, height: Math.max(150, 26 * domain.length + 60), marginLeft: 140,
+            x: {label: 'Open issues', grid: true}, y: {label: null, domain},
+            color: scale(t.color),
+            marks: [Plot.barX(rows, {y: t.y, x: t.x, fill: t.color, order: keys(t.color), tip: true}), Plot.ruleX([0])],
+          });
+        },
+        line: (t, rows) => Plot.plot({
+          style, width: W, height: 260,
+          x: {type: 'utc', label: null}, y: {label: '% answered within 48h', domain: [0, 100], grid: true},
+          marks: [
+            Plot.lineY(rows, {x: d => toDate(d[t.x]), y: t.y, stroke: SINGLE, strokeWidth: 2}),
+            Plot.dot(rows, {x: d => toDate(d[t.x]), y: t.y, fill: SINGLE, r: 2.5}),
+            Plot.tip(rows, Plot.pointerX({x: d => toDate(d[t.x]), y: t.y, channels: tipChannels(t)})),
+          ],
+        }),
+        table: (t, rows) => {
+          const cell = (c, d) => {
+            const v = d[c];
+            if (c === 'issue_number' || c === 'epic_number') return `<a href="${esc(d[t.link])}" target="_blank" rel="noopener">#${esc(v)}</a>`;
+            if (c === 'title') return `<a href="${esc(d[t.link])}" target="_blank" rel="noopener">${esc(v)}</a>`;
+            if (c === 'issue_category') return esc(label('issue_category', v));
+            if (typeof v === 'boolean') return v ? 'Yes' : '';
+            if (c === 'pct_complete' && t.form === 'table_with_bar')
+              return `<div class="bar"><div class="track"><div style="width:${Number(v) || 0}%;background:${SINGLE}"></div></div><span>${num(v)}%</span></div>`;
+            return NUMERIC.has(c) ? num(v) : esc(v);
+          };
+          const cls = c => NUMERIC.has(c) ? ' class="num"' : '';
+          return el('div', 'table-wrap', `<table>
+            <thead><tr>${t.columns.map(c => `<th${cls(c)}>${COLUMN_LABELS[c] ?? c}</th>`).join('')}</tr></thead>
+            <tbody>${rows.map(d => `<tr>${t.columns.map(c => `<td${cls(c)}>${cell(c, d)}</td>`).join('')}</tr>`).join('')}</tbody>
+          </table>`);
+        },
+      };
+      FORMS.table_with_bar = FORMS.table;
 
-      // ── Daily triage ────────────────────────────────────────────────────────
-      section('Daily triage');
-      kpis([
-        [t.slipped_through_count, '#f38ba8', 'Slipped through'],
-        [t.triage_queue_count,    '#fab387', 'Triage queue'],
-        [t.hard_blocker_count,   '#eba0ac', 'Hard blockers'],
-        [t.stale_count,          '#cba6f7', 'Stale'],
-        [t.needs_repro_count,    '#89dceb', 'Needs repro'],
-        [t.repro_verified_count, '#a6e3a1', 'Repro verified'],
-      ], 6);
+      function tileCard(t) {
+        const card = el('div', 'tile', `<h3>${esc(t.title)}</h3><p class="tile-sub">${esc(t.subtitle)}</p>`);
+        card.append(FORMS[t.form](t, data[t.model]));
+        return card;
+      }
 
-      const tbl = document.createElement('table');
-      tbl.innerHTML = `<thead><tr><th>Issue</th><th>Title</th><th style="text-align:right">Age (days)</th></tr></thead>
-        <tbody>${oldest.map(d => `<tr>
-          <td><a href="${d.issue_url}" target="_blank">#${d.issue_number}</a></td>
-          <td>${d.title}</td><td class="num">${d.age_days}</td></tr>`).join('')}</tbody>`;
-      root.append(tbl);
+      // ── Header: freshness banner ────────────────────────────────────────────
+      const meta = data.dashboard_meta[0] ?? {};
+      header.innerHTML = `<h1>${esc(contract.title)}</h1><p class="sub">${esc(contract.subtitle)} · DuckDB WASM + MotherDuck</p>
+        <p class="asof">Data as of <strong>${isoDay(meta.as_of_date)}</strong> · ${esc(meta.source_repo)} · label ${esc(meta.source_label)}</p>`;
+      if (meta.days_stale > contract.meta.stale_after_days)
+        header.append(el('p', 'stale', `⚠ Data is ${meta.days_stale} days old — the extract has probably stopped.`));
 
-      // ── Key metrics ─────────────────────────────────────────────────────────
-      section('Key metrics');
-      const net = sm.net_flow_4w ?? null;
-      kpis([
-        [sm.open_issues,                                                '#cba6f7', 'Open issues'],
-        [net != null ? (net >= 0 ? '+' : '') + net : null, '#a6e3a1', 'Net flow (4 wk)'],
-        [sm.rolling_median_close_days, '#89dceb', 'Median close (4 wk)'],
-        [sm.pct_responded_48h != null ? sm.pct_responded_48h + '%' : null, '#fab387', '48h response SLA'],
-        [sm.stale_count,               '#f38ba8', 'Stale (30d+)'],
-      ], 5);
-
-      // ── Cumulative flow ──────────────────────────────────────────────────────
-      section('Cumulative issue flow');
-      chart(Plot.plot({
-        style: S, width: 880, height: 260, marginBottom: 36,
-        x: {type: 'utc', label: null, tickRotate: -30},
-        y: {label: 'Issues', grid: true, gridColor: '#313244'},
-        color: {legend: true},
-        marks: [
-          Plot.areaY(cum, {x: 'week', y: 'cumulative_opened', fill: '#f38ba8', fillOpacity: 0.35, tip: true}),
-          Plot.areaY(cum, {x: 'week', y: 'cumulative_closed',  fill: '#a6e3a1', fillOpacity: 0.35, tip: true}),
-          Plot.lineY(cum, {x: 'week', y: 'cumulative_opened', stroke: '#f38ba8', strokeWidth: 2}),
-          Plot.lineY(cum, {x: 'week', y: 'cumulative_closed',  stroke: '#a6e3a1', strokeWidth: 2}),
-        ],
-      }));
-
-      // ── Velocity & response ──────────────────────────────────────────────────
-      section('Velocity & response');
-      const velChart = Plot.plot({
-        style: S, width: 420, height: 220, marginBottom: 36,
-        x: {type: 'utc', label: null, tickRotate: -30},
-        y: {label: 'Median days', grid: true, gridColor: '#313244'},
-        color: {legend: true, domain: ['bugs', 'enhancements'], range: ['#f38ba8', '#89b4fa']},
-        marks: [
-          Plot.lineY(vel.filter(d => d.bugs != null),         {x: 'week', y: 'bugs',         stroke: '#f38ba8', strokeWidth: 2, tip: true}),
-          Plot.lineY(vel.filter(d => d.enhancements != null), {x: 'week', y: 'enhancements', stroke: '#89b4fa', strokeWidth: 2, tip: true}),
-        ],
-      });
-      const respChart = Plot.plot({
-        style: S, width: 420, height: 220, marginBottom: 36,
-        x: {type: 'utc', label: null, tickRotate: -30},
-        y: {label: 'Hours', grid: true, gridColor: '#313244'},
-        color: {legend: true, domain: ['p75', 'p50', 'p25'], range: ['#f38ba8', '#89b4fa', '#a6e3a1']},
-        marks: [
-          Plot.lineY(rp, {x: 'week', y: 'p75', stroke: '#f38ba8', strokeWidth: 1.5, tip: true}),
-          Plot.lineY(rp, {x: 'week', y: 'p50', stroke: '#89b4fa', strokeWidth: 2,   tip: true}),
-          Plot.lineY(rp, {x: 'week', y: 'p25', stroke: '#a6e3a1', strokeWidth: 1.5, tip: true}),
-        ],
-      });
-      cols2(velChart, respChart);
-
-      // ── Issue distribution ───────────────────────────────────────────────────
-      section('Issue distribution');
-      const ageChart = Plot.plot({
-        style: S, width: 420, height: 220,
-        x: {label: null},
-        y: {label: 'Issues', grid: true, gridColor: '#313244'},
-        color: {legend: true, domain: ['bug', 'enhancement', 'other'], range: ['#f38ba8', '#89b4fa', '#a6adc8']},
-        marks: [Plot.barY(ageDist, Plot.stackY({x: 'age_bucket', y: 'issue_count', fill: 'issue_category', tip: true}))],
-      });
-      const labelChart = Plot.plot({
-        style: S, width: 420, height: 220, marginLeft: 140,
-        x: {label: 'Median days', grid: true, gridColor: '#313244'},
-        y: {label: null},
-        marks: [Plot.barX(closeLabel, {x: 'median_days_to_close', y: 'label_name', fill: '#89b4fa', tip: true, sort: {y: '-x'}})],
-      });
-      cols2(ageChart, labelChart);
-
-      // ── Triage health ────────────────────────────────────────────────────────
-      section('Triage health');
-      kpis([
-        [tp.pct_labeled    != null ? tp.pct_labeled    + '%' : null, '#a6e3a1', '% Labeled'],
-        [tp.pct_typed      != null ? tp.pct_typed      + '%' : null, '#fab387', '% Typed'],
-        [tp.pct_assigned   != null ? tp.pct_assigned   + '%' : null, '#89dceb', '% Assigned'],
-        [tp.pct_milestoned != null ? tp.pct_milestoned + '%' : null, '#cba6f7', '% Milestoned'],
-      ], 4);
-
-      // ── Workload & priorities ────────────────────────────────────────────────
-      section('Workload & priorities');
-      const workChart = Plot.plot({
-        style: S, width: 420, height: 300, marginLeft: 110,
-        x: {label: 'Open issues', grid: true, gridColor: '#313244'},
-        y: {label: null},
-        marks: [Plot.barX(workload, {y: 'assignee_login', x: 'open_issues', fill: '#cba6f7', tip: true, sort: {y: '-x'}})],
-      });
-      const commWrap = document.createElement('div');
-      const commTbl = document.createElement('table');
-      commTbl.innerHTML = `<thead><tr><th>Issue</th><th>Title</th><th style="text-align:right">Reactions</th></tr></thead>
-        <tbody>${community.map(d => `<tr>
-          <td><a href="${d.issue_url}" target="_blank">#${d.issue_number}</a></td>
-          <td>${String(d.title).slice(0, 60)}</td>
-          <td class="num">${d.reactions_total_count}</td></tr>`).join('')}</tbody>`;
-      commWrap.append(commTbl);
-      cols2(workChart, commWrap);
+      // ── Sections in contract order ──────────────────────────────────────────
+      for (const section of contract.sections) {
+        root.append(el('h2', 'question', esc(section.question)));
+        const charts = [];
+        const flush = () => { if (charts.length) { const g = el('div', charts.length > 1 ? 'tiles' : 'tiles one'); g.append(...charts.splice(0)); root.append(g); } };
+        for (const t of section.tiles) {
+          if (t.form === 'kpi_row') {
+            const row = data[t.model][0] ?? {};
+            root.append(el('div', 'kpis', t.kpis.map(k => `<div class="kpi">
+              <div class="kpi-label">${esc(k.label)}</div>
+              <div class="kpi-value">${esc(fill(k.value, row))}</div>
+              ${k.context ? `<div class="kpi-context">${esc(fill(k.context, row))}</div>` : ''}</div>`).join('')));
+          } else if (t.form.startsWith('table')) {
+            flush(); charts.push(tileCard(t)); flush();   // tables span the full width
+          } else {
+            charts.push(tileCard(t)); if (charts.length === 2) flush();
+          }
+        }
+        flush();
+      }
 
       status.textContent = 'Data loaded live from MotherDuck (DuckDB WASM).';
     }

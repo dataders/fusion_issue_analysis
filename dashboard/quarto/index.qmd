@@ -1,15 +1,21 @@
 ---
-title: "dbt-fusion Issue Health"
-subtitle: "Actionable metrics for dbt-labs/dbt-fusion (excludes EPICs)"
+title: "dbt Fusion issue health"
+subtitle: "Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)"
 format:
-  dashboard:
-    theme: darkly
-    scrolling: true
-    nav-buttons:
-      - icon: github
+  html:
+    theme: cosmo
+    toc: true
+    toc-title: Questions
+    toc-depth: 2
+    page-layout: article
+    embed-resources: false
+    other-links:
+      - text: Source on GitHub
+        icon: github
         href: https://github.com/dataders/fusion_issue_analysis
 execute:
   echo: false
+  warning: false
 ---
 
 <script>window.__quartoRequireDefine = window.define; window.define = undefined;</script>
@@ -18,360 +24,284 @@ execute:
 <script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
 <script>window.define = window.__quartoRequireDefine; delete window.__quartoRequireDefine;</script>
 
+<style>
+.kpi-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: .75rem; margin: 1rem 0 1.5rem; }
+.kpi { border: 1px solid #dee2e6; border-radius: .5rem; padding: .75rem 1rem; }
+.kpi .label { font-size: .8rem; color: #6c757d; }
+.kpi .value { font-size: 1.6rem; font-weight: 600; line-height: 1.2; }
+.kpi .context { font-size: .8rem; color: #6c757d; }
+.tile-subtitle { color: #6c757d; margin-top: -.5rem; }
+.pct-bar { display: flex; align-items: center; gap: .4rem; min-width: 130px; }
+.pct-bar .track { flex: 1; background: #e9ecef; height: 8px; border-radius: 4px; }
+.pct-bar .fill { height: 8px; border-radius: 4px; }
+table.issues td, table.issues th { font-size: .85rem; }
+table.issues td:first-child, table.issues th { white-space: nowrap; }
+.table-wrap { max-height: 460px; overflow: auto; margin-bottom: 1rem; }
+.table-wrap th { position: sticky; top: 0; background: #fff; }
+</style>
+
 ```{python}
 #| include: false
+import html
 import json
-import os
+import sys
 import uuid
+from pathlib import Path
 
-import duckdb
 import pandas as pd
-from IPython.display import HTML
+from IPython.display import HTML, Markdown
 
-PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname("__file__"), "../.."))
-DB_PATH = (
-    os.environ["FUSION_DB"]
-    if os.environ.get("FUSION_DB")
-    else "md:fusion_issues"
-    if os.environ.get("MOTHERDUCK_TOKEN")
-    else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
-)
+# dashboard/tiles.py: the tile contract (tiles.yml) + dbt model reader.
+sys.path.insert(0, str(Path.cwd().parent))
+import tiles
 
-PALETTE = {
-    "bug": "#f38ba8",
-    "enhancement": "#89b4fa",
-    "other": "#a6adc8",
-    "opened": "#f38ba8",
-    "closed": "#a6e3a1",
-    "p25": "#a6e3a1",
-    "p50": "#89b4fa",
-    "p75": "#f38ba8",
-}
+CATEGORIES = tiles.categories("issue_category")
+CATEGORY_SCALE = {"domain": CATEGORIES, "range": [tiles.color("issue_category", c) for c in CATEGORIES]}
+CATEGORY_LEGEND = {"title": None, "orient": "top",
+                   "labelExpr": json.dumps({c: tiles.label("issue_category", c) for c in CATEGORIES}) + "[datum.label]"}
 
 
-def query(sql: str) -> pd.DataFrame:
-    con = duckdb.connect(DB_PATH, read_only=True)
-    if not DB_PATH.startswith("md:"):
-        file_search_root = os.environ.get("FUSION_PROJECT_ROOT", PROJECT_ROOT)
-        con.execute(f"SET file_search_path = '{os.path.join(file_search_root, 'transform')}'")
-    df = con.execute(sql).fetchdf()
-    con.close()
-    return df
+def rows(tile_id: str) -> list[dict]:
+    """A tile's model rows, in tiles.yml order, JSON-safe for Vega-Lite."""
+    return json.loads(pd.DataFrame(tiles.tile_rows(tile_id)).to_json(orient="records", date_format="iso"))
 
 
 def chart(spec: dict) -> HTML:
     element_id = f"vl-{uuid.uuid4().hex}"
-    spec.setdefault("height", 280)
-    spec.setdefault("background", "transparent")
-    spec.setdefault("config", {})
-    spec["config"].setdefault("axis", {"labelColor": "#ced4da", "titleColor": "#ced4da", "gridColor": "#343a40"})
-    spec["config"].setdefault("legend", {"labelColor": "#ced4da", "titleColor": "#ced4da"})
-    spec["config"].setdefault("title", {"color": "#f8f9fa"})
-    spec_json = json.dumps(spec, default=str)
+    spec = {"$schema": "https://vega.github.io/schema/vega-lite/v6.json", "width": "container", "height": 280, **spec}
+    spec.setdefault("config", {}).update({"view": {"stroke": None}, "axis": {"labelFontSize": 11, "titleFontWeight": "normal"}})
     return HTML(
-        f'<div id="{element_id}"></div>'
+        f'<div id="{element_id}" style="width:100%"></div>'
         f"<script>(function render() {{"
-        f"if (window.vegaEmbed) {{ vegaEmbed('#{element_id}', {spec_json}, "
-        f"{{actions: false, theme: 'dark'}}); return; }}"
+        f"if (window.vegaEmbed) {{ vegaEmbed('#{element_id}', {json.dumps(spec)}, {{actions: false}}); return; }}"
         f"setTimeout(render, 50);"
         f"}})();</script>"
     )
 
 
-def records(df: pd.DataFrame) -> list[dict]:
-    return json.loads(df.to_json(orient="records", date_format="iso"))
+def category_bar(tile_id: str, y: str, total: str) -> HTML:
+    """Horizontal issue_count bar stacked by issue_category, sorted by the model's total."""
+    data = rows(tile_id)
+    order = list(dict.fromkeys(r[y] for r in data))  # order_by: {total} desc
+    return chart({
+        "data": {"values": data},
+        "height": {"step": 22},
+        "mark": "bar",
+        "encoding": {
+            "y": {"field": y, "type": "nominal", "sort": order, "title": None},
+            "x": {"field": "issue_count", "type": "quantitative", "stack": True, "title": "Open issues"},
+            "color": {"field": "issue_category", "type": "nominal", "sort": CATEGORIES,
+                      "scale": CATEGORY_SCALE, "legend": CATEGORY_LEGEND},
+            "order": {"field": "category_rank"},
+            "tooltip": [{"field": y}, {"field": "issue_category", "title": "Type"},
+                        {"field": "issue_count", "title": "Issues"}, {"field": total, "title": "Total"}],
+        },
+        "transform": [{"calculate": f"indexof({json.dumps(CATEGORIES)}, datum.issue_category)", "as": "category_rank"}],
+    })
 
 
-def fmt_pct(value) -> str:
-    # dbt ratios (e.g. responded / total) are NULL when the denominator is
-    # zero, which pandas surfaces as NaN — int(NaN) raises, so guard first.
+def _cell(value, kind=None) -> str:
     if value is None or value != value:
-        return "N/A"
-    return f"{int(value)}%"
+        return "—"
+    if isinstance(value, bool):
+        return "yes" if value else ""
+    if kind == "pct":
+        fill = tiles.MANIFEST["palette"]["single_series"]
+        return (f'<div class="pct-bar"><div class="track"><div class="fill" '
+                f'style="width:{value:.0f}%;background:{fill}"></div></div>{value:.0f}%</div>')
+    return html.escape(str(value))
 
 
-def fmt_or_na(value, suffix: str = "") -> str:
-    if value is None or value != value:
-        return "N/A"
-    return f"{value}{suffix}"
+def issue_table(tile_id: str, headers: dict, kinds: dict | None = None) -> HTML:
+    """The tile's contract columns, in order; the first column links to issue_url."""
+    t = tiles.tile(tile_id)
+    cols, kinds = t["columns"], kinds or {}
+    head = "".join(f"<th>{html.escape(headers.get(c, c))}</th>" for c in cols)
+    body = []
+    for r in tiles.tile_rows(tile_id):
+        cells = [f'<a href="{html.escape(r[t["link"]])}" target="_blank">#{r[cols[0]]}</a>']
+        cells += [_cell(r[c], kinds.get(c)) for c in cols[1:]]
+        body.append("<tr>" + "".join(f"<td>{c}</td>" for c in cells) + "</tr>")
+    return HTML(f'<div class="table-wrap"><table class="table table-sm table-hover issues">'
+                f'<thead><tr>{head}</tr></thead><tbody>{"".join(body)}</tbody></table></div>')
 
 
-summary = query("SELECT * FROM summary_kpis").iloc[0]
-cum_flow = query("SELECT * FROM cumulative_flow")
-velocity = query("SELECT * FROM velocity")
-resp = query("SELECT * FROM response_pctiles")
-age_dist = query("SELECT * FROM age_distribution")
-lbl = query("SELECT * FROM close_by_label ORDER BY median_days_to_close DESC")
-triage = query("SELECT * FROM triage_health").iloc[0]
-ops = query("SELECT * FROM issue_triage_health").iloc[0]
-untriaged = query("SELECT issue_number, title, age_days, issue_url FROM oldest_untriaged")
-workload = query("SELECT * FROM assignee_workload")
-priorities = query("SELECT * FROM community_priorities ORDER BY reactions_total_count DESC")
-
-net = int(summary["net_flow_4w"])
-```
-
-## Operational Triage {height="160"}
-```{python}
-#| content: valuebox
-#| title: "Slipped through (bugs)"
-dict(value=int(ops["slipped_through_count"]), caption="zero triage signal", icon="exclamation-circle", color="danger")
+meta = tiles.one(tiles.MANIFEST["meta"]["model"])  # dashboard_meta
+stale = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
+kpis = {k["label"]: k for k in tiles.kpis()}  # headline_kpis, formatted per tiles.yml
 ```
 
 ```{python}
-#| content: valuebox
-#| title: "Triage Queue"
-dict(value=int(ops["triage_queue_count"]), icon="inbox", color="warning")
+#| output: asis
+note = tiles.freshness_note(meta)
+print(f"::: {{.callout-warning}}\n{note}\n:::" if stale else f"*{note}*")
+```
+
+## Where do things stand?
+
+```{python}
+HTML('<div class="kpi-row">' + "".join(
+    f'<div class="kpi"><div class="label">{html.escape(k["label"])}</div>'
+    f'<div class="value">{html.escape(k["value"])}</div>'
+    f'<div class="context">{html.escape(k["context"])}</div></div>'
+    for k in kpis.values()
+) + "</div>")
 ```
 
 ```{python}
-#| content: valuebox
-#| title: "Hard Blockers"
-dict(value=int(ops["hard_blocker_count"]), caption=f"{int(ops['hard_blocker_unreleased'])} unreleased", icon="shield-exclamation", color="danger")
+#| output: asis
+_open, _triage = kpis["Open issues"], kpis["Awaiting triage"]
+print(f"There are **{_open['value']}** open issues ({_open['context']}), "
+      f"and **{_triage['value']}** of them are still waiting for triage ({_triage['context']}).")
 ```
 
-```{python}
-#| content: valuebox
-#| title: "Needs Repro"
-dict(value=int(ops["needs_repro_count"]), icon="bug", color="warning")
-```
+## Is the backlog shrinking?
+
+### Open issues over time
+[Open at the end of each week, by type]{.tile-subtitle}
 
 ```{python}
-#| content: valuebox
-#| title: "Repro Verified"
-dict(value=int(ops["repro_verified_count"]), icon="check-circle", color="success")
-```
-
-```{python}
-#| content: valuebox
-#| title: "Stale (90d+)"
-dict(value=int(ops["stale_count"]), icon="clock-history", color="secondary")
-```
-
-```{python}
-#| content: valuebox
-#| title: "Total Open"
-dict(value=int(ops["total_open"]), icon="journal-text", color="primary")
-```
-
-## Oldest Untriaged Bugs
-```{python}
-#| title: "Top 25 open bugs with zero triage signal, ordered by age"
-untriaged
-```
-
-## Key Metrics
-```{python}
-#| content: valuebox
-#| title: "Open Issues"
-dict(value=int(summary["open_issues"]), icon="journal-text", color="primary")
-```
-
-```{python}
-#| content: valuebox
-#| title: "Net Flow (4 wk)"
-dict(
-    value=f"{'+' if net >= 0 else ''}{net}",
-    icon="arrow-down-up",
-    color="success" if net >= 0 else "danger",
-)
-```
-
-```{python}
-#| content: valuebox
-#| title: "Median Close (4 wk)"
-val = summary["rolling_median_close_days"]
-dict(value=fmt_or_na(val, " days"), icon="clock", color="secondary")
-```
-
-```{python}
-#| content: valuebox
-#| title: "48h Response SLA"
-sla = summary["pct_responded_48h"]
-dict(value=fmt_pct(sla), icon="bell", color="info")
-```
-
-```{python}
-#| content: valuebox
-#| title: "Stale Issues (30d+)"
-dict(value=int(summary["stale_count"]), icon="exclamation-triangle", color="warning")
-```
-
-## Cumulative Issue Flow
-```{python}
-cum_long = cum_flow.melt(
-    id_vars="week",
-    value_vars=["cumulative_opened", "cumulative_closed"],
-    var_name="series",
-    value_name="issues",
-)
-cum_long["series"] = cum_long["series"].map({"cumulative_opened": "opened", "cumulative_closed": "closed"})
 chart({
-    "data": {"values": records(cum_long)},
-    "mark": {"type": "area", "opacity": 0.45, "line": True},
+    "data": {"values": rows("backlog_weekly")},
+    "mark": {"type": "area", "line": False},
     "encoding": {
-        "x": {"field": "week", "type": "temporal", "title": "Week"},
+        "x": {"field": "week", "type": "temporal", "title": None},
+        "y": {"field": "open_issues", "type": "quantitative", "stack": True, "title": "Open issues"},
+        "color": {"field": "issue_category", "type": "nominal", "sort": CATEGORIES,
+                  "scale": CATEGORY_SCALE, "legend": CATEGORY_LEGEND},
+        "order": {"field": "category_rank"},
+        "tooltip": [{"field": "week", "type": "temporal"}, {"field": "issue_category", "title": "Type"},
+                    {"field": "open_issues", "title": "Open"}],
+    },
+    "transform": [{"calculate": f"indexof({json.dumps(CATEGORIES)}, datum.issue_category)", "as": "category_rank"}],
+})
+```
+
+### Opened vs closed per week
+[Complete weeks; when closed > opened the backlog shrank]{.tile-subtitle}
+
+```{python}
+_series = tiles.tile("weekly_flow")["series"]
+chart({
+    "data": {"values": rows("weekly_flow")},
+    "transform": [{"fold": _series, "as": ["series", "issues"]}],
+    "mark": "bar",
+    "encoding": {
+        "x": {"field": "week", "type": "ordinal", "title": None,
+              "axis": {"labelAngle": -45, "labelExpr": "slice(datum.label, 5)"}},
+        "xOffset": {"field": "series", "sort": _series},
         "y": {"field": "issues", "type": "quantitative", "title": "Issues"},
-        "color": {
-            "field": "series",
-            "type": "nominal",
-            "scale": {"domain": ["opened", "closed"], "range": [PALETTE["opened"], PALETTE["closed"]]},
-            "title": None,
-        },
-        "tooltip": [{"field": "week"}, {"field": "series"}, {"field": "issues"}],
+        "color": {"field": "series", "type": "nominal", "sort": _series,
+                  "scale": {"domain": _series, "range": [tiles.color("flow", s) for s in _series]},
+                  "legend": {"title": None, "orient": "top",
+                             "labelExpr": json.dumps({s: tiles.label("flow", s) for s in _series}) + "[datum.label]"}},
+        "tooltip": [{"field": "week"}, {"field": "series"}, {"field": "issues"},
+                    {"field": "net_change", "title": "Net change", "format": "+d"}],
     },
-    "title": "Cumulative Issue Flow",
 })
 ```
 
-## Velocity & Response
-```{python}
-chart({
-    "data": {"values": records(velocity)},
-    "mark": {"type": "line", "point": True},
-    "encoding": {
-        "x": {"field": "week", "type": "temporal", "title": "Week"},
-        "y": {"field": "median_days", "type": "quantitative", "title": "Median Days"},
-        "color": {
-            "field": "issue_category",
-            "type": "nominal",
-            "scale": {"domain": ["bug", "enhancement"], "range": [PALETTE["bug"], PALETTE["enhancement"]]},
-            "title": "Type",
-        },
-        "tooltip": [{"field": "week"}, {"field": "issue_category"}, {"field": "median_days"}],
-    },
-    "title": "Median Days to Close: Bugs vs Enhancements",
-})
-```
+## Are we keeping up with triage?
+
+### Open issues by triage status and age
+[How much is waiting, and for how long]{.tile-subtitle}
 
 ```{python}
-resp_long = resp.melt(
-    id_vars="week",
-    value_vars=["p25", "p50", "p75"],
-    var_name="percentile",
-    value_name="hours",
-)
+_data = rows("triage_pipeline")  # order_by: status_order, age_bucket_order
+_buckets = tiles.categories("age_bucket")
 chart({
-    "data": {"values": records(resp_long)},
-    "mark": {"type": "line", "point": True},
-    "encoding": {
-        "x": {"field": "week", "type": "temporal", "title": "Week"},
-        "y": {"field": "hours", "type": "quantitative", "title": "Hours"},
-        "color": {
-            "field": "percentile",
-            "type": "nominal",
-            "scale": {"domain": ["p25", "p50", "p75"], "range": [PALETTE["p25"], PALETTE["p50"], PALETTE["p75"]]},
-            "title": None,
-        },
-        "tooltip": [{"field": "week"}, {"field": "percentile"}, {"field": "hours"}],
-    },
-    "title": "Time to First Response (hours)",
-})
-```
-
-## Issue Distribution
-```{python}
-age_bucket_order = (
-    age_dist[["age_bucket", "bucket_sort_order"]]
-    .drop_duplicates()
-    .sort_values("bucket_sort_order")["age_bucket"]
-    .tolist()
-)
-chart({
-    "data": {"values": records(age_dist)},
+    "data": {"values": _data},
+    "height": {"step": 34},
     "mark": "bar",
     "encoding": {
-        "x": {
-            "field": "age_bucket",
-            "type": "ordinal",
-            "title": "Age",
-            "sort": age_bucket_order,
-        },
-        "y": {"field": "issue_count", "type": "quantitative", "title": "Issues", "stack": True},
-        "color": {
-            "field": "issue_category",
-            "type": "nominal",
-            "title": "Type",
-        },
-        "tooltip": [{"field": "age_bucket"}, {"field": "issue_category"}, {"field": "issue_count"}],
+        "y": {"field": "status_label", "type": "nominal", "title": None,
+              "sort": list(dict.fromkeys(r["status_label"] for r in _data))},
+        "x": {"field": "issue_count", "type": "quantitative", "stack": True, "title": "Open issues"},
+        "color": {"field": "age_bucket", "type": "ordinal", "sort": _buckets,
+                  "scale": {"domain": _buckets, "range": [tiles.color("age_bucket", b) for b in _buckets]},
+                  "legend": {"title": "Age", "orient": "top"}},
+        "order": {"field": "age_bucket_order"},
+        "tooltip": [{"field": "status_label", "title": "Status"}, {"field": "age_bucket", "title": "Age"},
+                    {"field": "issue_count", "title": "Issues"}],
     },
-    "title": "Open Issue Age by Type",
 })
 ```
+
+### New issues answered within 48 hours
+[By week opened; unanswered issues count as misses]{.tile-subtitle}
 
 ```{python}
 chart({
-    "data": {"values": records(lbl)},
-    "mark": "bar",
+    "data": {"values": rows("response_weekly")},
+    "mark": {"type": "line", "point": True, "color": tiles.MANIFEST["palette"]["single_series"]},
     "encoding": {
-        "x": {"field": "median_days_to_close", "type": "quantitative", "title": "Median Days"},
-        "y": {"field": "label_name", "type": "nominal", "title": None, "sort": "-x"},
-        "tooltip": [{"field": "label_name"}, {"field": "median_days_to_close"}, {"field": "closed_count"}],
+        "x": {"field": "week", "type": "temporal", "title": "Week opened"},
+        "y": {"field": "pct_responded_48h", "type": "quantitative", "title": "% answered within 48h",
+              "scale": {"domain": [0, 100]}},
+        "tooltip": [{"field": "week", "type": "temporal"},
+                    {"field": "pct_responded_48h", "title": "% within 48h"},
+                    {"field": "issues_opened", "title": "Opened"},
+                    {"field": "responded_48h", "title": "Answered in 48h"},
+                    {"field": "median_hours_to_first_response", "title": "Median hours to first reply"}],
     },
-    "title": "Median Days to Close by Label",
 })
 ```
 
-## Triage Health
-```{python}
-#| content: valuebox
-#| title: "% Labeled"
-dict(value=fmt_pct(triage['pct_labeled']), icon="tag", color="primary")
-```
+### Triage queue — oldest first
+[Open issues still labeled status:triage]{.tile-subtitle}
 
 ```{python}
-#| content: valuebox
-#| title: "% Typed"
-dict(value=fmt_pct(triage['pct_typed']), icon="card-list", color="primary")
-```
-
-```{python}
-#| content: valuebox
-#| title: "% Assigned"
-dict(value=fmt_pct(triage['pct_assigned']), icon="person", color="primary")
-```
-
-```{python}
-#| content: valuebox
-#| title: "% Milestoned"
-dict(value=fmt_pct(triage['pct_milestoned']), icon="flag", color="primary")
-```
-
-## Workload & Priorities
-```{python}
-workload_long = workload.melt(
-    id_vars="assignee_login",
-    value_vars=["bugs", "enhancements"],
-    var_name="type",
-    value_name="issue_count",
-)
-chart({
-    "data": {"values": records(workload_long)},
-    "mark": "bar",
-    "encoding": {
-        "x": {"field": "issue_count", "type": "quantitative", "title": "Open Issues", "stack": True},
-        "y": {"field": "assignee_login", "type": "nominal", "title": None, "sort": "-x"},
-        "color": {
-            "field": "type",
-            "type": "nominal",
-            "scale": {"domain": ["bugs", "enhancements"], "range": [PALETTE["bug"], PALETTE["enhancement"]]},
-            "title": "Type",
-        },
-        "tooltip": [{"field": "assignee_login"}, {"field": "type"}, {"field": "issue_count"}],
-    },
-    "title": "Open Issues by Assignee",
+issue_table("triage_queue", {
+    "issue_number": "#", "title": "Title", "issue_category": "Type", "age_days": "Age (d)",
+    "days_idle": "Idle (d)", "reactions": "Reactions", "comments": "Comments",
+    "is_customer_reported": "Customer",
 })
 ```
 
+## Where is the work?
+
+### Open issues by area
+[Issues with several areas count in each]{.tile-subtitle}
+
 ```{python}
-#| title: "Community Priorities"
-_pri = priorities.copy()
-_pri["#"] = _pri.apply(
-    lambda r: f'<a href="{r["issue_url"]}" target="_blank">#{int(r["issue_number"])}</a>', axis=1
-)
-HTML(
-    _pri[["#", "title", "issue_category", "reactions_total_count", "age_days"]]
-    .rename(columns={"title": "Title", "issue_category": "Type", "reactions_total_count": "Reactions", "age_days": "Age (days)"})
-    .to_html(escape=False, index=False)
-)
+category_bar("open_by_area", "area", "area_total")
+```
+
+### Open issues by adapter
+[(none) = adapter-agnostic]{.tile-subtitle}
+
+```{python}
+category_bar("open_by_adapter", "adapter", "adapter_total")
+```
+
+## How close are the epics?
+
+### Open epics by % of sub-issues closed
+[Top of the list can be closed out soon]{.tile-subtitle}
+
+```{python}
+issue_table("epic_progress", {
+    "epic_number": "#", "title": "Epic", "child_closed": "Closed", "child_total": "Sub-issues",
+    "pct_complete": "% complete", "milestone_title": "Milestone",
+}, kinds={"pct_complete": "pct"})
+```
+
+## What should we work on, and who is on it?
+
+### Most-requested open issues
+[Ranked by reactions, then comments]{.tile-subtitle}
+
+```{python}
+issue_table("top_requested", {
+    "issue_number": "#", "title": "Title", "issue_category": "Type", "areas": "Areas",
+    "triage_status": "Triage", "reactions": "Reactions", "comments": "Comments",
+    "age_days": "Age (d)", "is_customer_reported": "Customer",
+})
+```
+
+### Open issues by assignee
+[Top 15, including unassigned]{.tile-subtitle}
+
+```{python}
+category_bar("assignee_workload", "assignee_login", "assignee_total")
 ```

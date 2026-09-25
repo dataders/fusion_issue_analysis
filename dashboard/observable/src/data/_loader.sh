@@ -1,67 +1,53 @@
 #!/usr/bin/env bash
-# Shared helper: run a named query against DuckDB/MotherDuck and emit JSON.
-# Usage: _loader.sh <query_name> [--first-row]
-#   --first-row  emit first row as a JSON object instead of an array
+# Shared helper: emit one dashboard model (or the tile contract) as JSON.
+# Usage: _loader.sh <model> [--first-row]
+#        _loader.sh --contract          # dashboard/tiles.yml as JSON
+# Each model is read as `SELECT * FROM <model> ORDER BY <order_by>`, with
+# order_by taken from dashboard/tiles.yml. Metric logic lives in dbt.
 set -euo pipefail
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
-QUERY_NAME="$1"
-FIRST_ROW="${2:-}"
 
-uv --directory "$REPO_ROOT" run python3 - <<PYEOF
-import sys, json, duckdb, math, os
-REPO_ROOT = "$REPO_ROOT"
-QUERY_NAME = "$QUERY_NAME"
-FIRST_ROW = "$FIRST_ROW" == "--first-row"
+uv --directory "$REPO_ROOT" run python - "$REPO_ROOT" "$@" <<'PYEOF'
+import json, math, os, sys
+from pathlib import Path
+
+import duckdb
+import yaml
+
+repo_root, target, *flags = sys.argv[1:]
+manifest = yaml.safe_load((Path(repo_root) / "dashboard" / "tiles.yml").read_text())
+
+if target == "--contract":
+    json.dump(manifest, sys.stdout)
+    sys.exit()
+
+order_by = {manifest["meta"]["model"]: None}
+for section in manifest["sections"]:
+    for tile in section["tiles"]:
+        order_by[tile["model"]] = tile.get("order_by")
+if target not in order_by:
+    sys.exit(f"{target} is not a tile model in dashboard/tiles.yml")
 
 if os.environ.get("FUSION_DB"):
-    DB_PATH = os.environ["FUSION_DB"]
-    con = duckdb.connect(DB_PATH, read_only=True)
+    con = duckdb.connect(os.environ["FUSION_DB"], read_only=True)
 elif os.environ.get("MOTHERDUCK_TOKEN"):
-    DB_PATH = "md:fusion_issues"
-    con = duckdb.connect(DB_PATH)
+    con = duckdb.connect("md:fusion_issues")
 else:
-    DB_PATH = f"{REPO_ROOT}/data/fusion_issues.duckdb"
-    con = duckdb.connect(DB_PATH, read_only=True)
-if not DB_PATH.startswith("md:"):
-    file_search_root = os.environ.get("FUSION_PROJECT_ROOT", REPO_ROOT)
-    con.execute(f"SET file_search_path = '{file_search_root}/transform'")
+    con = duckdb.connect(f"{repo_root}/data/fusion_issues.duckdb", read_only=True)
 
-SQL_BY_NAME = {
-    "summary": "SELECT * FROM summary_kpis",
-    "triage": "SELECT * FROM triage_health",
-    "triage_health": "SELECT * FROM issue_triage_health",
-    "oldest_untriaged": "SELECT * FROM oldest_untriaged",
-    "cumulative_flow": "SELECT * FROM cumulative_flow ORDER BY week",
-    "response_pctiles": "SELECT * FROM response_pctiles ORDER BY week",
-    "close_by_label": "SELECT * FROM close_by_label ORDER BY median_days_to_close DESC",
-    "assignee_workload": "SELECT * FROM assignee_workload ORDER BY open_issues DESC",
-    "community_priorities": "SELECT * FROM community_priorities ORDER BY reactions_total_count DESC",
-    "velocity": """
-        SELECT
-            week,
-            max(CASE WHEN issue_category = 'bug' THEN median_days END) AS bugs,
-            max(CASE WHEN issue_category = 'enhancement' THEN median_days END) AS enhancements
-        FROM velocity
-        GROUP BY week
-        ORDER BY week
-    """,
-    "age_distribution": """
-        SELECT age_bucket, bucket_sort_order, bug, enhancement, task, other
-        FROM age_distribution_wide
-        ORDER BY bucket_sort_order
-    """,
-}
-sql = SQL_BY_NAME[QUERY_NAME]
+sql = f"SELECT * FROM {target}" + (f" ORDER BY {order_by[target]}" if order_by[target] else "")
 rows = con.execute(sql).fetchdf().to_dict("records")
 
 def clean(value):
-    if isinstance(value, float) and (math.isnan(value) or math.isinf(value)):
+    if value is None or (isinstance(value, float) and (math.isnan(value) or math.isinf(value))):
         return None
     if hasattr(value, "isoformat"):
         return value.isoformat()
+    if hasattr(value, "item"):  # numpy scalar
+        return value.item()
     return value
 
-rows = [{key: clean(value) for key, value in row.items()} for row in rows]
-json.dump(rows[0] if FIRST_ROW else rows, sys.stdout, allow_nan=False)
+rows = [{k: clean(v) for k, v in row.items()} for row in rows]
+json.dump(rows[0] if "--first-row" in flags else rows, sys.stdout, allow_nan=False)
 PYEOF

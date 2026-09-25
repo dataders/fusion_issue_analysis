@@ -1,18 +1,19 @@
 ---
-title: dbt-fusion Issue Health
+title: dbt Fusion issue health
 theme: minimal
 data:
-  stats: ./data/stats.csv
-  triage_health: ./data/triage_health.csv
-  triage_pct_health: ./data/triage_pct_health.csv
-  oldest_untriaged: ./data/oldest_untriaged.csv
-  cumulative_flow: ./data/cumulative_flow.csv
-  velocity: ./data/velocity.csv
-  response: ./data/response.csv
-  age_distribution: ./data/age_distribution.csv
-  close_by_label: ./data/close_by_label.csv
+  dashboard_meta: ./data/dashboard_meta.csv
+  headline_kpis: ./data/headline_kpis.csv
+  backlog_weekly: ./data/backlog_weekly.csv
+  weekly_flow: ./data/weekly_flow.csv
+  triage_pipeline: ./data/triage_pipeline.csv
+  response_weekly: ./data/response_weekly.csv
+  triage_queue: ./data/triage_queue.csv
+  open_by_area: ./data/open_by_area.csv
+  open_by_adapter: ./data/open_by_adapter.csv
+  epic_progress: ./data/epic_progress.csv
+  top_requested: ./data/top_requested.csv
   assignee_workload: ./data/assignee_workload.csv
-  community_priorities: ./data/community_priorities.csv
 styles:
   note:
     background: "#eef5ff"
@@ -21,55 +22,98 @@ styles:
     radius: small
 ---
 
-# dbt-fusion Issue Health
+# dbt Fusion issue health
+
+Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)
+
+```stat data=dashboard_meta
+```
 
 ::: note
-MDV keeps the page as Markdown with named CSV datasets. The rendered artifact is a self-contained HTML file with inline SVG charts.
+MDV keeps the page as Markdown with named CSV datasets. MDV v1 has no stacked or horizontal bars, so stacked bars are shown as crosstab tables and stacked series as lines.
 :::
 
-## Daily Triage Snapshot
+## Where do things stand?
 
-```stat data=triage_health
+```stat data=headline_kpis
 ```
 
-```table data=oldest_untriaged
+## Is the backlog shrinking?
+
+### Open issues over time
+
+Open at the end of each week, by type
+
+```chart type=line data=backlog_weekly x=week y=open_issues series=type
 ```
 
-## Key Metrics
+### Opened vs closed per week
 
-```stat data=stats
+Complete weeks; when closed > opened the backlog shrank
+
+```chart type=line data=weekly_flow x=week y=issues series=series points
 ```
 
-## Cumulative Issue Flow
+## Are we keeping up with triage?
 
-```chart type=line data=cumulative_flow x=week y=issues series=series points title="Cumulative Issue Flow"
+### Open issues by triage status and age
+
+How much is waiting, and for how long
+
+```table data=triage_pipeline
 ```
 
-## Velocity & Response
+### New issues answered within 48 hours
 
-```chart type=line data=velocity x=week y=days series=type points title="Median Days to Close: Bugs vs Enhancements"
+By week opened; unanswered issues count as misses
+
+```chart type=line data=response_weekly x=week y=pct_answered_48h points
 ```
 
-```chart type=line data=response x=week y=hours series=percentile points title="Time to First Response (hours)"
+### Triage queue — oldest first
+
+Open issues still labeled status:triage
+
+```table data=triage_queue
 ```
 
-## Issue Distribution
+## Where is the work?
 
-```chart type=bar data=age_distribution x=age_bucket y=issue_count series=issue_category title="Open Issue Age by Type"
+### Open issues by area
+
+Issues with several areas count in each
+
+```table data=open_by_area
 ```
 
-```chart type=bar data=close_by_label x=label_name y=median_days_to_close title="Median Days to Close by Label"
+### Open issues by adapter
+
+(none) = adapter-agnostic
+
+```table data=open_by_adapter
 ```
 
-## Triage Health
+## How close are the epics?
 
-```stat data=triage_pct_health
+### Open epics by % of sub-issues closed
+
+Top of the list can be closed out soon
+
+```table data=epic_progress
 ```
 
-## Workload & Priorities
+## What should we work on, and who is on it?
 
-```chart type=bar data=assignee_workload x=assignee_login y=open_issues series=type title="Open Issues by Assignee"
+### Most-requested open issues
+
+Ranked by reactions, then comments
+
+```table data=top_requested
 ```
 
-```table data=community_priorities
+### Open issues by assignee
+
+Top 15, including unassigned
+
+```table data=assignee_workload
 ```

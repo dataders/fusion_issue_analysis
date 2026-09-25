@@ -57,7 +57,7 @@ class PrefabWindows2000Tests(unittest.TestCase):
 
         self.assertEqual(result.returncode, 0, result.stderr)
         self.assertIn("Fusion Issue Explorer", rendered)
-        self.assertIn("Issue Queue", rendered)
+        self.assertIn("Triage queue", rendered)
         self.assertIn("Ready", rendered)
 
 

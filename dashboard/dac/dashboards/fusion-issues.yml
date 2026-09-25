@@ -1,279 +1,271 @@
 name: Fusion Issue Analysis
-description: dbt-fusion GitHub issue health from the shared dbt dashboard marts.
+description: >-
+  dbt Fusion issue health — open engine:v2 issues in dbt-labs/dbt-core
+  (epics excluded unless noted). Renders dashboard/tiles.yml; every query is
+  a thin read of one dbt dashboard model, ordered by the tile's order_by.
 connection: fusion
 
 rows:
+  # ---- Header: freshness (dashboard_meta) ----
   - widgets:
-      - name: Open Issues
+      - name: Data as of
         type: metric
-        col: 2
+        col: 4
         sql: |
-          select open_issues as value from summary_kpis
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Net Flow (4 wk)
+          select strftime(as_of_date, '%Y-%m-%d') as value from dashboard_meta
+        value: { field: value, type: category }
+      - name: Days since latest activity
         type: metric
-        col: 2
+        col: 4
         sql: |
-          select net_flow_4w as value from summary_kpis
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Median Close
+          select days_stale as value from dashboard_meta
+        value: { field: value, type: number, format: ",.0f" }
+      - name: Freshness
         type: metric
-        col: 2
+        col: 4
+        # tiles.yml meta.stale_after_days = 3
         sql: |
-          select rolling_median_close_days as value from summary_kpis
-        value:
-          field: value
-          type: number
-          format: ",.1f"
-      - name: 48h Response SLA
-        type: metric
-        col: 3
-        sql: |
-          select pct_responded_48h / 100.0 as value from summary_kpis
-        value:
-          field: value
-          type: number
-          format: ".0%"
-      - name: Stale Issues
-        type: metric
-        col: 3
-        sql: |
-          select stale_count as value from summary_kpis
-        value:
-          field: value
-          type: number
-          format: ",.0f"
+          select case when days_stale > 3
+                      then '⚠ stale — extract has probably stopped'
+                      else 'fresh' end as value
+          from dashboard_meta
+        value: { field: value, type: category }
 
+  # ---- Where do things stand? (headline_kpis) ----
   - widgets:
-      - name: Cumulative Issue Flow
-        type: chart
-        chart: line
+      - name: section_status
+        type: text
         col: 12
-        sql: |
-          select week, cumulative_opened, cumulative_closed
-          from cumulative_flow
-          order by week
-        x: { field: week, type: date }
-        y: { field: [cumulative_opened, cumulative_closed], type: number }
-
+        content: "## Where do things stand?"
   - widgets:
-      - name: Median Days to Close
-        type: chart
-        chart: line
-        col: 6
+      - name: Open issues
+        type: metric
+        col: 2
         sql: |
-          select
-            week,
-            max(case when issue_category = 'bug' then median_days end) as bugs,
-            max(case when issue_category = 'enhancement' then median_days end) as enhancements
-          from velocity
-          group by week
-          order by week
-        x: { field: week, type: date }
-        y: { field: [bugs, enhancements], type: number }
-      - name: Time to First Response
-        type: chart
-        chart: line
-        col: 6
+          select open_issues || ' (' || printf('%+d', backlog_change_28d) || ' in 28 days)' as value
+          from headline_kpis
+        value: { field: value, type: category }
+      - name: Opened / closed (28d)
+        type: metric
+        col: 2
         sql: |
-          select week, p25, p50, p75
-          from response_pctiles
-          order by week
-        x: { field: week, type: date }
-        y: { field: [p25, p50, p75], type: number }
+          select opened_28d || ' / ' || closed_28d as value from headline_kpis
+        value: { field: value, type: category }
+      - name: Awaiting triage
+        type: metric
+        col: 2
+        sql: |
+          select awaiting_triage || ' (median age ' || awaiting_triage_median_age_days::integer || ' days)' as value
+          from headline_kpis
+        value: { field: value, type: category }
+      - name: Answered within 48h (28d)
+        type: metric
+        col: 2
+        sql: |
+          select pct_responded_48h_28d::integer || '% (median first reply '
+                 || printf('%g', median_hours_to_first_response_28d) || ' h)' as value
+          from headline_kpis
+        value: { field: value, type: category }
+      - name: Median days to close (28d)
+        type: metric
+        col: 2
+        sql: |
+          select median_days_to_close_28d as value from headline_kpis
+        value: { field: value, type: number, format: ",.1f" }
+      - name: Customer-reported open
+        type: metric
+        col: 2
+        sql: |
+          select open_customer_reported || ' (' || open_hard_blockers || ' hard blockers)' as value
+          from headline_kpis
+        value: { field: value, type: category }
 
+  # ---- Is the backlog shrinking? ----
   - widgets:
-      - name: Open Issue Age by Type
+      - name: section_backlog
+        type: text
+        col: 12
+        content: "## Is the backlog shrinking?"
+  - widgets:
+      - name: Open issues over time
+        description: Open at the end of each week, by type
         type: chart
+        # DAC only stacks bars; weekly stacked columns stand in for the stacked area.
         chart: bar
         stacked: true
         col: 6
         sql: |
-          select age_bucket, issue_category, issue_count
-          from age_distribution
-          order by bucket_sort_order
-        x: { field: age_bucket }
-        y: { field: issue_count, type: number }
+          select week, issue_category, open_issues
+          from backlog_weekly
+          order by week
+        x: { field: week, type: date }
+        y: { field: open_issues, type: number }
         color: { field: issue_category }
-      - name: Median Days to Close by Label
+      - name: Opened vs closed per week
+        description: Complete weeks; when closed > opened the backlog shrank
         type: chart
         chart: bar
         col: 6
         sql: |
-          select label_name, median_days_to_close
-          from close_by_label
-          order by median_days_to_close desc
-        x: { field: label_name }
-        y: { field: [median_days_to_close], type: number }
+          select week, opened, closed, net_change
+          from weekly_flow
+          order by week
+        x: { field: week, type: date }
+        y: { field: [opened, closed], type: number }
 
+  # ---- Are we keeping up with triage? ----
   - widgets:
-      - name: Slipped through (bugs)
-        type: metric
-        col: 3
-        sql: |
-          select slipped_through_count as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Triage Queue
-        type: metric
-        col: 3
-        sql: |
-          select triage_queue_count as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Hard Blockers
-        type: metric
-        col: 3
-        sql: |
-          select hard_blocker_count as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Needs Repro
-        type: metric
-        col: 3
-        sql: |
-          select needs_repro_count as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-
+      - name: section_triage
+        type: text
+        col: 12
+        content: "## Are we keeping up with triage?"
   - widgets:
-      - name: Repro Verified
-        type: metric
-        col: 4
+      - name: Open issues by triage status and age
+        description: How much is waiting, and for how long
+        type: chart
+        chart: bar
+        stacked: true
+        horizontal: true
+        col: 6
         sql: |
-          select repro_verified_count as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Stale (90d+)
-        type: metric
-        col: 4
+          select status_label, age_bucket, issue_count
+          from triage_pipeline
+          order by status_order, age_bucket_order
+        x: { field: status_label }
+        y: { field: issue_count, type: number }
+        color: { field: age_bucket }
+      - name: New issues answered within 48 hours
+        description: By week opened; unanswered issues count as misses
+        type: chart
+        chart: line
+        col: 6
         sql: |
-          select stale_count as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-      - name: Total Open
-        type: metric
-        col: 4
-        sql: |
-          select total_open as value from issue_triage_health
-        value:
-          field: value
-          type: number
-          format: ",.0f"
-
+          select week, pct_responded_48h, issues_opened, responded_48h, median_hours_to_first_response
+          from response_weekly
+          order by week
+        x: { field: week, type: date }
+        y: { field: [pct_responded_48h], type: number }
   - widgets:
-      - name: Oldest Untriaged Bugs
+      - name: Triage queue — oldest first
+        description: Open issues still labeled status:triage
         type: table
         col: 12
         sql: |
-          select issue_number, title, age_days, issue_url
-          from oldest_untriaged
+          select issue_number, title, issue_category, age_days, days_idle,
+                 reactions, comments, is_customer_reported, issue_url
+          from triage_queue
           order by age_days desc
-          limit 25
         columns:
-          - name: issue_number
-            label: Issue
-            format: number
-          - name: title
-            label: Title
-          - name: age_days
-            label: Age Days
-            format: number
-          - name: issue_url
-            label: URL
+          - { name: issue_number, label: "#" }
+          - { name: title, label: Title }
+          - { name: issue_category, label: Type }
+          - { name: age_days, label: Age (days), format: number }
+          - { name: days_idle, label: Idle (days), format: number }
+          - { name: reactions, label: Reactions, format: number }
+          - { name: comments, label: Comments, format: number }
+          - { name: is_customer_reported, label: Customer }
+          - { name: issue_url, label: Link }
 
+  # ---- Where is the work? ----
   - widgets:
-      - name: Triage Labeled
-        type: metric
-        col: 3
-        sql: |
-          select pct_labeled / 100.0 as value from triage_health
-        value:
-          field: value
-          type: number
-          format: ".0%"
-      - name: Triage Typed
-        type: metric
-        col: 3
-        sql: |
-          select pct_typed / 100.0 as value from triage_health
-        value:
-          field: value
-          type: number
-          format: ".0%"
-      - name: Triage Assigned
-        type: metric
-        col: 3
-        sql: |
-          select pct_assigned / 100.0 as value from triage_health
-        value:
-          field: value
-          type: number
-          format: ".0%"
-      - name: Triage Milestoned
-        type: metric
-        col: 3
-        sql: |
-          select pct_milestoned / 100.0 as value from triage_health
-        value:
-          field: value
-          type: number
-          format: ".0%"
-
+      - name: section_where
+        type: text
+        col: 12
+        content: "## Where is the work?"
   - widgets:
-      - name: Open Issues by Assignee
+      - name: Open issues by area
+        description: Issues with several areas count in each
         type: chart
         chart: bar
         stacked: true
+        horizontal: true
         col: 6
         sql: |
-          select assignee_login, open_issues, 'bug' as issue_category, bugs as issue_count
+          select area, issue_category, issue_count
+          from open_by_area
+          order by area_total desc, area
+        x: { field: area }
+        y: { field: issue_count, type: number }
+        color: { field: issue_category }
+      - name: Open issues by adapter
+        description: (none) = adapter-agnostic
+        type: chart
+        chart: bar
+        stacked: true
+        horizontal: true
+        col: 6
+        sql: |
+          select adapter, issue_category, issue_count
+          from open_by_adapter
+          order by adapter_total desc, adapter
+        x: { field: adapter }
+        y: { field: issue_count, type: number }
+        color: { field: issue_category }
+
+  # ---- How close are the epics? ----
+  - widgets:
+      - name: section_epics
+        type: text
+        col: 12
+        content: "## How close are the epics?"
+  - widgets:
+      - name: Open epics by % of sub-issues closed
+        description: Top of the list can be closed out soon
+        type: table
+        col: 12
+        sql: |
+          select epic_number, title, child_closed, child_total, pct_complete / 100.0 as pct_complete,
+                 milestone_title, issue_url
+          from epic_progress
+          order by pct_complete desc, child_open, epic_number
+        columns:
+          - { name: epic_number, label: "#" }
+          - { name: title, label: Epic }
+          - { name: child_closed, label: Closed, format: number }
+          - { name: child_total, label: Sub-issues, format: number }
+          - { name: pct_complete, label: "% complete", format: percent }
+          - { name: milestone_title, label: Milestone }
+          - { name: issue_url, label: Link }
+
+  # ---- What should we work on, and who is on it? ----
+  - widgets:
+      - name: section_next
+        type: text
+        col: 12
+        content: "## What should we work on, and who is on it?"
+  - widgets:
+      - name: Most-requested open issues
+        description: Ranked by reactions, then comments
+        type: table
+        col: 12
+        sql: |
+          select issue_number, title, issue_category, areas, triage_status,
+                 reactions, comments, age_days, is_customer_reported, issue_url
+          from top_requested
+          order by reactions desc, comments desc
+        columns:
+          - { name: issue_number, label: "#" }
+          - { name: title, label: Title }
+          - { name: issue_category, label: Type }
+          - { name: areas, label: Areas }
+          - { name: triage_status, label: Triage }
+          - { name: reactions, label: Reactions, format: number }
+          - { name: comments, label: Comments, format: number }
+          - { name: age_days, label: Age (days), format: number }
+          - { name: is_customer_reported, label: Customer }
+          - { name: issue_url, label: Link }
+  - widgets:
+      - name: Open issues by assignee
+        description: Top 15, including unassigned
+        type: chart
+        chart: bar
+        stacked: true
+        horizontal: true
+        col: 12
+        sql: |
+          select assignee_login, issue_category, issue_count
           from assignee_workload
-          union all
-          select assignee_login, open_issues, 'enhancement' as issue_category, enhancements as issue_count
-          from assignee_workload
-          order by open_issues desc, issue_category
+          order by assignee_total desc, assignee_login
         x: { field: assignee_login }
         y: { field: issue_count, type: number }
         color: { field: issue_category }
-      - name: Community Priorities
-        type: table
-        col: 6
-        sql: |
-          select issue_number, title, issue_category, reactions_total_count, age_days, issue_url
-          from community_priorities
-          order by reactions_total_count desc
-        columns:
-          - name: issue_number
-            label: Issue
-            format: number
-          - name: title
-            label: Title
-          - name: issue_category
-            label: Type
-          - name: reactions_total_count
-            label: Reactions
-            format: number
-          - name: age_days
-            label: Age Days
-            format: number
-          - name: issue_url
-            label: URL

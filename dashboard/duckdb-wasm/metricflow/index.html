@@ -170,8 +170,8 @@
       const [openCount, avgClose, openedWeekly, bugVel] = await Promise.all([
         q(conn, 'SELECT * FROM fusion_issues.main.metric_open_issue_count'),
         q(conn, 'SELECT * FROM fusion_issues.main.metric_avg_time_to_close ORDER BY metric_time'),
-        q(conn, 'SELECT * FROM fusion_issues.main.issues_opened_per_week ORDER BY week'),
-        q(conn, 'SELECT * FROM fusion_issues.main.bug_velocity ORDER BY week'),
+        q(conn, 'SELECT week, opened AS issues_opened FROM fusion_issues.main.weekly_flow ORDER BY week'),
+        q(conn, "SELECT metric_time AS week, median_days_to_close AS median_days FROM fusion_issues.main.metric_avg_time_to_close WHERE issue_category = 'bug' ORDER BY metric_time"),
       ]);
 
       status.textContent = '';
@@ -285,12 +285,12 @@ GROUP BY 1, 2`;
         y: {label: 'Avg days to close', grid: true, gridColor: '#313244'},
         color: {
           legend: true,
-          domain: ['bug', 'enhancement', 'task', 'other'],
-          range: ['#f38ba8', '#89b4fa', '#a6e3a1', '#a6adc8'],
+          domain: ['feature', 'bug', 'task', 'other'],
+          range: ['#3987e5', '#d95926', '#199e70', '#898781'],
         },
         marks: [
-          ...['bug', 'enhancement', 'task', 'other'].map((cat, i) => {
-            const color = ['#f38ba8', '#89b4fa', '#a6e3a1', '#a6adc8'][i];
+          ...['feature', 'bug', 'task', 'other'].map((cat, i) => {
+            const color = ['#3987e5', '#d95926', '#199e70', '#898781'][i];
             return Plot.lineY(
               avgCloseTyped.filter(d => d.issue_category === cat && d.avg_days_to_close != null),
               {x: 'metric_time', y: 'avg_days_to_close', stroke: color, strokeWidth: 2, tip: true}

@@ -40,14 +40,11 @@ class ShaperDashboardTests(unittest.TestCase):
         self.assertTrue(sql.startswith("-- shaperid:"))
         for token in (
             "::SECTION",
-            "::DROPDOWN_MULTI",
-            "::HINT",
-            "::GAUGE_PERCENT",
-            "::LINECHART",
+            "::LINECHART_PERCENT",
             "::BARCHART_STACKED",
-            "::DOWNLOAD_CSV",
+            "::COLOR",
+            "::HYPERLINK",
             "::FOOTER_LINK",
-            "getvariable('issue_category')",
         ):
             self.assertIn(token, sql)
 
@@ -62,7 +59,7 @@ class ShaperDashboardTests(unittest.TestCase):
         html = module.render_page(sql)
         self.assertIn("Open source Shaper joins the bakeoff", html)
         self.assertIn("fusion-issue-health.dashboard.sql", html)
-        self.assertIn("&quot;Open Issues&quot;", html)
+        self.assertIn("&quot;Open issues&quot;", html)
 
 
 if __name__ == "__main__":

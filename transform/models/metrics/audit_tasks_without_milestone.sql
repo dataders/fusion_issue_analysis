@@ -2,7 +2,7 @@ select
     issue_number,
     issue_url,
     title,
-    issue_type,
+    issue_category,
     parent_number,
     parent_title,
     state,
