@@ -8,7 +8,7 @@
 with a as (select as_of_date from {{ ref('as_of') }}),
 
 weeks as (
-    select (date_trunc('week', a.as_of_date) - to_days((t.i * 7)::integer))::date as week
+    select (date_trunc('week', a.as_of_date) - to_days((t.i * 7)::integer))::timestamp as week
     from a cross join generate_series(0::bigint, 26::bigint) as t(i)
 ),
 
@@ -29,6 +29,6 @@ from weeks w
 cross join a
 left join issues i
     on i.created_at >= w.week and i.created_at < w.week + interval 7 day
-where w.week + interval 9 day <= a.as_of_date  -- week complete + 48h grace
+where w.week + interval 9 day <= a.as_of_date::timestamp  -- week complete + 48h grace
 group by 1
 order by 1
