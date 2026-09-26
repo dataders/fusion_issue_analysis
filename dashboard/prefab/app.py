@@ -1,5 +1,5 @@
 """
-Prefab dashboard for dbt Fusion (engine:v2) issue health.
+Prefab dashboard for dbt v2 (engine:v2) issue health.
 
 A thin renderer over the tile contract in dashboard/tiles.yml: every section
 and tile comes from the manifest, every number from a dbt dashboard model.

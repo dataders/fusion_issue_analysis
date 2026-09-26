@@ -12,7 +12,7 @@ ROOT = Path(__file__).resolve().parents[2]
 DAC_DIR = ROOT / "dashboard" / "dac"
 SOURCE_DASHBOARDS = DAC_DIR / "dashboards"
 CONFIG = DAC_DIR / "bruin.yml"
-DASHBOARD_NAME = "Fusion Issue Analysis"
+DASHBOARD_NAME = "v2 Issue Analysis"
 ERROR_MARKERS = (
     "bruin query failed",
     "parsing bruin query output",

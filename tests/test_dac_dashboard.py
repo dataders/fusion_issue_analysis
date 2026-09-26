@@ -54,7 +54,7 @@ class DacDashboardTests(unittest.TestCase):
         self.assertIn("token: ${MOTHERDUCK_TOKEN}", config)
         self.assertIn("database: fusion_issues", config)
         self.assertIn('env.setdefault("FUSION_DB", str(ROOT / "data" / "fusion_issues.duckdb"))', render)
-        self.assertIn("name: Fusion Issue Analysis", dashboard)
+        self.assertIn("name: v2 Issue Analysis", dashboard)
         self.assertIn("connection: fusion", dashboard)
         self.assertIn("from headline_kpis", dashboard)
         self.assertIn("from backlog_weekly", dashboard)

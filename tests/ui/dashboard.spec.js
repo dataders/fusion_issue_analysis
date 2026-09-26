@@ -75,7 +75,7 @@ test.describe("dashboard bakeoff shell", () => {
     await page.goto("/index.html");
 
     await expect(page.locator(".header-title")).toHaveText(
-      "dbt-fusion Issue Analysis — Visualization Framework Bakeoff",
+      "dbt v2 Issue Analysis — Visualization Framework Bakeoff",
     );
     await expect(page.locator("nav.main-tabs")).toHaveAttribute("aria-label", "Dashboard framework");
 

@@ -26,7 +26,7 @@ function summarizeDashboard(data: Record<string, unknown>): string {
 
 export function createServer(): McpServer {
   const server = new McpServer({
-    name: "Fusion Issue Health MCP App",
+    name: "v2 Issue Health MCP App",
     version: "0.0.1",
   });
 
@@ -36,8 +36,8 @@ export function createServer(): McpServer {
     server,
     "show_issue_health",
     {
-      title: "Show Fusion Issue Health",
-      description: "Open the dbt Fusion (engine:v2) issue health dashboard: every tile in dashboard/tiles.yml, backed by dbt dashboard models.",
+      title: "Show v2 Issue Health",
+      description: "Open the dbt v2 (engine:v2) issue health dashboard: every tile in dashboard/tiles.yml, backed by dbt dashboard models.",
       inputSchema: {},
       _meta: { ui: { resourceUri } },
     },

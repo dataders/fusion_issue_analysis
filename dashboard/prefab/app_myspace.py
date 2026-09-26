@@ -1,6 +1,6 @@
 """
 ~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
-    dbt Fusion Issue Health Dashboard
+    dbt v2 Issue Health Dashboard
     -=- MySpace Edition -=-
     Best viewed in Internet Explorer 6.0 at 800x600
 ~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~*~
@@ -357,7 +357,7 @@ with PrefabApp(
     Separator(css_class="my-6")
     with Div(css_class="text-center py-4"):
         Text("Thanks 4 visiting my dashboard!! xD", style={"color": "#ff69b4", "font-size": "1.2rem", "font-weight": "bold"})
-        Text("~*~*~ made with luv and dbt-fusion ~*~*~", style={"color": "#0ff", "font-size": "0.9rem"})
+        Text("~*~*~ made with luv and dbt v2 ~*~*~", style={"color": "#0ff", "font-size": "0.9rem"})
         Span("✨", css_class="sparkle", style={"font-size": "2rem"})
         Span("⭐", css_class="sparkle", style={"font-size": "2rem", "animation-delay": "0.5s"})
         Span("💖", css_class="sparkle", style={"font-size": "2rem", "animation-delay": "1s"})

@@ -220,3 +220,7 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 .env.local
+
+# dbt Charts renders (scripts/render_dbt_charts.sh; CI renders them on deploy)
+dashboard/dbt-charts/fusion-issue-health-light.html
+dashboard/dbt-charts/fusion-issue-health-dark.html

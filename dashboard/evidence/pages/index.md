@@ -1,5 +1,5 @@
 ---
-title: dbt Fusion issue health
+title: dbt v2 issue health
 description: Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)
 ---
 

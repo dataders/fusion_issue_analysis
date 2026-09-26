@@ -10,7 +10,7 @@
 #
 # Change a tile here first, then in each framework.
 
-title: dbt Fusion issue health
+title: dbt v2 issue health
 subtitle: Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)
 
 # Freshness banner: show "Data as of {as_of_date}" in the header. When

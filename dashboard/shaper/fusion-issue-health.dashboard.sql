@@ -5,7 +5,7 @@
 -- the tile's order_by. Shaper-specific work is limited to type casts, labels,
 -- palette colors (tiles.yml palette, via ::COLOR) and light unpivots.
 
-SELECT 'dbt Fusion issue health'::SECTION,
+SELECT 'dbt v2 issue health'::SECTION,
   'Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)'::SUBTITLE;
 
 -- Freshness banner (dashboard_meta). The warning row only exists when

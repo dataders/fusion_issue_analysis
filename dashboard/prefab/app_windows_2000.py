@@ -1,5 +1,5 @@
 """
-Prefab dashboard for dbt Fusion issue health.
+Prefab dashboard for dbt v2 issue health.
 Windows 2000 desktop app edition.
 
 Renders the tile contract in dashboard/tiles.yml (sections, tiles, palette)
@@ -340,7 +340,7 @@ def flush(pending: list[dict]) -> None:
 with PrefabApp(title=f"{tiles.MANIFEST['title']} (Windows 2000)", css_class="mx-auto p-4", theme=WIN2K_THEME) as app:
     with Div(css_class="win-window", style={"max-width": "1440px", "margin": "0 auto"}):
         with Div(css_class="title-bar"):
-            Span("Fusion Issue Explorer")
+            Span("v2 Issue Explorer")
             with Div():
                 Span("_", css_class="window-button")
                 Span("[]", css_class="window-button")
@@ -357,7 +357,7 @@ with PrefabApp(title=f"{tiles.MANIFEST['title']} (Windows 2000)", css_class="mx-
 
             if IS_STALE:
                 with Div(css_class="msgbox"):
-                    Span("⚠ Fusion Issue Explorer — ", style={"font-weight": "700"})
+                    Span("⚠ v2 Issue Explorer — ", style={"font-weight": "700"})
                     Span(f"The data is {meta['days_stale']} days old. The extract may have stopped. [ OK ]")
 
             for section in tiles.sections():
