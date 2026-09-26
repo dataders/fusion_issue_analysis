@@ -88,6 +88,8 @@ jobs:
       - name: Write data freshness metadata
         if: github.actor != 'dependabot[bot]'
         env:
+          # dlt load metadata lives only in MotherDuck, not in the dashboard snapshot.
+          FUSION_DB: md:fusion_issues
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run python dashboard/write_data_freshness.py
 
