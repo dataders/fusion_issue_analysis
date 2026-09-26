@@ -8,6 +8,7 @@ on:
     types: [opened, synchronize, reopened]
 
 permissions:
+  actions: read
   contents: read
   pull-requests: write
 
@@ -16,6 +17,11 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Wait for any running extract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/wait_for_extract.sh
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
