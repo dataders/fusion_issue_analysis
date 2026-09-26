@@ -1,6 +1,6 @@
-name: Fusion Issue Analysis
+name: v2 Issue Analysis
 description: >-
-  dbt Fusion issue health — open engine:v2 issues in dbt-labs/dbt-core
+  dbt v2 issue health — open engine:v2 issues in dbt-labs/dbt-core
   (epics excluded unless noted). Renders dashboard/tiles.yml; every query is
   a thin read of one dbt dashboard model, ordered by the tile's order_by.
 connection: fusion

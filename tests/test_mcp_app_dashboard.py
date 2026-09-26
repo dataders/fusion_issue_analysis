@@ -46,7 +46,7 @@ class McpAppDashboardTests(unittest.TestCase):
 
     def test_view_connects_to_host_and_supports_app_refresh(self) -> None:
         app = APP_TS.read_text()
-        self.assertIn('new App({ name: "Fusion Issue Health"', app)
+        self.assertIn('new App({ name: "v2 Issue Health"', app)
         self.assertIn("app.ontoolresult", app)
         self.assertIn("app.callServerTool", app)
         self.assertIn('"show_issue_health"', app)

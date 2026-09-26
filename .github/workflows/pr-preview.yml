@@ -80,10 +80,7 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          mkdir -p preview/dbt-charts
-          cd transform
-          uv run dct validate charts/fusion-issue-health.yml --strict
-          uv run dct render charts/fusion-issue-health.yml --format html --output ../preview/dbt-charts/fusion-issue-health.html
+          scripts/render_dbt_charts.sh preview/dbt-charts
 
       - name: Write data freshness metadata
         if: github.actor != 'dependabot[bot]'

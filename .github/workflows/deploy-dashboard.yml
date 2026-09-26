@@ -12,6 +12,7 @@ on:
       - 'transform/charts/**'
       - 'transform/dbt_charts.yml'
       - 'scripts/snapshot_dashboard_db.*'
+      - 'scripts/render_dbt_charts.sh'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy-dashboard.yml'
@@ -103,10 +104,7 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          cd transform
-          uv run dct validate charts/fusion-issue-health.yml --strict
-          uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
+        run: scripts/render_dbt_charts.sh
 
       - name: Write data freshness metadata
         env:

@@ -1,6 +1,6 @@
 export default {
   root: "src",
-  title: "dbt Fusion issue health · Observable",
+  title: "dbt v2 issue health · Observable",
   pages: [
     {name: "Overview", path: "/"},
     {name: "Live (MotherDuck)", path: "/live"},

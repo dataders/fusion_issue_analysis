@@ -1,0 +1,4 @@
+# Dark-mode twin of fusion-issue-health.yml: same board, built-in neon theme.
+# dashboard/dbt-charts/fusion-issue-health.html picks this or the light render
+# from the viewer's prefers-color-scheme. Edit charts in the main file only.
+extends: [./fusion-issue-health.yml, neon]

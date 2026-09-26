@@ -35,7 +35,7 @@ def render_page(sql: str) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shaper | dbt Fusion issue health</title>
+  <title>Shaper | dbt v2 issue health</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{

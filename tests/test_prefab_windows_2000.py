@@ -56,7 +56,7 @@ class PrefabWindows2000Tests(unittest.TestCase):
             rendered = out_path.read_text() if out_path.exists() else ""
 
         self.assertEqual(result.returncode, 0, result.stderr)
-        self.assertIn("Fusion Issue Explorer", rendered)
+        self.assertIn("v2 Issue Explorer", rendered)
         self.assertIn("Triage queue", rendered)
         self.assertIn("Ready", rendered)
 

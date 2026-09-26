@@ -90,7 +90,7 @@ shaper:
 ## dbt-charts   Render dbt charts dashboard to self-contained interactive HTML
 dbt-charts:
 	scripts/snapshot_dashboard_db.sh
-	cd transform && uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
+	scripts/render_dbt_charts.sh
 
 ## graphene-mcp  Start the FastMCP server for the Graphene dashboard (builds snapshot on start)
 graphene-mcp:

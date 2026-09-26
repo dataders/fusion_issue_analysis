@@ -189,6 +189,7 @@ jobs:
         run: |
           cd transform
           uv run dct validate charts/fusion-issue-health.yml --strict
+          uv run dct validate charts/fusion-issue-health-dark.yml --strict
 
       - name: Smoke-test MCP App
         if: github.actor != 'dependabot[bot]'
