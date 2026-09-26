@@ -58,6 +58,15 @@ jobs:
           curl -LsSf https://dbc.columnar.tech/install.sh | sh
           dbc install "duckdb=1.5.2"
 
+      - name: Snapshot dashboard models from MotherDuck
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        # Every framework below builds from this one local copy (FUSION_DB), so
+        # no step reads MotherDuck while an extract is swapping its tables.
+        run: |
+          scripts/snapshot_dashboard_db.sh --source md:fusion_issues
+          echo "FUSION_DB=$GITHUB_WORKSPACE/data/serve/fusion_issues.duckdb" >> "$GITHUB_ENV"
+
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
 
@@ -72,7 +81,6 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
           mkdir -p preview/dbt-charts
-          scripts/build_dbt_charts_db.sh --source md:fusion_issues
           cd transform
           uv run dct validate charts/fusion-issue-health.yml --strict
           uv run dct render charts/fusion-issue-health.yml --format html --output ../preview/dbt-charts/fusion-issue-health.html
@@ -80,6 +88,8 @@ jobs:
       - name: Write data freshness metadata
         if: github.actor != 'dependabot[bot]'
         env:
+          # dlt load metadata lives only in MotherDuck, not in the dashboard snapshot.
+          FUSION_DB: md:fusion_issues
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run python dashboard/write_data_freshness.py
 
@@ -132,7 +142,6 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          FUSION_DB: md:fusion_issues
         run: |
           mkdir -p preview/ggsql
           uv run dashboard/ggsql/build.py
@@ -169,7 +178,6 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          DAC_ENVIRONMENT: prod
           DAC_OUTPUT: preview/dac
         run: |
           uv run python dashboard/dac/render.py

@@ -11,7 +11,7 @@ on:
       - 'dashboard/**'
       - 'transform/charts/**'
       - 'transform/dbt_charts.yml'
-      - 'scripts/build_dbt_charts_db.*'
+      - 'scripts/snapshot_dashboard_db.*'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy-dashboard.yml'
@@ -83,6 +83,15 @@ jobs:
           curl -LsSf https://dbc.columnar.tech/install.sh | sh
           dbc install "duckdb=1.5.2"
 
+      - name: Snapshot dashboard models from MotherDuck
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        # Every framework below builds from this one local copy (FUSION_DB), so
+        # no step reads MotherDuck while an extract is swapping its tables.
+        run: |
+          scripts/snapshot_dashboard_db.sh --source md:fusion_issues
+          echo "FUSION_DB=$GITHUB_WORKSPACE/data/serve/fusion_issues.duckdb" >> "$GITHUB_ENV"
+
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
 
@@ -95,13 +104,14 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: |
-          scripts/build_dbt_charts_db.sh --source md:fusion_issues
           cd transform
           uv run dct validate charts/fusion-issue-health.yml --strict
           uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
 
       - name: Write data freshness metadata
         env:
+          # dlt load metadata lives only in MotherDuck, not in the dashboard snapshot.
+          FUSION_DB: md:fusion_issues
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run python dashboard/write_data_freshness.py
 
@@ -137,7 +147,6 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          FUSION_DB: md:fusion_issues
         run: uv run dashboard/ggsql/build.py
 
       - name: Export Marimo dashboard
@@ -165,7 +174,6 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          DAC_ENVIRONMENT: prod
           DAC_OUTPUT: dashboard/dac/build
         run: |
           uv run python dashboard/dac/render.py
