@@ -8,8 +8,8 @@ source: fusion_issues
 
 queries:
   # dbt owns all metric logic. Each query is a direct model read ordered by
-  # the tile's tiles.yml `order_by`; scripts/build_dbt_charts_db.py parses
-  # these to materialize the serving DB, so keep them in this exact form.
+  # the tile's tiles.yml `order_by`, against the snapshot built by
+  # scripts/snapshot_dashboard_db.py (every dashboard model).
   dashboard_meta:
     description: One row — as-of date and staleness of the data.
     sql: select * from fusion_issues.main.dashboard_meta

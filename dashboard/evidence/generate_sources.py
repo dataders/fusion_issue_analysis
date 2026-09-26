@@ -5,9 +5,10 @@ Configure Evidence.dev for the current environment.
   model named in dashboard/tiles.yml (Evidence requires a source file per
   table) and removes source files for models that left the contract. Pages do
   the ordering (`order by` from tiles.yml) over these sources.
-- Local (no MOTHERDUCK_TOKEN): connection.yaml points at the local DuckDB file
-  (FUSION_DB or data/fusion_issues.duckdb), opened read-only by Evidence.
-- CI/prod (MOTHERDUCK_TOKEN set): connection.yaml points at MotherDuck.
+- FUSION_DB set (CI builds use the snapshot from scripts/snapshot_dashboard_db.py),
+  or no MOTHERDUCK_TOKEN: connection.yaml points at that local DuckDB file
+  (default data/fusion_issues.duckdb), opened read-only by Evidence.
+- Otherwise (MOTHERDUCK_TOKEN only): connection.yaml points at MotherDuck.
 
 Always writes evidence.config.yaml with the correct basePath.
 """
@@ -39,7 +40,7 @@ for path in glob.glob(os.path.join(_SOURCES_DIR, '*.sql')):
 print(f"sources/fusion → {len(models)} source queries from tiles.yml")
 
 # -- connection.yaml --
-if MOTHERDUCK_TOKEN:
+if MOTHERDUCK_TOKEN and not os.environ.get('FUSION_DB'):
     filename = 'md:fusion_issues'
 else:
     db_path = os.environ.get('FUSION_DB') or os.path.join(_REPO_ROOT, 'data', 'fusion_issues.duckdb')

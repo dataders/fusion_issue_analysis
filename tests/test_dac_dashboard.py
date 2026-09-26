@@ -37,7 +37,7 @@ class DacDashboardTests(unittest.TestCase):
 
         for content in (preview, ci, deploy):
             self.assertIn("Install DAC", content)
-            self.assertIn("DAC_ENVIRONMENT: prod", content)
+            self.assertIn("scripts/snapshot_dashboard_db.sh --source md:fusion_issues", content)
             self.assertIn("uv run python dashboard/dac/render.py", content)
 
         self.assertIn("preview/dac", preview)
