@@ -15,13 +15,19 @@ on:
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy-dashboard.yml'
-  # Run daily at 6am UTC
+  # Re-deploy with fresh data after every successful extract on main
+  workflow_run:
+    workflows: ["Extract GitHub Issues"]
+    types: [completed]
+    branches: [main]
+  # Run daily at 6am UTC (fallback if the extract is failing)
   schedule:
     - cron: '0 6 * * *'
   # Allow manual trigger (e.g., after refreshing data)
   workflow_dispatch:
 
 permissions:
+  actions: read
   contents: read
   pages: write
   id-token: write
@@ -32,9 +38,15 @@ concurrency:
 
 jobs:
   build:
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+
+      - name: Wait for any running extract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/wait_for_extract.sh
 
       - name: Install uv
         uses: astral-sh/setup-uv@v7
@@ -217,7 +229,7 @@ jobs:
   # artifact was uploaded. Skipped only if the build job was cancelled entirely.
   deploy:
     needs: build
-    if: always() && needs.build.result != 'cancelled'
+    if: always() && needs.build.result != 'cancelled' && needs.build.result != 'skipped'
     runs-on: ubuntu-latest
     environment:
       name: github-pages

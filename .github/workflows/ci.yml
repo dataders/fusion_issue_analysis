@@ -8,6 +8,10 @@ on:
   push:
     branches: [main]
 
+permissions:
+  actions: read
+  contents: read
+
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
@@ -76,6 +80,11 @@ jobs:
         run: |
           curl -LsSf https://dbc.columnar.tech/install.sh | sh
           dbc install "duckdb=1.5.2"
+
+      - name: Wait for any running extract
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: scripts/wait_for_extract.sh
 
       - name: Compile dbt models
         if: github.actor != 'dependabot[bot]'
