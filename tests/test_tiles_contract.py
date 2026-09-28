@@ -33,6 +33,7 @@ FRAMEWORKS = {
     "dbt-charts": ["transform/charts"],
     "duckdb-wasm": ["dashboard/duckdb-wasm/index.html"],
     "mosaic": ["dashboard/mosaic/index.html"],
+    "semiotic": ["dashboard/semiotic/index.html"],
     "mcp-app": ["dashboard/mcp-app/build_data.py", "dashboard/mcp-app/src"],
 }
 SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", ".mdv", ".sh"}
