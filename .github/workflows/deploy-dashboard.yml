@@ -213,6 +213,7 @@ jobs:
             echo "| dbt charts | $(icon '${{ steps.dbt_charts.outcome }}') |"
             echo "| DuckDB WASM (live) | static — no build step |"
             echo "| Mosaic (live) | static — no build step |"
+            echo "| Semiotic (live) | static — no build step |"
             echo "| Observable (live) | $(icon '${{ steps.npm.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           # Fail the job so GitHub sends a notification email, but only after
