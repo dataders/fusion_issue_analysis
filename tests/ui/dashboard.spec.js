@@ -14,6 +14,7 @@ const DASHBOARD_TABS = [
   { label: "Shaper", tab: "shaper", src: "shaper/index.html" },
   { label: "DuckDB WASM", tab: "duckdb-wasm", src: "duckdb-wasm/index.html" },
   { label: "Mosaic", tab: "mosaic", src: "mosaic/index.html" },
+  { label: "Semiotic", tab: "semiotic", src: "semiotic/index.html" },
   { label: "Observable (live)", tab: "observable-live", src: "observable/dist/live.html" },
   { label: "About", tab: "about", src: "about.html" },
 ];
