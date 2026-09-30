@@ -2,6 +2,7 @@ const { expect, test } = require("@playwright/test");
 
 const DASHBOARD_TABS = [
   { label: "dbt charts", tab: "dbt-charts", src: "dbt-charts/fusion-issue-health.html" },
+  { label: "Graphene", tab: "graphene", src: "graphene/index.html" },
   { label: "Prefab", tab: "prefab", src: "prefab/app.html" },
   { label: "Evidence.dev", tab: "evidence", src: "evidence/build/" },
   { label: "DAC", tab: "dac", src: "dac/build/" },
@@ -12,7 +13,6 @@ const DASHBOARD_TABS = [
   { label: "Marimo", tab: "marimo", src: "marimo.html" },
   { label: "Quarto", tab: "quarto", src: "quarto/index.html" },
   { label: "Shaper", tab: "shaper", src: "shaper/index.html" },
-  { label: "Graphene", tab: "graphene", src: "graphene/index.html" },
   { label: "DuckDB WASM", tab: "duckdb-wasm", src: "duckdb-wasm/index.html" },
   { label: "Mosaic", tab: "mosaic", src: "mosaic/index.html" },
   { label: "Semiotic", tab: "semiotic", src: "semiotic/index.html" },
