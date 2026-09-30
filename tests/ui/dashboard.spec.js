@@ -2,6 +2,7 @@ const { expect, test } = require("@playwright/test");
 
 const DASHBOARD_TABS = [
   { label: "dbt charts", tab: "dbt-charts", src: "dbt-charts/fusion-issue-health.html" },
+  { label: "Graphene", tab: "graphene", src: "graphene/index.html" },
   { label: "Prefab", tab: "prefab", src: "prefab/app.html" },
   { label: "Evidence.dev", tab: "evidence", src: "evidence/build/" },
   { label: "DAC", tab: "dac", src: "dac/build/" },
