@@ -1,0 +1,26 @@
+{
+  "name": "fusion-issues-graphene",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "graphene": "graphene",
+    "serve": "graphene serve",
+    "compile": "graphene compile",
+    "run": "graphene run"
+  },
+  "engines": {
+    "node": ">=24.0.0"
+  },
+  "type": "module",
+  "graphene": {
+    "motherduck": {
+      "database": "fusion_issues"
+    },
+    "envFile": ".env",
+    "defaultNamespace": "main"
+  },
+  "dependencies": {
+    "@duckdb/node-api": "^1.5.3-r.3",
+    "@graphenedata/cli": "^0.0.30"
+  }
+}

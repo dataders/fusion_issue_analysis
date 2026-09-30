@@ -211,6 +211,7 @@ jobs:
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
             echo "| dbt charts | $(icon '${{ steps.dbt_charts.outcome }}') |"
+            echo "| Graphene | static export — committed, no build step |"
             echo "| DuckDB WASM (live) | static — no build step |"
             echo "| Mosaic (live) | static — no build step |"
             echo "| Semiotic (live) | static — no build step |"

@@ -12,6 +12,7 @@ const DASHBOARD_TABS = [
   { label: "Marimo", tab: "marimo", src: "marimo.html" },
   { label: "Quarto", tab: "quarto", src: "quarto/index.html" },
   { label: "Shaper", tab: "shaper", src: "shaper/index.html" },
+  { label: "Graphene", tab: "graphene", src: "graphene/index.html" },
   { label: "DuckDB WASM", tab: "duckdb-wasm", src: "duckdb-wasm/index.html" },
   { label: "Mosaic", tab: "mosaic", src: "mosaic/index.html" },
   { label: "Semiotic", tab: "semiotic", src: "semiotic/index.html" },
