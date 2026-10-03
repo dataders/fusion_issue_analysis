@@ -1,0 +1,6 @@
+# Glyf requires a dbt project root. This stub exists only so `glyf` has one;
+# the real project is transform/. build.py writes target/manifest.json from
+# dashboard/tiles.yml so refs resolve without a dbt build in CI.
+name: glyf
+version: "1.0.0"
+profile: glyf

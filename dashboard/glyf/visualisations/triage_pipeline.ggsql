@@ -1,0 +1,11 @@
+SELECT status_label, age_bucket, issue_count
+FROM {{ ref('triage_pipeline') }}
+ORDER BY status_order, age_bucket_order
+
+VISUALISE status_label AS x, issue_count AS y, age_bucket AS color
+DRAW bar
+LABEL title => 'Open issues by triage status and age'
+LABEL subtitle => 'How much is waiting, and for how long'
+LABEL x_title => 'Triage status'
+LABEL y_title => 'Open issues'
+INTERACT tooltip, legend_filter
