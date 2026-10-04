@@ -1,4 +1,4 @@
-SELECT status_label, age_bucket, issue_count
+SELECT status_label, age_bucket_order || ' · ' || age_bucket AS age_bucket, issue_count
 FROM {{ ref('triage_pipeline') }}
 ORDER BY status_order, age_bucket_order
 

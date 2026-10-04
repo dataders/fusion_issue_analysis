@@ -20,7 +20,8 @@ uv run glyf serve --project-dir dashboard/glyf   # preview
 ## Deviations from the tile contract
 
 - **Palette:** Glyf has no custom color scale, so charts use its default theme, not the colorblind-validated palette.
-- **Horizontal stacked bars** (area / adapter / assignee) are vertical stacked bars; Glyf's `bar` has no orientation option, and x categories sort alphabetically, not by total.
+- **Horizontal stacked bars** (area / adapter / assignee) are vertical stacked bars; Glyf's `bar` has no orientation option.
+- **Ordering:** Glyf sorts bar/area x categories and stack/legend order alphabetically, ignoring the query's `ORDER BY`. So bars aren't ranked by total, triage statuses aren't in pipeline order, and categories stack bug/feature/other/task. Age buckets are prefixed with their order index (`1 · 0-7d`) as a workaround.
 - **Tables** have no link column, so `issue_url` isn't shown.
 - **KPIs** are six native `kpi` tiles; "Open issues" gets Glyf's built-in delta vs 28 days ago instead of the "+N in 28 days" text. Per-KPI context text isn't reproduced.
 - The freshness banner lands in Glyf's "Overview" summary block, with a warning alert when stale.
