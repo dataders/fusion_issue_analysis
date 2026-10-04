@@ -118,15 +118,17 @@ def main() -> None:
             env["FUSION_DB"] = os.path.relpath(db, tmp_path.resolve())
 
         command = ["dac", "--config", str(config)]
-        command.extend([
-            "build",
-            "--dir",
-            str(tmp_path),
-            "--dashboard",
-            DASHBOARD_NAME,
-            "--output",
-            str(output),
-        ])
+        command.extend(
+            [
+                "build",
+                "--dir",
+                str(tmp_path),
+                "--dashboard",
+                DASHBOARD_NAME,
+                "--output",
+                str(output),
+            ]
+        )
         subprocess.run(command, check=True, env=env, cwd=ROOT / "transform")
 
     fix_asset_paths(output / "index.html")

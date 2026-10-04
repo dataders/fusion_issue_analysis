@@ -39,9 +39,7 @@ def _get_auth_header(access_token: str | None) -> StrAny:
 def get_rest_pages(access_token: str | None, query: str) -> Iterator[list[StrAny]]:
     def _request(page_url: str) -> requests.Response:
         r = requests.get(page_url, headers=_get_auth_header(access_token))
-        print(
-            f"got page {page_url}, requests left: " + r.headers["x-ratelimit-remaining"]
-        )
+        print(f"got page {page_url}, requests left: " + r.headers["x-ratelimit-remaining"])
         return r
 
     next_page_url = REST_API_BASE_URL + query
@@ -67,9 +65,7 @@ def get_stargazers(
     max_items: int | None,
 ) -> Iterator[Iterator[StrAny]]:
     variables = {"owner": owner, "name": name, "items_per_page": items_per_page}
-    for page_items in _get_graphql_pages(
-        access_token, STARGAZERS_QUERY, variables, "stargazers", max_items
-    ):
+    for page_items in _get_graphql_pages(access_token, STARGAZERS_QUERY, variables, "stargazers", max_items):
         yield map(
             lambda item: {"starredAt": item["starredAt"], "user": item["node"]},
             page_items,
@@ -84,9 +80,7 @@ def get_milestones(
     max_items: int | None,
 ) -> Iterator[list[StrAny]]:
     variables = {"owner": owner, "name": name, "items_per_page": items_per_page}
-    yield from _get_graphql_pages(
-        access_token, MILESTONES_QUERY, variables, "milestones", max_items
-    )
+    yield from _get_graphql_pages(access_token, MILESTONES_QUERY, variables, "milestones", max_items)
 
 
 def get_reactions_data(
@@ -128,9 +122,7 @@ def get_reactions_data(
         extra_var_decls = ""
         filterby_clause = ""
     query = ISSUES_QUERY % (extra_var_decls, node_type, filterby_clause, issue_only_fields)
-    for page_items in _get_graphql_pages(
-        access_token, query, variables, node_type, max_items
-    ):
+    for page_items in _get_graphql_pages(access_token, query, variables, node_type, max_items):
         # use reactionGroups to query for reactions to comments that have any reactions. reduces cost by 10-50x
         reacted_comment_ids = {}
         for item in page_items:
@@ -140,9 +132,7 @@ def get_reactions_data(
                 comment.pop("reactionGroups", None)
 
         # get comment reactions by querying comment nodes separately
-        comment_reactions = _get_comment_reaction(
-            list(reacted_comment_ids.keys()), access_token
-        )
+        comment_reactions = _get_comment_reaction(list(reacted_comment_ids.keys()), access_token)
         # attach the reaction nodes where they should be
         for comment in comment_reactions.values():
             comment_id = comment["id"]
@@ -158,9 +148,9 @@ def get_reactions_data(
 
 
 def _extract_top_connection(data: StrAny, node_type: str) -> StrAny:
-    assert (
-        isinstance(data, dict) and len(data) == 1
-    ), f"The data with list of {node_type} must be a dictionary and contain only one element"
+    assert isinstance(data, dict) and len(data) == 1, (
+        f"The data with list of {node_type} must be a dictionary and contain only one element"
+    )
     data = next(iter(data.values()))
     return data[node_type]  # type: ignore
 
@@ -199,9 +189,7 @@ def _parse_reset_at(reset_at_str: str | None) -> float | None:
         return None
 
 
-def _run_graphql_query(
-    access_token: str, query: str, variables: DictStrAny
-) -> tuple[StrAny, StrAny]:
+def _run_graphql_query(access_token: str, query: str, variables: DictStrAny) -> tuple[StrAny, StrAny]:
     import requests as raw_requests
 
     retryable_errors = (
@@ -216,8 +204,7 @@ def _run_graphql_query(
         else:
             delay = RETRY_BASE_DELAY * (2 ** (retry_number - 1))
         print(
-            f"GitHub GraphQL request failed ({reason}), retrying in {delay:.1f}s "
-            f"(attempt {retry_number}/{MAX_RETRIES})"
+            f"GitHub GraphQL request failed ({reason}), retrying in {delay:.1f}s (attempt {retry_number}/{MAX_RETRIES})"
         )
         time.sleep(delay)
 
@@ -265,9 +252,7 @@ def _run_graphql_query(
     # so the retry loop above (which only checks HTTP status codes) can act on them.
     if "errors" in data:
         errors = data["errors"]
-        rate_limited = any(
-            e.get("type") == "RATE_LIMITED" for e in errors if isinstance(e, dict)
-        )
+        rate_limited = any(e.get("type") == "RATE_LIMITED" for e in errors if isinstance(e, dict))
         if rate_limited:
             # Pull resetAt from the partial rateLimit node if present
             reset_at_str = (data.get("data") or {}).get("rateLimit", {}).get("resetAt")
@@ -292,22 +277,16 @@ def _get_graphql_pages(
     while True:
         data, rate_limit = _run_graphql_query(access_token, query, variables)
         top_connection = _extract_top_connection(data, node_type)
-        data_items = (
-            top_connection["nodes"]
-            if "nodes" in top_connection
-            else top_connection["edges"]
-        )
+        data_items = top_connection["nodes"] if "nodes" in top_connection else top_connection["edges"]
         items_count += len(data_items)
         print(
-            f'Got {len(data_items)}/{items_count} {node_type}s, query cost {rate_limit["cost"]}, remaining credits: {rate_limit["remaining"]}'
+            f"Got {len(data_items)}/{items_count} {node_type}s, query cost {rate_limit['cost']}, remaining credits: {rate_limit['remaining']}"
         )
         if data_items:
             yield data_items
         else:
             return
-        variables["page_after"] = _extract_top_connection(data, node_type)["pageInfo"][
-            "endCursor"
-        ]
+        variables["page_after"] = _extract_top_connection(data, node_type)["pageInfo"]["endCursor"]
         if max_items and items_count >= max_items:
             print(f"Max items limit reached: {items_count} >= {max_items}")
             return
@@ -326,7 +305,7 @@ def _get_comment_reaction(comment_ids: list[str], access_token: str) -> StrAny:
         query = "{" + ",\n".join(subs) + "}"
         page, rate_limit = _run_graphql_query(access_token, query, {})
         print(
-            f'Got {len(page)} comments, query cost {rate_limit["cost"]}, remaining credits: {rate_limit["remaining"]}'
+            f"Got {len(page)} comments, query cost {rate_limit['cost']}, remaining credits: {rate_limit['remaining']}"
         )
         data.update(page)
     return data

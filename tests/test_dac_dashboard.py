@@ -102,7 +102,9 @@ class DacDashboardTests(unittest.TestCase):
 
         with TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "index.html"
-            path.write_text('<script>window.__DAC_STATIC__={"widgetData":{"Open Issues":{"columns":null,"rows":[]}}};</script>')
+            path.write_text(
+                '<script>window.__DAC_STATIC__={"widgetData":{"Open Issues":{"columns":null,"rows":[]}}};</script>'
+            )
 
             with self.assertRaises(SystemExit):
                 module.validate_static_output(path)

@@ -1,4 +1,5 @@
 """Unit tests for extract/github/helpers.py — no network required."""
+
 import os
 import sys
 from unittest.mock import MagicMock, patch
@@ -109,9 +110,10 @@ def test_chunked_encoding_on_post_is_retried():
     """ChunkedEncodingError raised during the POST itself is also retried."""
     good = _ok_response()
 
-    with patch("requests.post", side_effect=[
-        req_lib.exceptions.ChunkedEncodingError("dropped"), good
-    ]), patch("time.sleep"):
+    with (
+        patch("requests.post", side_effect=[req_lib.exceptions.ChunkedEncodingError("dropped"), good]),
+        patch("time.sleep"),
+    ):
         data, rate_limit = _run_graphql_query("tok", "query {}", {})
 
     assert rate_limit["cost"] == 1

@@ -54,9 +54,14 @@ def framework_source(paths: list[str]) -> str:
     text = []
     for rel in paths:
         path = ROOT / rel
-        files = [path] if path.is_file() else sorted(
-            p for p in path.rglob("*")
-            if p.is_file() and p.suffix in SOURCE_SUFFIXES and "node_modules" not in p.parts
+        files = (
+            [path]
+            if path.is_file()
+            else sorted(
+                p
+                for p in path.rglob("*")
+                if p.is_file() and p.suffix in SOURCE_SUFFIXES and "node_modules" not in p.parts
+            )
         )
         assert files, f"{rel} has no source files"
         text += [f.read_text() for f in files]
@@ -82,6 +87,7 @@ def test_exposure_covers_every_tile_model():
 
 def test_db_path_precedence(monkeypatch):
     import sys
+
     sys.path.insert(0, str(ROOT / "dashboard"))
     import tiles
 

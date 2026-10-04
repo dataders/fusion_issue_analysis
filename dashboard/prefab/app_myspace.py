@@ -51,6 +51,7 @@ MODE = "dark"  # MySpace is a dark theme -> dark palette variants
 
 # ── Data (dashboard models only; see tiles.yml) ─────────────────────
 
+
 def clean(rows: list[dict]) -> list[dict]:
     """NaN -> None so the baked-in JSON stays valid."""
     return [{k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in r.items()} for r in rows]
@@ -100,10 +101,20 @@ def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
 
 
 HEADERS = {
-    "issue_number": "#", "epic_number": "#", "title": "Title", "issue_category": "Type",
-    "age_days": "Age (d)", "days_idle": "Idle (d)", "reactions": "Reactions", "comments": "Comments",
-    "is_customer_reported": "Customer?", "areas": "Areas", "triage_status": "Triage",
-    "child_closed": "Closed", "child_total": "Sub-issues", "pct_complete": "% done",
+    "issue_number": "#",
+    "epic_number": "#",
+    "title": "Title",
+    "issue_category": "Type",
+    "age_days": "Age (d)",
+    "days_idle": "Idle (d)",
+    "reactions": "Reactions",
+    "comments": "Comments",
+    "is_customer_reported": "Customer?",
+    "areas": "Areas",
+    "triage_status": "Triage",
+    "child_closed": "Closed",
+    "child_total": "Sub-issues",
+    "pct_complete": "% done",
     "milestone_title": "Milestone",
 }
 
@@ -182,6 +193,7 @@ NEON = ["neon-card", "neon-pink", "neon-green", "neon-yellow"]
 #  TILE RENDERERS (keyed by tile id in tiles.yml)
 # ══════════════════════════════════════════════════════════════════
 
+
 def bar_height(data: list[dict]) -> int:
     return max(220, 34 * len(data) + 60)
 
@@ -211,8 +223,9 @@ def neon_table(tile: dict, data: list[dict], bar_key: str | None = None) -> None
 
 def render_backlog_weekly(tile: dict) -> None:
     data = DATA["backlog_weekly"]
-    AreaChart(data=data, series=series("issue_category", data), x_axis="week",
-              stacked=True, show_legend=True, height=300)
+    AreaChart(
+        data=data, series=series("issue_category", data), x_axis="week", stacked=True, show_legend=True, height=300
+    )
 
 
 def render_weekly_flow(tile: dict) -> None:
@@ -222,16 +235,31 @@ def render_weekly_flow(tile: dict) -> None:
 
 def render_triage_pipeline(tile: dict) -> None:
     data = DATA["triage_pipeline"]
-    BarChart(data=data, series=series("age_bucket", data), x_axis="status_label",
-             stacked=True, horizontal=True, show_legend=True, height=bar_height(data))
+    BarChart(
+        data=data,
+        series=series("age_bucket", data),
+        x_axis="status_label",
+        stacked=True,
+        horizontal=True,
+        show_legend=True,
+        height=bar_height(data),
+    )
 
 
 def render_response_weekly(tile: dict) -> None:
     LineChart(
         data=DATA["response_weekly"],
-        series=[ChartSeries(data_key="pct_responded_48h", label="% answered within 48h",
-                            color=tiles.MANIFEST["palette"]["single_series"])],
-        x_axis="week", show_legend=False, curve="smooth", height=260,
+        series=[
+            ChartSeries(
+                data_key="pct_responded_48h",
+                label="% answered within 48h",
+                color=tiles.MANIFEST["palette"]["single_series"],
+            )
+        ],
+        x_axis="week",
+        show_legend=False,
+        curve="smooth",
+        height=260,
     )
 
 
@@ -242,8 +270,16 @@ def render_triage_queue(tile: dict) -> None:
 def render_stacked_category_bar(key: str, y: str):
     def render(tile: dict) -> None:
         data = DATA[key]
-        BarChart(data=data, series=series("issue_category", data), x_axis=y,
-                 stacked=True, horizontal=True, show_legend=True, height=bar_height(data))
+        BarChart(
+            data=data,
+            series=series("issue_category", data),
+            x_axis=y,
+            stacked=True,
+            horizontal=True,
+            show_legend=True,
+            height=bar_height(data),
+        )
+
     return render
 
 
@@ -294,11 +330,16 @@ with PrefabApp(
     theme=MYSPACE_THEME,
     stylesheets=["https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap"],
 ) as app:
-
     # ── Marquee banner ─────────────────────────────────────────────
-    with Div(css_class="marquee-wrap", style={"border-top": "2px solid #0ff", "border-bottom": "2px solid #0ff", "padding": "8px 0"}):
-        Span(f"~*~Welcome 2 my dashboard~*~ ---- {meta['source_repo']} {meta['source_label']} issues ---- best viewed in IE6 @ 800x600 ---- dont steal my HTML!! ----",
-             css_class="marquee", style={"color": "#0ff", "font-size": "1.5rem", "font-weight": "bold", "text-shadow": "0 0 10px #0ff"})
+    with Div(
+        css_class="marquee-wrap",
+        style={"border-top": "2px solid #0ff", "border-bottom": "2px solid #0ff", "padding": "8px 0"},
+    ):
+        Span(
+            f"~*~Welcome 2 my dashboard~*~ ---- {meta['source_repo']} {meta['source_label']} issues ---- best viewed in IE6 @ 800x600 ---- dont steal my HTML!! ----",
+            css_class="marquee",
+            style={"color": "#0ff", "font-size": "1.5rem", "font-weight": "bold", "text-shadow": "0 0 10px #0ff"},
+        )
 
     # ── Title + freshness ──────────────────────────────────────────
     H2(f"~*~ {tiles.MANIFEST['title']} ~*~", css_class="text-center mt-4", style={"font-size": "2.5rem"})
@@ -320,7 +361,11 @@ with PrefabApp(
 
     with Div(css_class="text-center construction p-3 my-4"):
         Span("🚧 ", style={"font-size": "1.3rem"})
-        Span("!! UNDER CONSTRUCTION !!", css_class="blink", style={"color": "#ff0", "font-weight": "bold", "font-size": "1.1rem"})
+        Span(
+            "!! UNDER CONSTRUCTION !!",
+            css_class="blink",
+            style={"color": "#ff0", "font-weight": "bold", "font-size": "1.1rem"},
+        )
         Span(" 🚧", style={"font-size": "1.3rem"})
 
     # ── Sections, in tiles.yml order ───────────────────────────────
@@ -356,7 +401,10 @@ with PrefabApp(
     # ── Footer ─────────────────────────────────────────────────────
     Separator(css_class="my-6")
     with Div(css_class="text-center py-4"):
-        Text("Thanks 4 visiting my dashboard!! xD", style={"color": "#ff69b4", "font-size": "1.2rem", "font-weight": "bold"})
+        Text(
+            "Thanks 4 visiting my dashboard!! xD",
+            style={"color": "#ff69b4", "font-size": "1.2rem", "font-weight": "bold"},
+        )
         Text("~*~*~ made with luv and dbt v2 ~*~*~", style={"color": "#0ff", "font-size": "0.9rem"})
         Span("✨", css_class="sparkle", style={"font-size": "2rem"})
         Span("⭐", css_class="sparkle", style={"font-size": "2rem", "animation-delay": "0.5s"})

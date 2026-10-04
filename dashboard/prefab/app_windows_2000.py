@@ -42,6 +42,7 @@ MODE = "light"
 
 # ── Data (dashboard models only; see tiles.yml) ─────────────────────
 
+
 def clean(rows: list[dict]) -> list[dict]:
     """NaN -> None so the baked-in JSON stays valid."""
     return [{k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in r.items()} for r in rows]
@@ -91,14 +92,34 @@ def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
 
 
 HEADERS = {
-    "issue_number": "#", "epic_number": "#", "title": "Title", "issue_category": "Type",
-    "age_days": "Age (d)", "days_idle": "Idle (d)", "reactions": "Reactions", "comments": "Comments",
-    "is_customer_reported": "Customer", "areas": "Areas", "triage_status": "Triage",
-    "child_closed": "Closed", "child_total": "Sub-issues", "pct_complete": "% done",
+    "issue_number": "#",
+    "epic_number": "#",
+    "title": "Title",
+    "issue_category": "Type",
+    "age_days": "Age (d)",
+    "days_idle": "Idle (d)",
+    "reactions": "Reactions",
+    "comments": "Comments",
+    "is_customer_reported": "Customer",
+    "areas": "Areas",
+    "triage_status": "Triage",
+    "child_closed": "Closed",
+    "child_total": "Sub-issues",
+    "pct_complete": "% done",
     "milestone_title": "Milestone",
 }
-SORTABLE = {"issue_number", "epic_number", "age_days", "days_idle", "reactions", "comments",
-            "child_closed", "child_total", "pct_complete", "issue_category"}
+SORTABLE = {
+    "issue_number",
+    "epic_number",
+    "age_days",
+    "days_idle",
+    "reactions",
+    "comments",
+    "child_closed",
+    "child_total",
+    "pct_complete",
+    "issue_category",
+}
 
 
 # Long issue titles wrap instead of pushing the numeric columns off-screen.
@@ -220,6 +241,7 @@ WIN2K_THEME = Theme(mode="light", font="Tahoma", css=WIN2K_CSS, accent="#0a246a"
 #  TILE RENDERERS (keyed by tile id in tiles.yml)
 # ══════════════════════════════════════════════════════════════════
 
+
 def text_bar(pct) -> str:
     """pct_complete (0-100) as a 10-cell text bar. DataTable renders component
     cells outside the table in this Prefab version, so the bar is text."""
@@ -253,10 +275,20 @@ def issue_table(tile: dict, data: list[dict], bar_key: str | None = None) -> Non
     DataTable(
         rows=table_rows,
         columns=[
-            DataTableColumn(key=c, header=HEADERS.get(c, c), sortable=c in SORTABLE,
-                            **TITLE_COLUMN if c == "title" else {})
+            DataTableColumn(
+                key=c, header=HEADERS.get(c, c), sortable=c in SORTABLE, **TITLE_COLUMN if c == "title" else {}
+            )
             for c in columns
-        ] + ([DataTableColumn(key="_bar", header="Progress", min_width="140px", cell_class="font-mono whitespace-nowrap")] if bar_key else []),
+        ]
+        + (
+            [
+                DataTableColumn(
+                    key="_bar", header="Progress", min_width="140px", cell_class="font-mono whitespace-nowrap"
+                )
+            ]
+            if bar_key
+            else []
+        ),
         search=True,
         paginated=True,
         page_size=10,
@@ -266,8 +298,9 @@ def issue_table(tile: dict, data: list[dict], bar_key: str | None = None) -> Non
 
 def render_backlog_weekly(tile: dict) -> None:
     data = DATA["backlog_weekly"]
-    AreaChart(data=data, series=series("issue_category", data), x_axis="week",
-              stacked=True, show_legend=True, height=285)
+    AreaChart(
+        data=data, series=series("issue_category", data), x_axis="week", stacked=True, show_legend=True, height=285
+    )
 
 
 def render_weekly_flow(tile: dict) -> None:
@@ -277,24 +310,47 @@ def render_weekly_flow(tile: dict) -> None:
 
 def render_triage_pipeline(tile: dict) -> None:
     data = DATA["triage_pipeline"]
-    BarChart(data=data, series=series("age_bucket", data), x_axis="status_label",
-             stacked=True, horizontal=True, show_legend=True, height=bar_height(data))
+    BarChart(
+        data=data,
+        series=series("age_bucket", data),
+        x_axis="status_label",
+        stacked=True,
+        horizontal=True,
+        show_legend=True,
+        height=bar_height(data),
+    )
 
 
 def render_response_weekly(tile: dict) -> None:
     LineChart(
         data=DATA["response_weekly"],
-        series=[ChartSeries(data_key="pct_responded_48h", label="% answered within 48h",
-                            color=tiles.MANIFEST["palette"]["single_series"])],
-        x_axis="week", show_legend=False, curve="linear", height=265,
+        series=[
+            ChartSeries(
+                data_key="pct_responded_48h",
+                label="% answered within 48h",
+                color=tiles.MANIFEST["palette"]["single_series"],
+            )
+        ],
+        x_axis="week",
+        show_legend=False,
+        curve="linear",
+        height=265,
     )
 
 
 def render_stacked_category_bar(key: str, y: str):
     def render(tile: dict) -> None:
         data = DATA[key]
-        BarChart(data=data, series=series("issue_category", data), x_axis=y,
-                 stacked=True, horizontal=True, show_legend=True, height=bar_height(data))
+        BarChart(
+            data=data,
+            series=series("issue_category", data),
+            x_axis=y,
+            stacked=True,
+            horizontal=True,
+            show_legend=True,
+            height=bar_height(data),
+        )
+
     return render
 
 
@@ -329,9 +385,10 @@ def flush(pending: list[dict]) -> None:
     """Lay out queued chart tiles two per row."""
     for i in range(0, len(pending), 2):
         with Row(gap=3, css_class="mt-2 flex-wrap"):
-            for t in pending[i:i + 2]:
+            for t in pending[i : i + 2]:
                 tile_window(t)
     pending.clear()
+
 
 # ══════════════════════════════════════════════════════════════════
 #  BUILD DASHBOARD

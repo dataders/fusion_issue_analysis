@@ -43,9 +43,7 @@ def copy_models(source: str, target: Path, models: list[str]) -> None:
         connection.execute(f"ATTACH '{target.as_posix()}' AS serve (READ_WRITE)")
         connection.execute("CREATE SCHEMA IF NOT EXISTS serve.main")
         for model in models:
-            connection.execute(
-                f'CREATE OR REPLACE TABLE serve.main."{model}" AS SELECT * FROM main."{model}"'
-            )
+            connection.execute(f'CREATE OR REPLACE TABLE serve.main."{model}" AS SELECT * FROM main."{model}"')
         # A connection whose primary attachment is a MotherDuck (md:) session
         # doesn't reliably checkpoint a secondary local ATTACH on close, so
         # writes can be left stranded in serve's WAL and lost once the file

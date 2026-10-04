@@ -54,7 +54,12 @@ def github_reactions(
         ),
     ):
         yield from get_reactions_data(
-            "issues", owner, name, access_token, items_per_page, max_items,
+            "issues",
+            owner,
+            name,
+            access_token,
+            items_per_page,
+            max_items,
             since=updated_at.last_value,
             labels=labels,
         )
@@ -66,7 +71,12 @@ def github_reactions(
         ),
     ):
         yield from get_reactions_data(
-            "pullRequests", owner, name, access_token, items_per_page, max_items,
+            "pullRequests",
+            owner,
+            name,
+            access_token,
+            items_per_page,
+            max_items,
             since=updated_at.last_value,
         )
 
@@ -86,9 +96,7 @@ def github_reactions(
 
 
 @dlt.source(max_table_nesting=2)
-def github_repo_events(
-    owner: str, name: str, access_token: str | None = None
-) -> DltResource:
+def github_repo_events(owner: str, name: str, access_token: str | None = None) -> DltResource:
     """Gets events for repository `name` with owner `owner` incrementally.
 
     This source contains a single resource `repo_events` that gets given repository's events and dispatches them to separate tables with names based on event type.
@@ -112,9 +120,7 @@ def github_repo_events(
             "created_at", initial_value="1970-01-01T00:00:00Z", last_value_func=max
         ),
     ) -> Iterator[TDataItems]:
-        repos_path = (
-            f"/repos/{urllib.parse.quote(owner)}/{urllib.parse.quote(name)}/events"
-        )
+        repos_path = f"/repos/{urllib.parse.quote(owner)}/{urllib.parse.quote(name)}/events"
 
         for page in get_rest_pages(access_token, repos_path + "?per_page=100"):
             yield page
@@ -122,9 +128,7 @@ def github_repo_events(
             # stop requesting pages if the last element was already older than initial value
             # note: incremental will skip those items anyway, we just do not want to use the api limits
             if last_created_at.start_out_of_range:
-                print(
-                    f"Overlap with previous run created at {last_created_at.initial_value}"
-                )
+                print(f"Overlap with previous run created at {last_created_at.initial_value}")
                 break
 
     return repo_events
