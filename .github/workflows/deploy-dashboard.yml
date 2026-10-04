@@ -147,6 +147,13 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run dashboard/ggsql/build.py
 
+      - name: Build Glyf dashboard
+        id: glyf
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run dashboard/glyf/build.py
+
       - name: Export Marimo dashboard
         id: marimo
         continue-on-error: true
@@ -207,6 +214,7 @@ jobs:
             echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
             echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
             echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
+            echo "| Glyf | $(icon '${{ steps.glyf.outcome }}') |"
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
@@ -224,6 +232,7 @@ jobs:
             '${{ steps.npm.outcome }}' \
             '${{ steps.mdv.outcome }}' \
             '${{ steps.ggsql.outcome }}' \
+            '${{ steps.glyf.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
             '${{ steps.dbt_charts.outcome }}'; do

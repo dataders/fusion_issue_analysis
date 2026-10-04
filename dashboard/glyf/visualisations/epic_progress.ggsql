@@ -1,0 +1,9 @@
+SELECT epic_number, title AS epic, child_closed, child_total, pct_complete, milestone_title
+FROM {{ ref('epic_progress') }}
+ORDER BY pct_complete DESC, child_open, epic_number
+
+VISUALISE *
+DRAW table
+LABEL title => 'Open epics by % of sub-issues closed'
+LABEL subtitle => 'Top of the list can be closed out soon'
+CONFIG height => 420
