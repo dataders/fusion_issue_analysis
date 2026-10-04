@@ -1,7 +1,7 @@
 """Source that load github issues, pull requests and reactions for a specific repository via customizable graphql query. Loads events incrementally."""
 
 import urllib.parse
-from typing import Iterator, List, Optional, Sequence
+from collections.abc import Iterator, Sequence
 
 import dlt
 from dlt.common.typing import TDataItems
@@ -16,8 +16,8 @@ def github_reactions(
     name: str,
     access_token: str = dlt.secrets.value,
     items_per_page: int = 100,
-    max_items: Optional[int] = None,
-    labels: Optional[List[str]] = None,
+    max_items: int | None = None,
+    labels: list[str] | None = None,
 ) -> Sequence[DltResource]:
     """Get reactions associated with issues, pull requests and comments in the repo `name` with owner `owner`.
 
@@ -87,7 +87,7 @@ def github_reactions(
 
 @dlt.source(max_table_nesting=2)
 def github_repo_events(
-    owner: str, name: str, access_token: Optional[str] = None
+    owner: str, name: str, access_token: str | None = None
 ) -> DltResource:
     """Gets events for repository `name` with owner `owner` incrementally.
 
@@ -136,7 +136,7 @@ def github_stargazers(
     name: str,
     access_token: str = dlt.secrets.value,
     items_per_page: int = 100,
-    max_items: Optional[int] = None,
+    max_items: int | None = None,
 ) -> Sequence[DltResource]:
     """Get stargazers in the repo `name` with owner `owner`.
 

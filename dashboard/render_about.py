@@ -1,6 +1,6 @@
 from pathlib import Path
-import markdown
 
+import markdown
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "about.md"

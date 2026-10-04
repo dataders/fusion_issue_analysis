@@ -1,14 +1,13 @@
 """Unit tests for extract/github/helpers.py — no network required."""
-import sys
 import os
-from unittest.mock import MagicMock, patch, call
+import sys
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 
 import copy
 
 import requests as req_lib
-
 from github.helpers import _extract_nested_nodes, _run_graphql_query
 
 

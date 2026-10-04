@@ -16,6 +16,8 @@ import tiles  # noqa: E402
 from prefab_ui.actions import OpenLink  # noqa: E402
 from prefab_ui.app import PrefabApp  # noqa: E402
 from prefab_ui.components import (  # noqa: E402
+    H2,
+    H3,
     Alert,
     AlertDescription,
     AlertTitle,
@@ -26,8 +28,6 @@ from prefab_ui.components import (  # noqa: E402
     DataTable,
     DataTableColumn,
     Grid,
-    H2,
-    H3,
     Metric,
     Muted,
     Row,

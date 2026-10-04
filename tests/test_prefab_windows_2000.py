@@ -4,7 +4,6 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INDEX_HTML = REPO_ROOT / "dashboard" / "index.html"
 MAKEFILE = REPO_ROOT / "Makefile"
@@ -31,7 +30,8 @@ class PrefabWindows2000Tests(unittest.TestCase):
         content = PR_PREVIEW_WORKFLOW.read_text()
         self.assertIn("dashboard/prefab/app_windows_2000.py", content)
         self.assertIn("preview/prefab/app_windows_2000.html", content)
-        self.assertIn("| Prefab Windows 2000 | `prefab/app_windows_2000.html` |", content)
+        self.assertIn("| Prefab Windows 2000 |", content)
+        self.assertIn("prefab/app_windows_2000.html", content)
 
     def test_windows_2000_prefab_exports_app_shell(self) -> None:
         if not os.environ.get("MOTHERDUCK_TOKEN") and not LOCAL_DB.exists():

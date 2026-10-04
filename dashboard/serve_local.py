@@ -3,6 +3,7 @@
 import os
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 
+
 class COEPHandler(SimpleHTTPRequestHandler):
     def end_headers(self):
         self.send_header("Cross-Origin-Opener-Policy", "same-origin")

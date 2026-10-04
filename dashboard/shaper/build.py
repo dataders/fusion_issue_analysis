@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import re
 from html import escape
 from pathlib import Path
-import re
-
 
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE / "fusion-issue-health.dashboard.sql"

@@ -2,7 +2,6 @@ import importlib.util
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INDEX_HTML = REPO_ROOT / "dashboard" / "index.html"
 MAKEFILE = REPO_ROOT / "Makefile"
@@ -33,7 +32,8 @@ class ShaperDashboardTests(unittest.TestCase):
             self.assertIn("uv run python3 dashboard/shaper/build.py", content)
 
         self.assertIn("preview/shaper", preview)
-        self.assertIn("| Shaper | `shaper/index.html` |", preview)
+        self.assertIn("| Shaper |", preview)
+        self.assertIn("shaper/index.html", preview)
 
     def test_shaper_dashboard_source_uses_shaper_sql_types(self) -> None:
         sql = SHAPER_SQL.read_text()

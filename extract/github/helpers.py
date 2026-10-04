@@ -1,6 +1,6 @@
 import time
-from datetime import datetime, timezone
-from typing import Iterator, List, Optional, Tuple
+from collections.abc import Iterator
+from datetime import datetime
 
 from dlt.common.typing import DictStrAny, StrAny
 from dlt.common.utils import chunks
@@ -11,8 +11,8 @@ from .queries import (
     ISSUE_ONLY_FIELDS,
     ISSUES_QUERY,
     MILESTONES_QUERY,
-    STARGAZERS_QUERY,
     RATE_LIMIT,
+    STARGAZERS_QUERY,
 )
 from .settings import GRAPHQL_API_BASE_URL, REST_API_BASE_URL
 
@@ -25,7 +25,7 @@ REQUEST_TIMEOUT_SECONDS = 60
 #
 # Shared
 #
-def _get_auth_header(access_token: Optional[str]) -> StrAny:
+def _get_auth_header(access_token: str | None) -> StrAny:
     if access_token:
         return {"Authorization": f"Bearer {access_token}"}
     else:
@@ -36,7 +36,7 @@ def _get_auth_header(access_token: Optional[str]) -> StrAny:
 #
 # Rest API helpers
 #
-def get_rest_pages(access_token: Optional[str], query: str) -> Iterator[List[StrAny]]:
+def get_rest_pages(access_token: str | None, query: str) -> Iterator[list[StrAny]]:
     def _request(page_url: str) -> requests.Response:
         r = requests.get(page_url, headers=_get_auth_header(access_token))
         print(
@@ -64,7 +64,7 @@ def get_stargazers(
     name: str,
     access_token: str,
     items_per_page: int,
-    max_items: Optional[int],
+    max_items: int | None,
 ) -> Iterator[Iterator[StrAny]]:
     variables = {"owner": owner, "name": name, "items_per_page": items_per_page}
     for page_items in _get_graphql_pages(
@@ -81,13 +81,12 @@ def get_milestones(
     name: str,
     access_token: str,
     items_per_page: int,
-    max_items: Optional[int],
-) -> Iterator[List[StrAny]]:
+    max_items: int | None,
+) -> Iterator[list[StrAny]]:
     variables = {"owner": owner, "name": name, "items_per_page": items_per_page}
-    for page_items in _get_graphql_pages(
+    yield from _get_graphql_pages(
         access_token, MILESTONES_QUERY, variables, "milestones", max_items
-    ):
-        yield page_items
+    )
 
 
 def get_reactions_data(
@@ -96,10 +95,10 @@ def get_reactions_data(
     name: str,
     access_token: str,
     items_per_page: int,
-    max_items: Optional[int],
-    since: Optional[str] = None,
-    labels: Optional[List[str]] = None,
-    repository: Optional[str] = None,
+    max_items: int | None,
+    since: str | None = None,
+    labels: list[str] | None = None,
+    repository: str | None = None,
 ) -> Iterator[Iterator[StrAny]]:
     variables = {
         "owner": owner,
@@ -189,7 +188,7 @@ def _extract_nested_nodes(item: DictStrAny) -> DictStrAny:
     return item
 
 
-def _parse_reset_at(reset_at_str: Optional[str]) -> Optional[float]:
+def _parse_reset_at(reset_at_str: str | None) -> float | None:
     """Parse a GitHub ISO-8601 resetAt timestamp into a Unix epoch float."""
     if not reset_at_str:
         return None
@@ -202,7 +201,7 @@ def _parse_reset_at(reset_at_str: Optional[str]) -> Optional[float]:
 
 def _run_graphql_query(
     access_token: str, query: str, variables: DictStrAny
-) -> Tuple[StrAny, StrAny]:
+) -> tuple[StrAny, StrAny]:
     import requests as raw_requests
 
     retryable_errors = (
@@ -211,7 +210,7 @@ def _run_graphql_query(
         raw_requests.exceptions.Timeout,
     )
 
-    def _sleep_before_retry(reason: str, retry_number: int, until: Optional[float] = None) -> None:
+    def _sleep_before_retry(reason: str, retry_number: int, until: float | None = None) -> None:
         if until is not None:
             delay = max(until - time.time(), 0) + 5  # 5s safety margin
         else:
@@ -222,7 +221,7 @@ def _run_graphql_query(
         )
         time.sleep(delay)
 
-    def _extract_retry_until(r: raw_requests.Response) -> Optional[float]:
+    def _extract_retry_until(r: raw_requests.Response) -> float | None:
         """Return the Unix timestamp to sleep until, from Retry-After or x-ratelimit-reset."""
         retry_after = r.headers.get("Retry-After")
         if retry_after:
@@ -288,7 +287,7 @@ def _run_graphql_query(
 
 def _get_graphql_pages(
     access_token: str, query: str, variables: DictStrAny, node_type: str, max_items: int
-) -> Iterator[List[DictStrAny]]:
+) -> Iterator[list[DictStrAny]]:
     items_count = 0
     while True:
         data, rate_limit = _run_graphql_query(access_token, query, variables)
@@ -314,7 +313,7 @@ def _get_graphql_pages(
             return
 
 
-def _get_comment_reaction(comment_ids: List[str], access_token: str) -> StrAny:
+def _get_comment_reaction(comment_ids: list[str], access_token: str) -> StrAny:
     """Builds a query from a list of comment nodes and returns associated reactions."""
     idx = 0
     data: DictStrAny = {}
