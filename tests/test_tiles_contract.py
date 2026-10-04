@@ -17,9 +17,9 @@ MODELS_DIR = ROOT / "transform" / "models" / "dashboard"
 # Directories are scanned for SOURCE_SUFFIXES; list .html files explicitly.
 FRAMEWORKS = {
     "prefab": ["dashboard/prefab/app.py"],
-    "prefab-reactive": ["dashboard/prefab/app_reactive.py"],
-    "prefab-myspace": ["dashboard/prefab/app_myspace.py"],
-    "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py"],
+    "prefab-reactive": ["dashboard/prefab/app_reactive.py", "dashboard/prefab/prefab_common.py"],
+    "prefab-myspace": ["dashboard/prefab/app_myspace.py", "dashboard/prefab/prefab_common.py"],
+    "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py", "dashboard/prefab/prefab_common.py"],
     "ggsql": ["dashboard/ggsql"],
     "mviz": ["dashboard/mviz"],
     "mdv": ["dashboard/mdv"],

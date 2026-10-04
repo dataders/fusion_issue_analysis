@@ -9,13 +9,14 @@ Renders the tile contract in dashboard/tiles.yml (sections, tiles, palette)
 from the dbt dashboard models. Layout and neon only — no metric logic here.
 """
 
-import math
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import tiles
+from prefab_common import page_meta, rows, wide
+from prefab_common import series as common_series
 from prefab_ui.app import PrefabApp, Theme
 from prefab_ui.components import (
     H2,
@@ -52,29 +53,12 @@ MODE = "dark"  # MySpace is a dark theme -> dark palette variants
 # ── Data (dashboard models only; see tiles.yml) ─────────────────────
 
 
-def clean(rows: list[dict]) -> list[dict]:
-    """NaN -> None so the baked-in JSON stays valid."""
-    return [{k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in r.items()} for r in rows]
+meta, FRESHNESS, IS_STALE, KPIS = page_meta()
 
 
-def rows(tile_id: str) -> list[dict]:
-    return clean(tiles.tile_rows(tile_id))
+def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
+    return common_series(palette_key, data, MODE)
 
-
-def wide(tile_id: str, index: str, column: str = "issue_category", value: str = "issue_count") -> list[dict]:
-    pivoted = tiles.pivot(rows(tile_id), index=index, column=column, value=value)
-    return [{(k if k == index else safe_key(k)): v for k, v in r.items()} for r in pivoted]
-
-
-def safe_key(name: str) -> str:
-    """Series keys become CSS variables in the renderer; '180d+' would break them."""
-    return re.sub(r"\W", "_", str(name))
-
-
-meta = tiles.one("dashboard_meta")
-FRESHNESS = tiles.freshness_note(meta)
-IS_STALE = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
-KPIS = tiles.kpis()  # headline_kpis, formatted per tiles.yml
 
 DATA = {
     "backlog_weekly": wide("backlog_weekly", "week", value="open_issues"),
@@ -88,16 +72,6 @@ DATA = {
     "top_requested": rows("top_requested"),
     "assignee_workload": wide("assignee_workload", "assignee_login"),
 }
-
-
-def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
-    """One series per palette entry present in the data, in palette order."""
-    present = set().union(*(r.keys() for r in data)) if data else set()
-    return [
-        ChartSeries(data_key=safe_key(k), label=tiles.label(palette_key, k), color=tiles.color(palette_key, k, MODE))
-        for k in tiles.categories(palette_key)
-        if safe_key(k) in present
-    ]
 
 
 HEADERS = {

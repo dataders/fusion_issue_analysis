@@ -30,9 +30,11 @@ class DacDashboardTests(unittest.TestCase):
         self.assertIn("dashboard/dac/build", content)
 
     def test_ci_and_preview_workflows_build_dac(self) -> None:
-        preview = PR_PREVIEW_WORKFLOW.read_text()
+        # Preview and deploy share their install/snapshot steps via a composite action.
+        setup = (REPO_ROOT / ".github" / "actions" / "dashboard-setup" / "action.yml").read_text()
+        preview = PR_PREVIEW_WORKFLOW.read_text() + setup
         ci = CI_WORKFLOW.read_text()
-        deploy = DEPLOY_WORKFLOW.read_text()
+        deploy = DEPLOY_WORKFLOW.read_text() + setup
 
         for content in (preview, ci, deploy):
             self.assertIn("Install DAC", content)

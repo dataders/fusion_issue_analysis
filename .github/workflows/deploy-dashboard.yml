@@ -44,54 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Wait for any running extract
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: scripts/wait_for_extract.sh
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
+      - name: Set up dashboard build
+        uses: ./.github/actions/dashboard-setup
         with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Cache npm packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-dashboard-npm-
-
-      - name: Cache MDV build
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/fusion-mdv-cache
-          key: ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-${{ hashFiles('dashboard/mdv/build.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Install DAC
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install DuckDB ADBC driver (MotherDuck 1.5.2 pin)
-        run: |
-          curl -LsSf https://dbc.columnar.tech/install.sh | sh
-          dbc install "duckdb=1.5.2"
-
-      - name: Snapshot dashboard models from MotherDuck
-        env:
-          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        # Every framework below builds from this one local copy (FUSION_DB), so
-        # no step reads MotherDuck while an extract is swapping its tables.
-        run: |
-          scripts/snapshot_dashboard_db.sh --source md:fusion_issues
-          echo "FUSION_DB=$GITHUB_WORKSPACE/data/serve/fusion_issues.duckdb" >> "$GITHUB_ENV"
+          github-token: ${{ github.token }}
+          motherduck-token: ${{ secrets.MOTHERDUCK_TOKEN }}
 
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
