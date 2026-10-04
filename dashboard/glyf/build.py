@@ -3,6 +3,7 @@
 # dependencies = [
 #     "duckdb>=1.5.2",
 #     "glyf-core>=0.18",
+#     "pandas>=2",
 #     "pyyaml>=6",
 # ]
 # ///
