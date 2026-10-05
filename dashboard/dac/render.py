@@ -7,7 +7,6 @@ from pathlib import Path
 
 from fix_asset_paths import fix_asset_paths
 
-
 ROOT = Path(__file__).resolve().parents[2]
 DAC_DIR = ROOT / "dashboard" / "dac"
 SOURCE_DASHBOARDS = DAC_DIR / "dashboards"
@@ -119,15 +118,17 @@ def main() -> None:
             env["FUSION_DB"] = os.path.relpath(db, tmp_path.resolve())
 
         command = ["dac", "--config", str(config)]
-        command.extend([
-            "build",
-            "--dir",
-            str(tmp_path),
-            "--dashboard",
-            DASHBOARD_NAME,
-            "--output",
-            str(output),
-        ])
+        command.extend(
+            [
+                "build",
+                "--dir",
+                str(tmp_path),
+                "--dashboard",
+                DASHBOARD_NAME,
+                "--output",
+                str(output),
+            ]
+        )
         subprocess.run(command, check=True, env=env, cwd=ROOT / "transform")
 
     fix_asset_paths(output / "index.html")

@@ -16,6 +16,8 @@ import tiles  # noqa: E402
 from prefab_ui.actions import OpenLink  # noqa: E402
 from prefab_ui.app import PrefabApp  # noqa: E402
 from prefab_ui.components import (  # noqa: E402
+    H2,
+    H3,
     Alert,
     AlertDescription,
     AlertTitle,
@@ -26,8 +28,6 @@ from prefab_ui.components import (  # noqa: E402
     DataTable,
     DataTableColumn,
     Grid,
-    H2,
-    H3,
     Metric,
     Muted,
     Row,
@@ -51,8 +51,17 @@ COLUMN_HEADERS = {
     "pct_complete": "% done",
     "milestone_title": "Milestone",
 }
-NUMERIC = {"issue_number", "epic_number", "age_days", "days_idle", "reactions", "comments",
-           "child_closed", "child_total", "pct_complete"}
+NUMERIC = {
+    "issue_number",
+    "epic_number",
+    "age_days",
+    "days_idle",
+    "reactions",
+    "comments",
+    "child_closed",
+    "child_total",
+    "pct_complete",
+}
 
 
 def safe_key(name: str) -> str:
@@ -62,15 +71,19 @@ def safe_key(name: str) -> str:
 
 def series_for(palette_key: str, keys: list[str] | None = None) -> list[ChartSeries]:
     keys = keys or tiles.categories(palette_key)
-    return [ChartSeries(data_key=safe_key(k), label=tiles.label(palette_key, k), color=tiles.color(palette_key, k))
-            for k in keys]
+    return [
+        ChartSeries(data_key=safe_key(k), label=tiles.label(palette_key, k), color=tiles.color(palette_key, k))
+        for k in keys
+    ]
 
 
 def stacked(tile: dict, rows: list[dict], category_key: str, value_key: str) -> tuple[list[dict], list[ChartSeries]]:
     """Pivot a long model to one key per series, keeping only series present in the data."""
     palette_key = tile["color"]
-    wide = [{(k if k == category_key else safe_key(k)): v for k, v in r.items()}
-            for r in tiles.pivot(rows, index=category_key, column=palette_key, value=value_key)]
+    wide = [
+        {(k if k == category_key else safe_key(k)): v for k, v in r.items()}
+        for r in tiles.pivot(rows, index=category_key, column=palette_key, value=value_key)
+    ]
     present = {r[palette_key] for r in rows if r[value_key]}
     keys = [k for k in tiles.categories(palette_key) if k in present]
     return wide, series_for(palette_key, keys)
@@ -113,23 +126,43 @@ def render_tile(tile: dict) -> None:
                 wide, series = stacked(tile, rows, tile["x"], tile["y"])
                 AreaChart(data=wide, series=series, x_axis=tile["x"], stacked=True, show_legend=True, height=300)
             elif form == "grouped_bar":
-                BarChart(data=rows, series=series_for("flow", tile["series"]), x_axis=tile["x"],
-                         show_legend=True, height=300)
+                BarChart(
+                    data=rows, series=series_for("flow", tile["series"]), x_axis=tile["x"], show_legend=True, height=300
+                )
             elif form == "line":
-                LineChart(data=rows, x_axis=tile["x"], show_legend=False, height=300,
-                          series=[ChartSeries(data_key=tile["y"], label=tile["title"],
-                                              color=tiles.MANIFEST["palette"]["single_series"])])
+                LineChart(
+                    data=rows,
+                    x_axis=tile["x"],
+                    show_legend=False,
+                    height=300,
+                    series=[
+                        ChartSeries(
+                            data_key=tile["y"], label=tile["title"], color=tiles.MANIFEST["palette"]["single_series"]
+                        )
+                    ],
+                )
             elif form == "horizontal_stacked_bar":
                 wide, series = stacked(tile, rows, tile["y"], tile["x"])
-                BarChart(data=wide, series=series, x_axis=tile["y"], stacked=True, horizontal=True,
-                         show_legend=True, height=max(220, 34 * len(wide)))
+                BarChart(
+                    data=wide,
+                    series=series,
+                    x_axis=tile["y"],
+                    stacked=True,
+                    horizontal=True,
+                    show_legend=True,
+                    height=max(220, 34 * len(wide)),
+                )
             elif form in ("table", "table_with_bar"):
                 cols = tile["columns"]
                 DataTable(
                     rows=display_rows(rows, cols),
                     columns=[
-                        DataTableColumn(key=c, header=COLUMN_HEADERS.get(c, c), sortable=c in NUMERIC,
-                                        align="right" if c in NUMERIC else None)
+                        DataTableColumn(
+                            key=c,
+                            header=COLUMN_HEADERS.get(c, c),
+                            sortable=c in NUMERIC,
+                            align="right" if c in NUMERIC else None,
+                        )
                         for c in cols
                     ],
                     search=True,

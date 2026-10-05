@@ -5,7 +5,6 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 INDEX_HTML = REPO_ROOT / "dashboard" / "index.html"
 MAKEFILE = REPO_ROOT / "Makefile"
@@ -26,14 +25,17 @@ class DacDashboardTests(unittest.TestCase):
 
     def test_makefile_builds_and_cleans_dac(self) -> None:
         content = MAKEFILE.read_text()
-        self.assertIn("build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper", content)
+        build_line = next(line for line in content.splitlines() if line.startswith("build:"))
+        self.assertIn("dac", build_line.split()[1:])
         self.assertIn("uv run python dashboard/dac/render.py", content)
         self.assertIn("dashboard/dac/build", content)
 
     def test_ci_and_preview_workflows_build_dac(self) -> None:
-        preview = PR_PREVIEW_WORKFLOW.read_text()
+        # Preview and deploy share their install/snapshot steps via a composite action.
+        setup = (REPO_ROOT / ".github" / "actions" / "dashboard-setup" / "action.yml").read_text()
+        preview = PR_PREVIEW_WORKFLOW.read_text() + setup
         ci = CI_WORKFLOW.read_text()
-        deploy = DEPLOY_WORKFLOW.read_text()
+        deploy = DEPLOY_WORKFLOW.read_text() + setup
 
         for content in (preview, ci, deploy):
             self.assertIn("Install DAC", content)
@@ -103,7 +105,9 @@ class DacDashboardTests(unittest.TestCase):
 
         with TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "index.html"
-            path.write_text('<script>window.__DAC_STATIC__={"widgetData":{"Open Issues":{"columns":null,"rows":[]}}};</script>')
+            path.write_text(
+                '<script>window.__DAC_STATIC__={"widgetData":{"Open Issues":{"columns":null,"rows":[]}}};</script>'
+            )
 
             with self.assertRaises(SystemExit):
                 module.validate_static_output(path)

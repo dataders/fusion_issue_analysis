@@ -1,10 +1,7 @@
+import importlib.util
 import json
 import unittest
-import importlib.util
-import os
 from pathlib import Path
-from unittest.mock import patch
-
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 MCP_APP_DIR = REPO_ROOT / "dashboard" / "mcp-app"
@@ -32,12 +29,15 @@ class McpAppDashboardTests(unittest.TestCase):
         self.assertEqual(package["name"], "fusion-issue-analysis-mcp-app")
         self.assertIn("@modelcontextprotocol/ext-apps", package["dependencies"])
         self.assertIn("@modelcontextprotocol/sdk", package["dependencies"])
-        self.assertEqual(package["scripts"]["build"], "tsc --noEmit && tsc -p tsconfig.server.json && cross-env INPUT=issue-health.html vite build")
+        self.assertEqual(
+            package["scripts"]["build"],
+            "tsc --noEmit && tsc -p tsconfig.server.json && cross-env INPUT=issue-health.html vite build",
+        )
 
     def test_server_registers_dashboard_tool_and_ui_resource(self) -> None:
         server = SERVER_TS.read_text()
         self.assertIn('const resourceUri = "ui://fusion-issues/issue-health.html"', server)
-        self.assertIn('registerAppTool(', server)
+        self.assertIn("registerAppTool(", server)
         self.assertIn('"show_issue_health"', server)
         self.assertIn("_meta: { ui: { resourceUri } }", server)
         self.assertIn("structuredContent", server)

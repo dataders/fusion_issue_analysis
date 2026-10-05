@@ -9,7 +9,7 @@ MCP_APP_PORT ?= 3001
 ## serve        Build all static exports and open the bakeoff at localhost:PORT
 serve: build kill-server
 	@echo "Serving bakeoff at http://localhost:$(PORT)"
-	@cd dashboard && uv run python3 -m http.server $(PORT) &
+	@PORT=$(PORT) uv run python3 dashboard/serve_local.py &
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)

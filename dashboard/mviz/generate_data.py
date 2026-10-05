@@ -60,15 +60,16 @@ def category_bars(tile_id: str, index: str) -> None:
     """
     wide = tiles.pivot(tiles.tile_rows(tile_id), index=index, column="issue_category", value="issue_count")
     data = [{index: r[index], **{tiles.label("issue_category", c): r.get(c, 0) for c in CATEGORIES}} for r in wide]
-    spec(tile_id, x=index, y=CATEGORY_LABELS, stacked=True, horizontal=True, format="num0",
-         data=list(reversed(data)))
+    spec(tile_id, x=index, y=CATEGORY_LABELS, stacked=True, horizontal=True, format="num0", data=list(reversed(data)))
 
 
 def issue_table(tile_id: str, number_col: str, columns: list[tuple[str, str, dict]], row_fn) -> None:
     cols = [{"id": "issue", "title": "#", "bold": True}, {"id": "title", "title": "Title"}]
     cols += [{"id": cid, "title": title, **opts} for cid, title, opts in columns]
-    data = [{"issue": link(r, f"#{r[number_col]}"), "title": link(r, r["title"]), **row_fn(r)}
-            for r in tiles.tile_rows(tile_id)]
+    data = [
+        {"issue": link(r, f"#{r[number_col]}"), "title": link(r, r["title"]), **row_fn(r)}
+        for r in tiles.tile_rows(tile_id)
+    ]
     spec(tile_id, columns=cols, data=data, sortable=True, compact=True)
 
 
@@ -87,11 +88,14 @@ def main() -> None:
     # -- Header: freshness banner; a warning note when the extract looks stopped --
     meta = tiles.one("dashboard_meta")
     stale = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
-    write_json("dashboard_meta.json", {
-        "content": tiles.freshness_note(meta),
-        "noteType": "warning" if stale else "tip",
-        "label": "Stale data:" if stale else "Fresh:",
-    })
+    write_json(
+        "dashboard_meta.json",
+        {
+            "content": tiles.freshness_note(meta),
+            "noteType": "warning" if stale else "tip",
+            "label": "Stale data:" if stale else "Fresh:",
+        },
+    )
     write_json("subtitle.json", {"content": tiles.MANIFEST["subtitle"]})
 
     # -- Where do things stand? headline_kpis, formatted per tiles.yml. mviz
@@ -102,12 +106,23 @@ def main() -> None:
 
     # -- Is the backlog shrinking? --
     backlog = tiles.pivot(tiles.tile_rows("backlog_weekly"), index="week", column="issue_category", value="open_issues")
-    spec("backlog_weekly", x="week", y=CATEGORY_LABELS, stacked=True, format="num0",
-         data=[{"week": r["week"], **{tiles.label("issue_category", c): r[c] for c in CATEGORIES}} for r in backlog])
+    spec(
+        "backlog_weekly",
+        x="week",
+        y=CATEGORY_LABELS,
+        stacked=True,
+        format="num0",
+        data=[{"week": r["week"], **{tiles.label("issue_category", c): r[c] for c in CATEGORIES}} for r in backlog],
+    )
 
     closed, opened = tiles.label("flow", "closed"), tiles.label("flow", "opened")
-    spec("weekly_flow", x="week", y=[closed, opened], format="num0",
-         data=[{"week": r["week"], closed: r["closed"], opened: r["opened"]} for r in tiles.tile_rows("weekly_flow")])
+    spec(
+        "weekly_flow",
+        x="week",
+        y=[closed, opened],
+        format="num0",
+        data=[{"week": r["week"], closed: r["closed"], opened: r["opened"]} for r in tiles.tile_rows("weekly_flow")],
+    )
 
     # -- Are we keeping up with triage? --
     # mviz has a single global palette (the issue-category colors), so the
@@ -115,42 +130,96 @@ def main() -> None:
     pipeline = tiles.tile_rows("triage_pipeline")
     buckets = list(dict.fromkeys(r["age_bucket"] for r in pipeline))
     statuses = list(dict.fromkeys(r["status_label"] for r in pipeline))[::-1]  # first status on top
-    spec("triage_pipeline", xCategories=buckets, yCategories=statuses, format="num0",
-         data=[[buckets.index(r["age_bucket"]), statuses.index(r["status_label"]), r["issue_count"]]
-               for r in pipeline])
+    spec(
+        "triage_pipeline",
+        xCategories=buckets,
+        yCategories=statuses,
+        format="num0",
+        data=[[buckets.index(r["age_bucket"]), statuses.index(r["status_label"]), r["issue_count"]] for r in pipeline],
+    )
 
-    spec("response_weekly", x="week", y="answered_48h", format="pct0", yMin=0, yMax=1,
-         data=[{"week": r["week"], "answered_48h": None if r["pct_responded_48h"] is None else r["pct_responded_48h"] / 100}
-               for r in tiles.tile_rows("response_weekly")])
+    spec(
+        "response_weekly",
+        x="week",
+        y="answered_48h",
+        format="pct0",
+        yMin=0,
+        yMax=1,
+        data=[
+            {
+                "week": r["week"],
+                "answered_48h": None if r["pct_responded_48h"] is None else r["pct_responded_48h"] / 100,
+            }
+            for r in tiles.tile_rows("response_weekly")
+        ],
+    )
 
-    issue_table("triage_queue", "issue_number", [
-        ("type", "Type", {}), ("age_days", "Age (d)", {"fmt": "num0"}), ("days_idle", "Idle (d)", {"fmt": "num0"}),
-        ("reactions", "Reactions", {"fmt": "num0"}), ("comments", "Comments", {"fmt": "num0"}),
-        ("customer", "Customer", {}),
-    ], lambda r: {"type": issue_type(r), "age_days": r["age_days"], "days_idle": r["days_idle"],
-                  "reactions": r["reactions"], "comments": r["comments"], "customer": yes(r["is_customer_reported"])})
+    issue_table(
+        "triage_queue",
+        "issue_number",
+        [
+            ("type", "Type", {}),
+            ("age_days", "Age (d)", {"fmt": "num0"}),
+            ("days_idle", "Idle (d)", {"fmt": "num0"}),
+            ("reactions", "Reactions", {"fmt": "num0"}),
+            ("comments", "Comments", {"fmt": "num0"}),
+            ("customer", "Customer", {}),
+        ],
+        lambda r: {
+            "type": issue_type(r),
+            "age_days": r["age_days"],
+            "days_idle": r["days_idle"],
+            "reactions": r["reactions"],
+            "comments": r["comments"],
+            "customer": yes(r["is_customer_reported"]),
+        },
+    )
 
     # -- Where is the work? --
     category_bars("open_by_area", "area")
     category_bars("open_by_adapter", "adapter")
 
     # -- How close are the epics? --
-    issue_table("epic_progress", "epic_number", [
-        ("closed", "Closed", {"fmt": "num0"}), ("total", "Sub-issues", {"fmt": "num0"}),
-        ("pct_complete", "% closed", {"type": "sparkline", "sparkType": "pct_bar"}),
-        ("milestone", "Milestone", {}),
-    ], lambda r: {"closed": r["child_closed"], "total": r["child_total"],
-                  "pct_complete": (r["pct_complete"] or 0) / 100,  # pct_bar wants 0-1
-                  "milestone": r["milestone_title"]})
+    issue_table(
+        "epic_progress",
+        "epic_number",
+        [
+            ("closed", "Closed", {"fmt": "num0"}),
+            ("total", "Sub-issues", {"fmt": "num0"}),
+            ("pct_complete", "% closed", {"type": "sparkline", "sparkType": "pct_bar"}),
+            ("milestone", "Milestone", {}),
+        ],
+        lambda r: {
+            "closed": r["child_closed"],
+            "total": r["child_total"],
+            "pct_complete": (r["pct_complete"] or 0) / 100,  # pct_bar wants 0-1
+            "milestone": r["milestone_title"],
+        },
+    )
 
     # -- What should we work on, and who is on it? --
-    issue_table("top_requested", "issue_number", [
-        ("type", "Type", {}), ("areas", "Areas", {}), ("triage", "Triage", {}),
-        ("reactions", "Reactions", {"fmt": "num0"}), ("comments", "Comments", {"fmt": "num0"}),
-        ("age_days", "Age (d)", {"fmt": "num0"}), ("customer", "Customer", {}),
-    ], lambda r: {"type": issue_type(r), "areas": r["areas"], "triage": r["triage_status"],
-                  "reactions": r["reactions"], "comments": r["comments"], "age_days": r["age_days"],
-                  "customer": yes(r["is_customer_reported"])})
+    issue_table(
+        "top_requested",
+        "issue_number",
+        [
+            ("type", "Type", {}),
+            ("areas", "Areas", {}),
+            ("triage", "Triage", {}),
+            ("reactions", "Reactions", {"fmt": "num0"}),
+            ("comments", "Comments", {"fmt": "num0"}),
+            ("age_days", "Age (d)", {"fmt": "num0"}),
+            ("customer", "Customer", {}),
+        ],
+        lambda r: {
+            "type": issue_type(r),
+            "areas": r["areas"],
+            "triage": r["triage_status"],
+            "reactions": r["reactions"],
+            "comments": r["comments"],
+            "age_days": r["age_days"],
+            "customer": yes(r["is_customer_reported"]),
+        },
+    )
 
     category_bars("assignee_workload", "assignee_login")
 

@@ -72,8 +72,11 @@ def write_manifest(models: list[str]) -> None:
         }
         for m in models
     }
-    manifest = {"metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json"},
-                "nodes": nodes, "sources": {}}
+    manifest = {
+        "metadata": {"dbt_schema_version": "https://schemas.getdbt.com/dbt/manifest/v12.json"},
+        "nodes": nodes,
+        "sources": {},
+    }
     (TARGET / "manifest.json").write_text(json.dumps(manifest, indent=2))
 
 

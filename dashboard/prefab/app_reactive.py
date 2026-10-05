@@ -19,13 +19,14 @@ working.
 from __future__ import annotations
 
 import json
-import math
-import re
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 import tiles
+from prefab_common import page_meta, rows, text_bar, wide
+from prefab_common import series as common_series
 from prefab_ui.actions import CallHandler, OpenLink
 from prefab_ui.app import PrefabApp
 from prefab_ui.components import (
@@ -73,29 +74,12 @@ CATEGORIES = tiles.categories("issue_category")  # feature, bug, task, other
 
 # ── Data (dashboard models only; see tiles.yml) ─────────────────────
 
-def clean(rows: list[dict]) -> list[dict]:
-    """NaN -> None so the baked-in JSON state stays valid."""
-    return [{k: (None if isinstance(v, float) and math.isnan(v) else v) for k, v in r.items()} for r in rows]
+
+meta, FRESHNESS, IS_STALE, KPIS = page_meta()
 
 
-def rows(tile_id: str) -> list[dict]:
-    return clean(tiles.tile_rows(tile_id))
-
-
-def wide(tile_id: str, index: str, column: str = "issue_category", value: str = "issue_count") -> list[dict]:
-    pivoted = tiles.pivot(rows(tile_id), index=index, column=column, value=value)
-    return [{(k if k == index else safe_key(k)): v for k, v in r.items()} for r in pivoted]
-
-
-def safe_key(name: str) -> str:
-    """Series keys become CSS variables in the renderer; '180d+' would break them."""
-    return re.sub(r"\W", "_", str(name))
-
-
-meta = tiles.one("dashboard_meta")
-FRESHNESS = tiles.freshness_note(meta)
-IS_STALE = meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
-KPIS = tiles.kpis()  # headline_kpis, formatted per tiles.yml
+def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
+    return common_series(palette_key, data, MODE)
 
 
 def with_type_label(data: list[dict]) -> list[dict]:
@@ -121,16 +105,6 @@ CATEGORY_CHART_TILES = ["backlog_weekly", "open_by_area", "open_by_adapter", "as
 ISSUE_TABLE_TILES = ["triage_queue", "top_requested"]
 
 DEFAULT_FILTERS = {"categories": [], "customer_only": False, "weeks": "0"}
-
-
-def series(palette_key: str, data: list[dict]) -> list[ChartSeries]:
-    """One series per palette entry present in the data, in palette order."""
-    present = set().union(*(r.keys() for r in data)) if data else set()
-    return [
-        ChartSeries(data_key=safe_key(k), label=tiles.label(palette_key, k), color=tiles.color(palette_key, k, MODE))
-        for k in tiles.categories(palette_key)
-        if safe_key(k) in present
-    ]
 
 
 # ══════════════════════════════════════════════════════════════════════════
@@ -198,21 +172,33 @@ APPLY = CallHandler("apply_filters")
 # ══════════════════════════════════════════════════════════════════════════
 
 HEADERS = {
-    "issue_number": "#", "epic_number": "#", "title": "Title", "issue_category": "Type",
-    "age_days": "Age (d)", "days_idle": "Idle (d)", "reactions": "Reactions", "comments": "Comments",
-    "is_customer_reported": "Customer", "areas": "Areas", "triage_status": "Triage",
-    "child_closed": "Closed", "child_total": "Sub-issues", "pct_complete": "% done",
+    "issue_number": "#",
+    "epic_number": "#",
+    "title": "Title",
+    "issue_category": "Type",
+    "age_days": "Age (d)",
+    "days_idle": "Idle (d)",
+    "reactions": "Reactions",
+    "comments": "Comments",
+    "is_customer_reported": "Customer",
+    "areas": "Areas",
+    "triage_status": "Triage",
+    "child_closed": "Closed",
+    "child_total": "Sub-issues",
+    "pct_complete": "% done",
     "milestone_title": "Milestone",
 }
-NUMERIC = {"issue_number", "epic_number", "age_days", "days_idle", "reactions", "comments",
-           "child_closed", "child_total", "pct_complete"}
-
-
-def text_bar(pct) -> str:
-    """pct_complete (0-100) as a 10-cell text bar. DataTable renders component
-    cells outside the table in this Prefab version, so the bar is text."""
-    filled = round((pct or 0) / 10)
-    return "█" * filled + "░" * (10 - filled)
+NUMERIC = {
+    "issue_number",
+    "epic_number",
+    "age_days",
+    "days_idle",
+    "reactions",
+    "comments",
+    "child_closed",
+    "child_total",
+    "pct_complete",
+}
 
 
 def bar_height(data: list[dict]) -> int:
@@ -250,28 +236,47 @@ def issue_table(tile: dict) -> None:
                             else:
                                 TableCell(item[c], css_class="text-right" if c in NUMERIC else None)
                         with TableCell():
-                            Button("Details", variant="ghost", size="sm",
-                                   on_click=CallHandler("open_issue", arguments={
-                                       "tile": tile["id"], "number": item.issue_number}))
+                            Button(
+                                "Details",
+                                variant="ghost",
+                                size="sm",
+                                on_click=CallHandler(
+                                    "open_issue", arguments={"tile": tile["id"], "number": item.issue_number}
+                                ),
+                            )
     Muted(f"{Rx(tile['id']).length()} of {len(BASE[tile['id']])} issues · {Rx('filter_label')}")
 
 
 def epic_table(tile: dict) -> None:
     data = [
-        {**{c: (r[c] if r[c] not in (None, "") else "—") for c in tile["columns"]},
-         "issue_url": r["issue_url"],
-         "progress": text_bar(r["pct_complete"])}
+        {
+            **{c: (r[c] if r[c] not in (None, "") else "—") for c in tile["columns"]},
+            "issue_url": r["issue_url"],
+            "progress": text_bar(r["pct_complete"]),
+        }
         for r in BASE["epic_progress"]
     ]
     DataTable(
         rows=data,
         columns=[
-            DataTableColumn(key=c, header=HEADERS.get(c, c), sortable=c in NUMERIC,
-                            align="right" if c in NUMERIC else None,
-                            **({"min_width": "240px", "max_width": "480px", "cell_class": "whitespace-normal"}
-                               if c == "title" else {}))
+            DataTableColumn(
+                key=c,
+                header=HEADERS.get(c, c),
+                sortable=c in NUMERIC,
+                align="right" if c in NUMERIC else None,
+                **(
+                    {"min_width": "240px", "max_width": "480px", "cell_class": "whitespace-normal"}
+                    if c == "title"
+                    else {}
+                ),
+            )
             for c in tile["columns"]
-        ] + [DataTableColumn(key="progress", header="Progress", min_width="140px", cell_class="font-mono whitespace-nowrap")],
+        ]
+        + [
+            DataTableColumn(
+                key="progress", header="Progress", min_width="140px", cell_class="font-mono whitespace-nowrap"
+            )
+        ],
         search=True,
         paginated=True,
         page_size=10,
@@ -282,27 +287,53 @@ def epic_table(tile: dict) -> None:
 
 def category_bar(y: str):
     def render(tile: dict) -> None:
-        BarChart(data=Rx(tile["id"]), series=series("issue_category", BASE[tile["id"]]), x_axis=y,
-                 stacked=True, horizontal=True, show_legend=True, height=bar_height(BASE[tile["id"]]))
+        BarChart(
+            data=Rx(tile["id"]),
+            series=series("issue_category", BASE[tile["id"]]),
+            x_axis=y,
+            stacked=True,
+            horizontal=True,
+            show_legend=True,
+            height=bar_height(BASE[tile["id"]]),
+        )
+
     return render
 
 
 RENDER = {
     "backlog_weekly": lambda t: AreaChart(
-        data=Rx("backlog_weekly"), series=series("issue_category", BASE["backlog_weekly"]),
-        x_axis="week", stacked=True, show_legend=True, height=300),
+        data=Rx("backlog_weekly"),
+        series=series("issue_category", BASE["backlog_weekly"]),
+        x_axis="week",
+        stacked=True,
+        show_legend=True,
+        height=300,
+    ),
     "weekly_flow": lambda t: BarChart(
-        data=Rx("weekly_flow"), series=series("flow", BASE["weekly_flow"]),
-        x_axis="week", show_legend=True, height=300),
+        data=Rx("weekly_flow"), series=series("flow", BASE["weekly_flow"]), x_axis="week", show_legend=True, height=300
+    ),
     "triage_pipeline": lambda t: BarChart(
-        data=BASE["triage_pipeline"], series=series("age_bucket", BASE["triage_pipeline"]),
-        x_axis="status_label", stacked=True, horizontal=True, show_legend=True,
-        height=bar_height(BASE["triage_pipeline"])),
+        data=BASE["triage_pipeline"],
+        series=series("age_bucket", BASE["triage_pipeline"]),
+        x_axis="status_label",
+        stacked=True,
+        horizontal=True,
+        show_legend=True,
+        height=bar_height(BASE["triage_pipeline"]),
+    ),
     "response_weekly": lambda t: LineChart(
         data=Rx("response_weekly"),
-        series=[ChartSeries(data_key="pct_responded_48h", label="% answered within 48h",
-                            color=tiles.MANIFEST["palette"]["single_series"])],
-        x_axis="week", show_legend=False, height=300),
+        series=[
+            ChartSeries(
+                data_key="pct_responded_48h",
+                label="% answered within 48h",
+                color=tiles.MANIFEST["palette"]["single_series"],
+            )
+        ],
+        x_axis="week",
+        show_legend=False,
+        height=300,
+    ),
     "triage_queue": issue_table,
     "open_by_area": category_bar("area"),
     "open_by_adapter": category_bar("adapter"),
@@ -320,8 +351,7 @@ for t in WEEKLY_TILES:
     FILTER_SCOPE[t] = " · ".join(x for x in [FILTER_SCOPE.get(t), "weeks"] if x)
 
 # Charts that sit two-up; everything else is full width.
-PAIRED = {"backlog_weekly", "weekly_flow", "triage_pipeline", "response_weekly",
-          "open_by_area", "open_by_adapter"}
+PAIRED = {"backlog_weekly", "weekly_flow", "triage_pipeline", "response_weekly", "open_by_area", "open_by_adapter"}
 
 
 def tile_card(tile: dict) -> None:
@@ -359,7 +389,9 @@ with PrefabApp(
     if IS_STALE:
         with Alert(variant="warning", icon="triangle-alert", css_class="mt-2"):
             AlertTitle("Stale data")
-            AlertDescription(f"The newest issue activity is {meta['days_stale']} days old — the extract may have stopped.")
+            AlertDescription(
+                f"The newest issue activity is {meta['days_stale']} days old — the extract may have stopped."
+            )
 
     # ── Filter bar ──────────────────────────────────────────────────────
     with Card(css_class="mt-4 sticky top-2 z-10"):

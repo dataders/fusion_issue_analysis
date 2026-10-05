@@ -17,9 +17,9 @@ MODELS_DIR = ROOT / "transform" / "models" / "dashboard"
 # Directories are scanned for SOURCE_SUFFIXES; list .html files explicitly.
 FRAMEWORKS = {
     "prefab": ["dashboard/prefab/app.py"],
-    "prefab-reactive": ["dashboard/prefab/app_reactive.py"],
-    "prefab-myspace": ["dashboard/prefab/app_myspace.py"],
-    "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py"],
+    "prefab-reactive": ["dashboard/prefab/app_reactive.py", "dashboard/prefab/prefab_common.py"],
+    "prefab-myspace": ["dashboard/prefab/app_myspace.py", "dashboard/prefab/prefab_common.py"],
+    "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py", "dashboard/prefab/prefab_common.py"],
     "ggsql": ["dashboard/ggsql"],
     "glyf": ["dashboard/glyf"],
     "mviz": ["dashboard/mviz"],
@@ -55,9 +55,14 @@ def framework_source(paths: list[str]) -> str:
     text = []
     for rel in paths:
         path = ROOT / rel
-        files = [path] if path.is_file() else sorted(
-            p for p in path.rglob("*")
-            if p.is_file() and p.suffix in SOURCE_SUFFIXES and "node_modules" not in p.parts
+        files = (
+            [path]
+            if path.is_file()
+            else sorted(
+                p
+                for p in path.rglob("*")
+                if p.is_file() and p.suffix in SOURCE_SUFFIXES and "node_modules" not in p.parts
+            )
         )
         assert files, f"{rel} has no source files"
         text += [f.read_text() for f in files]
@@ -83,6 +88,7 @@ def test_exposure_covers_every_tile_model():
 
 def test_db_path_precedence(monkeypatch):
     import sys
+
     sys.path.insert(0, str(ROOT / "dashboard"))
     import tiles
 

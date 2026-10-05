@@ -1,0 +1,75 @@
+name: Dashboard setup
+description: >
+  Shared setup for the dashboard build workflows (PR preview and Pages deploy):
+  wait out any running extract, install uv/DAC/the DuckDB ADBC driver, restore
+  caches, sync Python deps, and snapshot the dashboard models from MotherDuck
+  (exported as FUSION_DB). Requires MDV_SHA in the calling workflow's env.
+
+inputs:
+  github-token:
+    description: Token the extract-wait script uses to poll workflow runs
+    required: true
+  motherduck-token:
+    description: MotherDuck token used to snapshot the dashboard models
+    required: true
+  uv-sync-args:
+    description: Extra arguments for `uv sync`
+    required: false
+    default: ""
+
+runs:
+  using: composite
+  steps:
+    - name: Wait for any running extract
+      shell: bash
+      env:
+        GH_TOKEN: ${{ inputs.github-token }}
+      run: scripts/wait_for_extract.sh
+
+    - name: Install uv
+      uses: astral-sh/setup-uv@v7
+      with:
+        enable-cache: true
+        cache-dependency-glob: uv.lock
+
+    - name: Cache npm packages
+      uses: actions/cache@v4
+      with:
+        path: ~/.npm
+        key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
+        restore-keys: |
+          ${{ runner.os }}-dashboard-npm-
+
+    - name: Cache MDV build
+      uses: actions/cache@v4
+      with:
+        path: ${{ runner.temp }}/fusion-mdv-cache
+        key: ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-${{ hashFiles('dashboard/mdv/build.sh') }}
+        restore-keys: |
+          ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-
+
+    - name: Install dependencies
+      shell: bash
+      run: uv sync ${{ inputs.uv-sync-args }}
+
+    - name: Install DAC
+      shell: bash
+      run: |
+        curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
+        echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+    - name: Install DuckDB ADBC driver (MotherDuck 1.5.2 pin)
+      shell: bash
+      run: |
+        curl -LsSf https://dbc.columnar.tech/install.sh | sh
+        dbc install "duckdb=1.5.2"
+
+    - name: Snapshot dashboard models from MotherDuck
+      shell: bash
+      env:
+        MOTHERDUCK_TOKEN: ${{ inputs.motherduck-token }}
+      # Every framework below builds from this one local copy (FUSION_DB), so
+      # no step reads MotherDuck while an extract is swapping its tables.
+      run: |
+        scripts/snapshot_dashboard_db.sh --source md:fusion_issues
+        echo "FUSION_DB=$GITHUB_WORKSPACE/data/serve/fusion_issues.duckdb" >> "$GITHUB_ENV"

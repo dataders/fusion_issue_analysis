@@ -55,12 +55,20 @@ jobs:
           curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
+      - name: Lint and format check (ruff)
+        run: |
+          uvx ruff check .
+          uvx ruff format --check .
+
       # ── Extract unit tests (no network) ──────────────────────────────────
       - name: Test extract helpers
         run: uv run --with pytest pytest extract/tests/ -v
 
       - name: Check dashboard tile contract
         run: uv run --with pytest pytest tests/test_tiles_contract.py -v
+
+      - name: Test dashboard helpers and workflow wiring
+        run: uv run --with pytest pytest tests/ extract/tests/ -v
 
       # ── dlt smoke-test: real GraphQL call, local parquet, no MotherDuck ──
       - name: Smoke-test dlt extract (incremental, --limit 5)

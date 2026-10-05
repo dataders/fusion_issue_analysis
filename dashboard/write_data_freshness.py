@@ -5,12 +5,11 @@ from __future__ import annotations
 import argparse
 import json
 import os
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 from pathlib import Path
 from typing import Any
 
 import duckdb
-
 
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_OUTPUT = PROJECT_ROOT / "dashboard" / "data_freshness.json"
@@ -20,11 +19,11 @@ def _isoformat(value: Any) -> str | None:
     if value is None:
         return None
     if isinstance(value, date) and not isinstance(value, datetime):
-        value = datetime.combine(value, datetime.min.time(), tzinfo=timezone.utc)
+        value = datetime.combine(value, datetime.min.time(), tzinfo=UTC)
     if isinstance(value, datetime):
         if value.tzinfo is None:
-            value = value.replace(tzinfo=timezone.utc)
-        return value.astimezone(timezone.utc).isoformat().replace("+00:00", "Z")
+            value = value.replace(tzinfo=UTC)
+        return value.astimezone(UTC).isoformat().replace("+00:00", "Z")
     return str(value)
 
 
@@ -99,7 +98,7 @@ def _local_metadata() -> dict[str, Any]:
 def build_metadata(source: str = "auto") -> dict[str, Any]:
     detected = _detect_source(source)
     metadata = _motherduck_metadata() if detected == "motherduck" else _local_metadata()
-    metadata["generated_at"] = datetime.now(timezone.utc).isoformat().replace("+00:00", "Z")
+    metadata["generated_at"] = datetime.now(UTC).isoformat().replace("+00:00", "Z")
     return metadata
 
 

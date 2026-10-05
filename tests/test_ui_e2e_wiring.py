@@ -2,7 +2,6 @@ import json
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_JSON = REPO_ROOT / "package.json"
 MAKEFILE = REPO_ROOT / "Makefile"
@@ -32,7 +31,7 @@ class UiE2eWiringTests(unittest.TestCase):
 
         config = PLAYWRIGHT_CONFIG.read_text()
         self.assertIn("tests/ui", config)
-        self.assertIn("uv run python3 -m http.server", config)
+        self.assertIn("dashboard/serve_local.py", config)
         self.assertIn("dashboard", config)
 
     def test_ci_installs_browsers_and_runs_ui_tests(self) -> None:
