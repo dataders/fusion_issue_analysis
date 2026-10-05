@@ -2,7 +2,7 @@ PORT ?= 8081
 MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
+.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql glyf mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,7 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper dbt-charts
+build: data-freshness about prefab ggsql glyf npm-dashboards mdv marimo quarto dac shaper dbt-charts
 
 ## ui-test      Run Playwright checks against generated dashboard exports
 ui-test:
@@ -47,6 +47,10 @@ prefab:
 ## ggsql        Build ggsql + Vega-Lite dashboard
 ggsql:
 	uv run dashboard/ggsql/build.py
+
+## glyf         Build Glyf dashboard
+glyf:
+	uv run dashboard/glyf/build.py
 
 ## mviz         Generate data files and render mviz dashboard
 mviz:

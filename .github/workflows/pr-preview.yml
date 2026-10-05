@@ -102,6 +102,17 @@ jobs:
           uv run dashboard/ggsql/build.py
           cp dashboard/ggsql/index.html preview/ggsql/index.html
 
+      - name: Build Glyf dashboard
+        id: glyf
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          uv run dashboard/glyf/build.py
+          mkdir -p preview/glyf
+          cp -r dashboard/glyf/build preview/glyf/build
+
       - name: Export Marimo dashboard
         id: marimo
         if: github.actor != 'dependabot[bot]'
@@ -169,6 +180,7 @@ jobs:
               `| MDV | \`mdv/index.html\` | ${fmt('${{ steps.mdv.outcome }}')} |`,
               `| Observable | \`observable/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
               `| Evidence.dev | \`evidence/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
+              `| Glyf | \`glyf/build/site/dashboards/fusion_issue_health.html\` | ${fmt('${{ steps.glyf.outcome }}')} |`,
               `| Marimo | \`marimo.html\` | ${fmt('${{ steps.marimo.outcome }}')} |`,
               `| Quarto | \`quarto/index.html\` | ${fmt('${{ steps.quarto.outcome }}')} |`,
               `| DAC | \`dac/index.html\` | ${fmt('${{ steps.dac.outcome }}')} |`,
@@ -217,6 +229,7 @@ jobs:
             echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
             echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
             echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
+            echo "| Glyf | $(icon '${{ steps.glyf.outcome }}') |"
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
@@ -227,6 +240,7 @@ jobs:
             '${{ steps.npm.outcome }}' \
             '${{ steps.mdv.outcome }}' \
             '${{ steps.ggsql.outcome }}' \
+            '${{ steps.glyf.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
             '${{ steps.dbt_charts.outcome }}'; do

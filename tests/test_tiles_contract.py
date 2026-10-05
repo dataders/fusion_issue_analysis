@@ -21,6 +21,7 @@ FRAMEWORKS = {
     "prefab-myspace": ["dashboard/prefab/app_myspace.py", "dashboard/prefab/prefab_common.py"],
     "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py", "dashboard/prefab/prefab_common.py"],
     "ggsql": ["dashboard/ggsql"],
+    "glyf": ["dashboard/glyf"],
     "mviz": ["dashboard/mviz"],
     "mdv": ["dashboard/mdv"],
     "observable": ["dashboard/observable/src/index.md", "dashboard/observable/src/data"],
@@ -36,7 +37,7 @@ FRAMEWORKS = {
     "semiotic": ["dashboard/semiotic/index.html"],
     "mcp-app": ["dashboard/mcp-app/build_data.py", "dashboard/mcp-app/src"],
 }
-SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", ".mdv", ".sh"}
+SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", ".mdv", ".sh", ".ggsql"}
 NON_TILE_MODELS = {"metric_avg_time_to_close", "metric_open_issue_count"}
 # Renderers that loop over tiles.yml instead of naming each model. They get
 # every tile by construction, so they're checked for the loop instead.

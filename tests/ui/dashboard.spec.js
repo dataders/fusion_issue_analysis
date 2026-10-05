@@ -7,6 +7,7 @@ const DASHBOARD_TABS = [
   { label: "Evidence.dev", tab: "evidence", src: "evidence/build/" },
   { label: "DAC", tab: "dac", src: "dac/build/" },
   { label: "ggsql + Vega-Lite", tab: "ggsql", src: "ggsql/index.html" },
+  { label: "Glyf", tab: "glyf", src: "glyf/build/site/dashboards/fusion_issue_health.html" },
   { label: "mviz", tab: "mviz", src: "mviz/index.html" },
   { label: "MDV", tab: "mdv", src: "mdv/index.html" },
   { label: "Observable", tab: "observable", src: "observable/dist/" },

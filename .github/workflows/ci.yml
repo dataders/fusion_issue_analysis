@@ -154,6 +154,12 @@ jobs:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run dashboard/ggsql/build.py
 
+      - name: Smoke-test Glyf
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run dashboard/glyf/build.py
+
       - name: Smoke-test MDV
         if: github.actor != 'dependabot[bot]'
         env:

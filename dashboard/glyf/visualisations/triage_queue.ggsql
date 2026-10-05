@@ -1,0 +1,9 @@
+SELECT issue_number, title AS issue, issue_category, age_days, days_idle, reactions, comments, is_customer_reported
+FROM {{ ref('triage_queue') }}
+ORDER BY age_days DESC, issue_number
+
+VISUALISE *
+DRAW table
+LABEL title => 'Triage queue — oldest first'
+LABEL subtitle => 'Open issues still labeled status:triage'
+CONFIG height => 420

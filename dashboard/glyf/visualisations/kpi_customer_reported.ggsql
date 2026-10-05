@@ -1,0 +1,6 @@
+SELECT open_customer_reported AS value
+FROM {{ ref('headline_kpis') }}
+
+VISUALISE value AS value
+DRAW kpi
+LABEL title => 'Customer-reported open'
