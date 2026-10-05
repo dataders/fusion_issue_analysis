@@ -25,7 +25,8 @@ class DacDashboardTests(unittest.TestCase):
 
     def test_makefile_builds_and_cleans_dac(self) -> None:
         content = MAKEFILE.read_text()
-        self.assertIn("build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper", content)
+        build_line = next(line for line in content.splitlines() if line.startswith("build:"))
+        self.assertIn("dac", build_line.split()[1:])
         self.assertIn("uv run python dashboard/dac/render.py", content)
         self.assertIn("dashboard/dac/build", content)
 

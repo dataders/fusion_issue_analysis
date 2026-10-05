@@ -5,7 +5,6 @@ from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[2]))
 import tiles  # noqa: E402
-
 from glyf.dashboard.macros import alert, ui  # noqa: E402
 
 
