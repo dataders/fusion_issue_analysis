@@ -1,0 +1,6 @@
+kind: Features
+body: Add TanStack Charts to the dashboard bakeoff using the shared dbt tile contract.
+time: 2026-10-06T13:24:28.248068-04:00
+custom:
+    Author: dataders
+    Issue: N/A

@@ -168,7 +168,7 @@ jobs:
             echo "|-----------|--------|"
             icon() { case $1 in success) echo "✅";; failure) echo "❌ **failed**";; *) echo "⚠️ $1";; esac; }
             echo "| Prefab | $(icon '${{ steps.prefab.outcome }}') |"
-            echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| npm (TanStack Charts + mviz + Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
             echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
             echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
             echo "| Glyf | $(icon '${{ steps.glyf.outcome }}') |"

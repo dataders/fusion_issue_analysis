@@ -2,7 +2,7 @@ PORT ?= 8081
 MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql glyf mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
+.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql glyf tanstack mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -52,11 +52,16 @@ ggsql:
 glyf:
 	uv run dashboard/glyf/build.py
 
+## tanstack     Build TanStack Charts from the shared dbt snapshot
+tanstack:
+	npm --prefix dashboard/tanstack ci --prefer-offline --no-audit --no-fund --silent
+	npm run build:tanstack
+
 ## mviz         Generate data files and render mviz dashboard
 mviz:
 	npm run build:mviz
 
-## npm-dashboards Build mviz, Observable, and Evidence in one npm command
+## npm-dashboards Build TanStack Charts, mviz, Observable, and Evidence in one npm command
 npm-dashboards:
 	npm run build:npm-dashboards
 
@@ -122,6 +127,7 @@ clean:
 	rm -f  dashboard/prefab/app.html dashboard/prefab/app_reactive.html dashboard/prefab/app_myspace.html dashboard/prefab/app_windows_2000.html
 	rm -f  dashboard/data_freshness.json
 	rm -f  dashboard/ggsql/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
+	rm -rf dashboard/tanstack/data dashboard/tanstack/dist
 	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto

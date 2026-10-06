@@ -224,3 +224,7 @@ cython_debug/
 # dbt Charts renders (scripts/render_dbt_charts.sh; CI renders them on deploy)
 dashboard/dbt-charts/fusion-issue-health-light.html
 dashboard/dbt-charts/fusion-issue-health-dark.html
+
+# TanStack Charts generated snapshot and bundle
+dashboard/tanstack/data/
+dashboard/tanstack/dist/

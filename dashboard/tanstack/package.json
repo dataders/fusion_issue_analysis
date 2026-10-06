@@ -1,0 +1,17 @@
+{
+  "name": "fusion-issues-tanstack",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc --noEmit && vite build",
+    "dev": "vite --host 127.0.0.1"
+  },
+  "dependencies": {
+    "@tanstack/charts": "1.0.0"
+  },
+  "devDependencies": {
+    "typescript": "5.9.3",
+    "vite": "8.3.1"
+  },
+  "engines": { "node": "^20.19 || ^22.12 || >=24" }
+}

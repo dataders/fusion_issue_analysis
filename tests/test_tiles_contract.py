@@ -22,6 +22,7 @@ FRAMEWORKS = {
     "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py", "dashboard/prefab/prefab_common.py"],
     "ggsql": ["dashboard/ggsql"],
     "glyf": ["dashboard/glyf"],
+    "tanstack": ["dashboard/tanstack/build_data.py", "dashboard/tanstack/src"],
     "mviz": ["dashboard/mviz"],
     "mdv": ["dashboard/mdv"],
     "observable": ["dashboard/observable/src/index.md", "dashboard/observable/src/data"],
@@ -41,7 +42,7 @@ SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", 
 NON_TILE_MODELS = {"metric_avg_time_to_close", "metric_open_issue_count"}
 # Renderers that loop over tiles.yml instead of naming each model. They get
 # every tile by construction, so they're checked for the loop instead.
-MANIFEST_DRIVEN = {"prefab": "tiles.sections()"}
+MANIFEST_DRIVEN = {"prefab": "tiles.sections()", "tanstack": "tiles.sections()"}
 
 
 def tile_models() -> list[str]:
