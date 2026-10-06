@@ -33,6 +33,7 @@ make extract
 make dbt
 make build
 make ui-test
+make tanstack
 make serve
 make mcp-app
 ```
@@ -42,11 +43,12 @@ What they do:
 - `make extract`: pull GitHub issue data with dlt
 - `make dbt`: build shared models in DuckDB
 - `make build`: export all dashboard variants
+- `make tanstack`: build the TanStack Charts tab from the shared dbt models (requires Node.js 20.19+, 22.12+, or 24+)
 - `make ui-test`: run Playwright checks against the generated dashboard exports
 - `make serve`: build and open local static wrapper
 - `make mcp-app`: build a local MCP Apps proof of concept for agent-hosted dashboard consumption
 
-Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, Evidence.dev, Marimo, Quarto, DAC, Shaper, and dbt charts. The MCP Apps spike is local-only for now.
+Dashboard variants include Prefab, ggsql + Vega-Lite, mviz, MDV, Observable, TanStack Charts, Evidence.dev, Marimo, Quarto, DAC, Shaper, and dbt charts. The MCP Apps spike is local-only for now.
 
 ## Repo Shape
 

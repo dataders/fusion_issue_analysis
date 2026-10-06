@@ -10,6 +10,7 @@ const DASHBOARD_TABS = [
   { label: "Glyf", tab: "glyf", src: "glyf/build/site/dashboards/fusion_issue_health.html" },
   { label: "mviz", tab: "mviz", src: "mviz/index.html" },
   { label: "MDV", tab: "mdv", src: "mdv/index.html" },
+  { label: "TanStack Charts", tab: "tanstack", src: "tanstack/dist/" },
   { label: "Observable", tab: "observable", src: "observable/dist/" },
   { label: "Marimo", tab: "marimo", src: "marimo.html" },
   { label: "Quarto", tab: "quarto", src: "quarto/index.html" },
