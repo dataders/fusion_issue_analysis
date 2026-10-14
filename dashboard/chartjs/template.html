@@ -79,7 +79,7 @@ function mk(cv, build) {
     const cs = getComputedStyle(document.body);
     Chart.defaults.color = cs.getPropertyValue("--muted").trim();
     Chart.defaults.borderColor = cs.getPropertyValue("--line").trim();
-    if (ch) ch.destroy(); ch = new Chart(cv, build()); 
+    if (ch) ch.destroy(); ch = new Chart(cv, build());
   });
 }
 const base = (extra = {}) => ({responsive: true, maintainAspectRatio: false, animation: false, ...extra});
