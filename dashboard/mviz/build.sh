@@ -9,6 +9,6 @@ echo "==> Generating data files..."
 uv run python dashboard/mviz/generate_data.py
 
 echo "==> Rendering mviz dashboard..."
-npx --yes --prefer-offline mviz@1.7.0 --theme dashboard/mviz/data/theme.yaml dashboard/mviz/dashboard.md -o dashboard/mviz/index.html
+npx --yes mviz@1.7.0 --theme dashboard/mviz/data/theme.yaml dashboard/mviz/dashboard.md -o dashboard/mviz/index.html
 
 echo "==> Done: dashboard/mviz/index.html"
