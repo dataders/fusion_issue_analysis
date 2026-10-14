@@ -2,7 +2,7 @@ PORT ?= 8081
 MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql glyf chartjs tanstack mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
+.PHONY: serve build ui-test data-freshness framework-versions about dbt extract prefab ggsql glyf chartjs tanstack mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,10 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: data-freshness about prefab ggsql glyf npm-dashboards mdv marimo quarto dac shaper dbt-charts chartjs
+build: data-freshness framework-versions about prefab ggsql glyf npm-dashboards mdv marimo quarto dac shaper dbt-charts chartjs
+
+framework-versions:
+	uv run python dashboard/write_framework_versions.py
 
 ## ui-test      Run Playwright checks against generated dashboard exports
 ui-test:

@@ -2,12 +2,14 @@
 # requires-python = ">=3.10"
 # dependencies = [
 #     "duckdb>=1",
-#     "ggsql>=0.3",
+#     "ggsql==0.5.2",
 #     "pandas>=2",
 #     "polars>=1",
 #     "pyarrow>=15",
 #     "pyyaml>=6",
 # ]
+# [tool.uv]
+# exclude-newer = false
 # ///
 """ggsql dashboard: render the dashboard/tiles.yml tiles to a static HTML page.
 
@@ -144,9 +146,9 @@ HEAD = """<!doctype html>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>{title} — ggsql</title>
-<script src="https://cdn.jsdelivr.net/npm/vega@6"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-lite@6"></script>
-<script src="https://cdn.jsdelivr.net/npm/vega-embed@7"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega@6.4.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-lite@6.5.0"></script>
+<script src="https://cdn.jsdelivr.net/npm/vega-embed@7.3.0"></script>
 <style>
   body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
          max-width: 1040px; margin: 2rem auto; padding: 0 1rem; color: #1b1b1b; }

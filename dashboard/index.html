@@ -141,6 +141,27 @@
     #panes.stacked { flex-direction: column; }
     .subnav button { padding: 7px 18px; color: #aaa; font-size: .875rem; }
 
+    .version-badge {
+      display: inline-block;
+      margin-left: 7px;
+      padding: 1px 5px;
+      border: 1px solid currentColor;
+      border-radius: 9px;
+      font-size: 0.65rem;
+      font-weight: 500;
+      opacity: 0.8;
+      vertical-align: 1px;
+    }
+
+    .version-badge.current { color: #5cc996; }
+    .version-badge.outdated { color: #ffb454; }
+    .version-badge.unverified, .version-badge.untracked, .version-badge.snapshot { color: #888; }
+    nav button.active .version-badge.current { color: #146b45; }
+    nav button.active .version-badge.outdated { color: #8b4b00; }
+    nav button.active .version-badge.unverified,
+    nav button.active .version-badge.untracked,
+    nav button.active .version-badge.snapshot { color: #555; }
+
     .subnav {
       display: flex;
       gap: 6px;
@@ -204,6 +225,9 @@
 
       .chrome-meta {
         font-size: 0.72rem;
+        flex-wrap: wrap;
+        white-space: normal;
+        width: 100%;
       }
     }
   </style>
@@ -215,6 +239,7 @@
       <p class="header-title">dbt v2 Issue Analysis — Visualization Framework Bakeoff</p>
       <div class="chrome-meta" aria-label="Dashboard metadata">
         <span id="data-refreshed">Data refreshed: unavailable</span>
+        <span id="versions-checked">Versions: checking…</span>
         <a
           class="repo-link"
           href="https://github.com/dataders/fusion_issue_analysis"
@@ -303,6 +328,7 @@
     const duckdbWasmBar = document.getElementById('duckdb-wasm-views');
     const frame = document.getElementById('frame');
     const dataRefreshed = document.getElementById('data-refreshed');
+    const versionsChecked = document.getElementById('versions-checked');
     const legacyPrefabThemeAliases = {
       "prefab-reactive": "reactive",
       "prefab-myspace": "myspace",
@@ -311,6 +337,10 @@
     const legacyTabAliases = {
       "dataface": "dbt-charts",
     };
+
+    function frameworkLabel(button) {
+      return button.dataset.label || button.firstChild.textContent.trim();
+    }
 
     function formatTimestamp(value) {
       if (!value) return null;
@@ -348,6 +378,34 @@
       }
     }
 
+    async function loadFrameworkVersions() {
+      try {
+        const response = await fetch('framework_versions.json', { cache: 'no-store' });
+        if (!response.ok) throw new Error('missing framework versions');
+        const metadata = await response.json();
+        const checked = formatTimestamp(metadata.checked_at);
+        versionsChecked.textContent = checked ? `Versions checked: ${checked}` : 'Versions: check unavailable';
+        for (const button of tabs) {
+          const entry = metadata.frameworks?.[button.dataset.tab];
+          if (!entry) continue;
+          const label = frameworkLabel(button);
+          button.dataset.label = label;
+          const version = entry.installed ? `v${entry.installed.length > 16 ? entry.installed.slice(0, 7) : entry.installed}` : 'untracked';
+          const badge = document.createElement('span');
+          badge.className = `version-badge ${entry.status}`;
+          badge.textContent = `${version} ${entry.status === 'current' ? '✓' : entry.status === 'outdated' ? '↑' : '?'}`;
+          badge.setAttribute('aria-hidden', 'true');
+          button.append(badge);
+          const status = entry.status === 'current' ? 'Current' : entry.status === 'outdated' ? 'Update available' : entry.status === 'untracked' ? 'Version not recorded' : entry.status === 'snapshot' ? 'Static export version not verified' : 'Latest release could not be checked';
+          const detail = `${label}: ${entry.installed ?? 'unknown'} · ${status}${entry.latest ? ` (latest: ${entry.latest})` : ''}${checked ? ` · checked ${checked}` : ''}`;
+          button.title = detail;
+          button.setAttribute('aria-description', detail);
+        }
+      } catch {
+        versionsChecked.textContent = 'Versions: unavailable';
+      }
+    }
+
     function setActive(buttons, active) {
       buttons.forEach(button => button.classList.toggle('active', button === active));
     }
@@ -366,8 +424,8 @@
       comparisons = comparisons.map(id => id === btn.dataset.tab ? previous.dataset.tab : id);
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
-      document.getElementById('selected-framework').textContent = btn.textContent.trim();
-      document.getElementById('primary-name').textContent = btn.textContent.trim();
+      document.getElementById('selected-framework').textContent = frameworkLabel(btn);
+      document.getElementById('primary-name').textContent = frameworkLabel(btn);
       closePicker();
       const isPrefab = btn.dataset.tab === "prefab";
       const isDuckDBWasm = btn.dataset.tab === "duckdb-wasm";
@@ -390,7 +448,7 @@
         updateUrl("duckdb-wasm", null, viewName === "health" ? null : viewName);
       } else {
         frame.src = btn.dataset.src;
-        frame.title = btn.textContent.trim();
+        frame.title = frameworkLabel(btn);
         updateUrl(btn.dataset.tab);
       }
       if (btn.dataset.tab === 'about') comparisons = [];
@@ -567,14 +625,14 @@
         const select = pane.querySelector('select');
         select.setAttribute('aria-label', `Framework ${index + 2}`);
         select.replaceChildren(...catalog.map(item => {
-          const option = new Option(item.textContent.trim(), item.dataset.tab);
+          const option = new Option(frameworkLabel(item), item.dataset.tab);
           option.disabled = item.dataset.tab === primaryId() || comparisons.some((value, i) => i !== index && value === item.dataset.tab);
           return option;
         }));
         select.value = id;
         pane.querySelector('.remove-pane').setAttribute('aria-label', `Remove comparison ${index + 2}`);
         const iframe = pane.querySelector('iframe');
-        iframe.title = button.textContent.trim();
+        iframe.title = frameworkLabel(button);
         if (iframe.getAttribute('src') !== button.dataset.src) iframe.src = button.dataset.src;
       });
       existing.slice(comparisons.length).forEach(pane => pane.remove());
@@ -634,6 +692,7 @@
     attachScroll(frame);
     loadTabFromHash();
     loadDataFreshness();
+    loadFrameworkVersions();
     window.addEventListener("popstate", loadTabFromHash);
     window.addEventListener("hashchange", loadTabFromHash);
   </script>

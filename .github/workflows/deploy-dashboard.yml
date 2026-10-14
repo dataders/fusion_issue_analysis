@@ -1,7 +1,7 @@
 name: Deploy Dashboard to GitHub Pages
 
 env:
-  MDV_SHA: b9d5a8c1bb66b094a8745775cb9bf1389f08403f
+  MDV_SHA: e079b27b4a84848d17e70176200401cb80b78291
 
 on:
   # Re-deploy when dashboard code changes on main
@@ -155,6 +155,9 @@ jobs:
           find dashboard -type f \( -name "*.html" -o -name "*.js" \) \
             -exec grep -l '__MOTHERDUCK_READ_TOKEN__' {} \; \
             | xargs -I{} sed -i "s|__MOTHERDUCK_READ_TOKEN__|${MOTHERDUCK_READ_TOKEN}|g" {}
+
+      - name: Check dashboard framework versions
+        run: uv run python dashboard/write_framework_versions.py
 
       # Upload whatever built successfully; deploy job runs regardless of framework failures.
       - name: Upload Pages artifact

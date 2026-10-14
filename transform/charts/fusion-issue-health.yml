@@ -1,5 +1,6 @@
+_schema_version: "0.9.0"  # written automatically by dct migrate
 title: "dbt v2 issue health"
-description: >
+notes: >
   Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted).
   Renders the tile contract in dashboard/tiles.yml, one thin query per dbt
   dashboard model (transform/models/dashboard/).
@@ -19,46 +20,46 @@ queries:
   # the tile's tiles.yml `order_by`, against the snapshot built by
   # scripts/snapshot_dashboard_db.py (every dashboard model).
   dashboard_meta:
-    description: One row — as-of date and staleness of the data.
+    notes: One row — as-of date and staleness of the data.
     sql: select * from fusion_issues.main.dashboard_meta
   headline_kpis:
-    description: One row of headline numbers (28-day windows).
+    notes: One row of headline numbers (28-day windows).
     sql: select * from fusion_issues.main.headline_kpis
   backlog_weekly:
-    description: Open non-epic issues at each week's end, by type (long).
+    notes: Open non-epic issues at each week's end, by type (long).
     sql: select * from fusion_issues.main.backlog_weekly order by week
   weekly_flow:
-    description: Issues opened vs closed per complete week.
+    notes: Issues opened vs closed per complete week.
     sql: select * from fusion_issues.main.weekly_flow order by week
   triage_pipeline:
-    description: Open issues by triage status x age bucket (long).
+    notes: Open issues by triage status x age bucket (long).
     sql: select * from fusion_issues.main.triage_pipeline order by status_order, age_bucket_order
   response_weekly:
-    description: Share of new issues answered within 48h, by week opened.
+    notes: Share of new issues answered within 48h, by week opened.
     sql: select * from fusion_issues.main.response_weekly order by week
   triage_queue:
-    description: Open issues still awaiting triage, oldest first.
+    notes: Open issues still awaiting triage, oldest first.
     sql: select * from fusion_issues.main.triage_queue order by age_days desc
   open_by_area:
-    description: Open issues per area label, by type (long).
+    notes: Open issues per area label, by type (long).
     sql: select * from fusion_issues.main.open_by_area order by area_total desc, area
   open_by_adapter:
-    description: Open issues per adapter label, by type (long).
+    notes: Open issues per adapter label, by type (long).
     sql: select * from fusion_issues.main.open_by_adapter order by adapter_total desc, adapter
   epic_progress:
-    description: Open epics with sub-issues, most complete first.
+    notes: Open epics with sub-issues, most complete first.
     sql: select * from fusion_issues.main.epic_progress order by pct_complete desc, child_open, epic_number
   top_requested:
-    description: Open issues ranked by reactions, then comments.
+    notes: Open issues ranked by reactions, then comments.
     sql: select * from fusion_issues.main.top_requested order by reactions desc, comments desc
   assignee_workload:
-    description: Top 15 assignees by open issues, by type (long).
+    notes: Top 15 assignees by open issues, by type (long).
     sql: select * from fusion_issues.main.assignee_workload order by assignee_total desc, assignee_login
 
 charts:
   # ---- Header: freshness ----
   data_as_of_kpi:
-    description: As-of date; days_stale turns red when > 3 (tiles.yml stale_after_days) — the extract has probably stopped.
+    notes: As-of date; days_stale turns red when > 3 (tiles.yml stale_after_days) — the extract has probably stopped.
     query: dashboard_meta
     type: kpi
     variant: inline

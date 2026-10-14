@@ -67,6 +67,10 @@ test.describe("dashboard bakeoff shell", () => {
     const refreshLabel = page.locator("#data-refreshed");
     await expect(refreshLabel).toHaveText(/^Data refreshed: .+/);
     await expect(refreshLabel).not.toHaveText(/Invalid Date/);
+    await expect(page.locator("#versions-checked")).toHaveText(/^Versions checked: .+/);
+    const tanstackVersion = page.locator('[data-tab="tanstack"] .version-badge');
+    await expect(tanstackVersion).toHaveText(/^v\d+\.\d+\.\d+ ✓$/);
+    await expect(tanstackVersion).toHaveClass(/current/);
 
     const repoLink = page.getByRole("link", { name: "Open source repository" });
     await expect(repoLink).toHaveAttribute("href", "https://github.com/dataders/fusion_issue_analysis");
@@ -86,7 +90,7 @@ test.describe("dashboard bakeoff shell", () => {
 
     const labels = await page.locator(".main-tabs button").evaluateAll((buttons) =>
       buttons.map((button) => ({
-        label: button.textContent.trim(),
+        label: button.dataset.label || button.firstChild.textContent.trim(),
         tab: button.dataset.tab,
         src: button.dataset.src,
       })),

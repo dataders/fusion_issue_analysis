@@ -158,7 +158,7 @@ def render() -> str:
     {body}
   </main>
   <script type="module">
-    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.esm.min.mjs";
+    import mermaid from "https://cdn.jsdelivr.net/npm/mermaid@12.2.0/dist/mermaid.esm.min.mjs";
 
     mermaid.initialize({{ startOnLoad: false, securityLevel: "strict" }});
     const blocks = document.querySelectorAll("pre code.language-mermaid");

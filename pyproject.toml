@@ -4,23 +4,23 @@ version = "0.1.0"
 description = "Analytics pipeline and dashboard bakeoff for dbt Fusion (engine:v2) GitHub issues"
 requires-python = ">=3.12"
 dependencies = [
-    "dbt-charts==0.5.0",
+    "dbt-charts==0.9.1",
     "dbt-duckdb>=1.10.1",
     "dlt[filesystem,parquet]>=1.24.0",
-    "duckdb==1.5.2",
-    "marimo>=0.23.2",
+    "duckdb==1.5.6",
+    "marimo>=0.25.1",
     "markdown>=3.10.2",
     "numpy>=2.4.4",
     "pandas>=3.0.2",
-    "plotly>=6.7.0",
-    "fastmcp>=2.0",
-    "prefab-ui>=0.19.0",
+    "plotly>=7.1.0",
+    "fastmcp>=4.1.0",
+    "prefab-ui>=0.20.2",
     "pyyaml>=6.0.3",
 ]
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { dbt-charts = "2026-08-29T00:00:00Z" }
+exclude-newer-package = { fastmcp = false, fastmcp-slim = false }
 
 [dependency-groups]
 dev = [

@@ -1,7 +1,7 @@
 name: CI
 
 env:
-  MDV_SHA: b9d5a8c1bb66b094a8745775cb9bf1389f08403f
+  MDV_SHA: e079b27b4a84848d17e70176200401cb80b78291
 
 on:
   pull_request:
@@ -216,6 +216,10 @@ jobs:
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: make mcp-app
+
+      - name: Check dashboard framework versions
+        if: github.actor != 'dependabot[bot]'
+        run: uv run python dashboard/write_framework_versions.py
 
       - name: Run Playwright UI tests
         if: github.actor != 'dependabot[bot]'
