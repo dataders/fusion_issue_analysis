@@ -28,9 +28,7 @@ class GithubHelpersTests(unittest.TestCase):
                 raw_requests,
                 "post",
                 side_effect=[
-                    raw_requests.exceptions.ChunkedEncodingError(
-                        "Response ended prematurely"
-                    ),
+                    raw_requests.exceptions.ChunkedEncodingError("Response ended prematurely"),
                     FakeGraphqlResponse(),
                 ],
             ) as post,

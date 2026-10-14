@@ -43,9 +43,7 @@ def main():
     args = parser.parse_args()
 
     # GitHub token
-    access_token = os.environ.get("GITHUB_TOKEN") or os.environ.get(
-        "SOURCES__GITHUB__ACCESS_TOKEN"
-    )
+    access_token = os.environ.get("GITHUB_TOKEN") or os.environ.get("SOURCES__GITHUB__ACCESS_TOKEN")
     if not access_token:
         raise ValueError("Set GITHUB_TOKEN or SOURCES__GITHUB__ACCESS_TOKEN env var")
 

@@ -1,7 +1,7 @@
 [project]
 name = "fusion-issue-analysis"
 version = "0.1.0"
-description = "Add your description here"
+description = "Analytics pipeline and dashboard bakeoff for dbt Fusion (engine:v2) GitHub issues"
 requires-python = ">=3.12"
 dependencies = [
     "dbt-charts==0.5.0",
@@ -28,3 +28,17 @@ dev = [
     "nbclient>=0.10.4",
     "nbformat>=5.10.4",
 ]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+testpaths = ["tests", "extract/tests"]
+norecursedirs = ["tests/ui"]
+
+[tool.ruff]
+line-length = 120
+extend-exclude = ["dashboard/evidence", "dashboard/observable", "dashboard/mcp-app"]
+
+[tool.ruff.lint]
+select = ["E4", "E7", "E9", "F", "I", "UP", "B", "SIM"]
+# B008: dlt requires incremental() in defaults; SIM108/SIM117: readability.
+ignore = ["B008", "SIM108", "SIM117"]

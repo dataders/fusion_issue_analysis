@@ -81,14 +81,15 @@ Moving on.
 
 ### Layer 2 (data transport): this is where I'm stuck
 
-Of the nine variants in the bakeoff, eight do the same basic thing: at build time, run SQL against the warehouse, dump the results into a flat file (JSON, CSV, Parquet), and bake that file into the static site. Evidence.dev does something slightly different: SQL still runs at build time, but instead of embedding results directly in the page, it ships them as Parquet files alongside the HTML. Then DuckDB-WASM runs in the browser and lets you filter and aggregate over those Parquet files without touching a server. The data is still frozen at build time — but the browser-side query layer means interactive filtering without a roundtrip.
+Of the original nine variants in the bakeoff, eight do the same basic thing: at build time, run SQL against the warehouse, dump the results into a flat file (JSON, CSV, Parquet), and bake that file into the static site. Evidence.dev does something slightly different: SQL still runs at build time, but instead of embedding results directly in the page, it ships them as Parquet files alongside the HTML. Then DuckDB-WASM runs in the browser and lets you filter and aggregate over those Parquet files without touching a server. The data is still frozen at build time — but the browser-side query layer means interactive filtering without a roundtrip.
 
 | Mode | What happens | Frameworks in the bakeoff |
 |---|---|---|
 | Build-time bake | SQL runs in CI; results get written into the static artifact | Prefab, mviz, MDV, ggsql, Observable, Marimo, Quarto |
 | Build-time bake + browser-side querying | SQL runs at build time; browser queries frozen Parquet via DuckDB-WASM | Evidence.dev |
+| Render-time live query | No data in the artifact; the page queries MotherDuck from the browser on every load (MotherDuck WASM client + a read-only token) | DuckDB WASM, Mosaic, Observable (live), Semiotic |
 
-Both share the same fundamental problem: the data is frozen at build time. "Refresh the dashboard" means "rerun the build and redeploy."
+The first two share the same fundamental problem: the data is frozen at build time. "Refresh the dashboard" means "rerun the build and redeploy."
 
 That's fine for a lot of cases — a nightly build-and-deploy isn't that different from a nightly refresh in Tableau. I'm genuinely not sure where the line is between "frozen data is fine" and "you actually need live queries." It probably depends on how stale your data can be and whether users need to filter on dimensions that weren't pre-aggregated. I don't have strong opinions on this yet. The shape I keep sketching in my head, for an unfrozen version, is something like:
 
@@ -98,7 +99,9 @@ data source + dashboard infra → on dashboard load:
   2. render the dashboard into the page
 ```
 
-Which, if you squint, is just Looker or Mode or Power BI's "live query" mode. The HTML is "static" in the sense that the dashboard *spec* is static and versionable, but the data is fetched fresh every time. None of the nine frameworks I tried do this cleanly today; most are committed to one mode or the other, and the live-query path basically doesn't exist outside of full SaaS BI tools.
+Which, if you squint, is just Looker or Mode or Power BI's "live query" mode. The HTML is "static" in the sense that the dashboard *spec* is static and versionable, but the data is fetched fresh every time. None of the original nine frameworks I tried do this cleanly today; most are committed to one mode or the other.
+
+The "live" tabs I added later get about halfway there. DuckDB WASM, Mosaic, Observable (live), and Semiotic ship no data at all — on every page load they query the same dbt dashboard models in MotherDuck, straight from the browser. Fresh data, no rebuild. The catch is step 1: they don't use the *user's* creds. The deploy workflow bakes one shared, read-only MotherDuck token into the page, so anyone with the URL gets the same access. That's fine for public GitHub issues and a non-starter for anything private — which is really a Layer 7 problem wearing a Layer 2 costume.
 
 What I'd want from a "good" stack is the ability to start with build-time bake (because it's simple, cacheable, and the static artifacts are diffable), then promote individual queries to render-time when they actually need it — *without rewriting the dashboard*. That doesn't exist yet either.
 
@@ -203,6 +206,9 @@ If you only need a TL;DR for which framework fits which job, here's the table I 
 | Rich interactivity + bespoke viz if you accept Node | [Observable Framework](./?tab=observable) |
 | Narrative report or document feel | [Quarto](./?tab=quarto) |
 | SQL-first product dashboard with sharing, embeds, and reports if a server is acceptable | [Shaper](./?tab=shaper) |
+| Live data on every page load, no build step | [DuckDB WASM](./?tab=duckdb-wasm) or [Observable (live)](./?tab=observable-live) |
+| Cross-filtering (legend clicks, brushing) over live queries | [Mosaic](./?tab=mosaic) |
+| Off-the-shelf React chart components over live queries | [Semiotic](./?tab=semiotic) |
 
 ## What about modern BI tools?
 

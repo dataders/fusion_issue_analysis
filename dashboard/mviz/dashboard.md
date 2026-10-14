@@ -1,10 +1,10 @@
 ---
-title: dbt Fusion issue health
+title: dbt v2 issue health
 theme: light
 continuous: true
 ---
 
-# dbt Fusion issue health
+# dbt v2 issue health
 
 ```text size=[16,1] file=data/subtitle.json
 ```

@@ -1,0 +1,6 @@
+SELECT opened_28d || ' / ' || closed_28d AS value
+FROM {{ ref('headline_kpis') }}
+
+VISUALISE value AS value
+DRAW kpi
+LABEL title => 'Opened / closed (28d)'

@@ -44,7 +44,7 @@ const statusEl = document.getElementById("status")!;
 const sectionsEl = document.getElementById("sections")!;
 const refreshBtn = document.getElementById("refresh") as HTMLButtonElement;
 
-const app = new App({ name: "Fusion Issue Health", version: "0.1.0" });
+const app = new App({ name: "v2 Issue Health", version: "0.1.0" });
 
 // ---------- formatting ----------
 

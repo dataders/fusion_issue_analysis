@@ -99,8 +99,13 @@ def load_tiles() -> dict[str, Tile]:
     for path in sorted(QUERIES_DIR.glob("*.sql")):
         text = path.read_text()
         meta = {m.group(1).lower(): m.group(2) for m in map(HEADER_RE.match, text.splitlines()) if m}
-        t = Tile(name=path.stem, tile_id=meta["tile"], query=text,
-                 kind=meta.get("type", "chart").lower(), order=meta.get("order", ""))
+        t = Tile(
+            name=path.stem,
+            tile_id=meta["tile"],
+            query=text,
+            kind=meta.get("type", "chart").lower(),
+            order=meta.get("order", ""),
+        )
         loaded[t.tile_id] = t
     manifest_ids = [t["id"] for s in tiles.sections() for t in s["tiles"]]
     ordered = [QUERIES_DIR / f"{i:02d}_{tid}.sql" for i, tid in enumerate(manifest_ids, start=1)]
@@ -212,17 +217,25 @@ def _cell(col: str, v, row: dict) -> str:
 def _table_html(t: Tile) -> str:
     assert t.data is not None
     cols = [c for c in t.data.columns if c != "issue_url"]
-    right = {c for c, dt in t.data.schema.items()
-             if dt.is_numeric() and c not in ("issue_number", "epic_number", "pct_complete")}
+    right = {
+        c
+        for c, dt in t.data.schema.items()
+        if dt.is_numeric() and c not in ("issue_number", "epic_number", "pct_complete")
+    }
     head = "".join(f"<th>{'#' if c in ('issue_number', 'epic_number') else _humanize(c)}</th>" for c in cols)
     rows = [
-        "<tr>" + "".join(
-            ('<td class="num">' if c in right else "<td>") + _cell(c, row[c], row) + "</td>" for c in cols
-        ) + "</tr>"
+        "<tr>"
+        + "".join(('<td class="num">' if c in right else "<td>") + _cell(c, row[c], row) + "</td>" for c in cols)
+        + "</tr>"
         for row in t.data.iter_rows(named=True)
     ]
-    return ('<div class="table-wrap"><table class="data"><thead><tr>' + head + "</tr></thead><tbody>"
-            + "\n".join(rows) + "</tbody></table></div>")
+    return (
+        '<div class="table-wrap"><table class="data"><thead><tr>'
+        + head
+        + "</tr></thead><tbody>"
+        + "\n".join(rows)
+        + "</tbody></table></div>"
+    )
 
 
 def to_html(loaded: dict[str, Tile], db_url: str) -> str:
@@ -232,7 +245,7 @@ def to_html(loaded: dict[str, Tile], db_url: str) -> str:
         f"<h1>{html.escape(tiles.MANIFEST['title'])}</h1>",
         f'<p class="subtitle">{html.escape(tiles.MANIFEST["subtitle"])}</p>',
         f'<div class="source{" stale" if stale else ""}">{html.escape(tiles.freshness_note(meta))}'
-        f' · rendered from <code>{html.escape(db_url)}</code> via ggsql → Vega-Lite</div>',
+        f" · rendered from <code>{html.escape(db_url)}</code> via ggsql → Vega-Lite</div>",
     ]
     embeds: list[str] = []
     for section in tiles.sections():

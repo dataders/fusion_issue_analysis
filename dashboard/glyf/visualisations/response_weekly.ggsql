@@ -1,0 +1,11 @@
+SELECT week, pct_responded_48h
+FROM {{ ref('response_weekly') }}
+ORDER BY week
+
+VISUALISE week AS x, pct_responded_48h AS y
+DRAW line
+LABEL title => 'New issues answered within 48 hours'
+LABEL subtitle => 'By week opened; unanswered issues count as misses'
+LABEL x_title => 'Week opened'
+LABEL y_title => '% answered within 48h'
+INTERACT tooltip

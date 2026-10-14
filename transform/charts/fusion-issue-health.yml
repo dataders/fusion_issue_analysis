@@ -1,4 +1,4 @@
-title: "dbt Fusion issue health"
+title: "dbt v2 issue health"
 description: >
   Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted).
   Renders the tile contract in dashboard/tiles.yml, one thin query per dbt
@@ -6,10 +6,18 @@ description: >
 
 source: fusion_issues
 
+# Keep authored casing: title case turns "v2" into "V2" and doesn't match the
+# sentence-case headings every other framework in the bakeoff uses.
+style:
+  title: { font: { case: none } }
+  charts:
+    kpi: { label: { font: { case: none } } }
+    table: { header: { font: { case: none } } }
+
 queries:
   # dbt owns all metric logic. Each query is a direct model read ordered by
-  # the tile's tiles.yml `order_by`; scripts/build_dbt_charts_db.py parses
-  # these to materialize the serving DB, so keep them in this exact form.
+  # the tile's tiles.yml `order_by`, against the snapshot built by
+  # scripts/snapshot_dashboard_db.py (every dashboard model).
   dashboard_meta:
     description: One row — as-of date and staleness of the data.
     sql: select * from fusion_issues.main.dashboard_meta
@@ -325,13 +333,15 @@ rows:
   - data_as_of_kpi
 
   - title: "Where do things stand?"
-    cols:
-      - kpi_open_issues
-      - kpi_opened_closed
-      - kpi_awaiting_triage
-      - kpi_answered_48h
-      - kpi_median_close
-      - kpi_customer_reported
+    rows:
+      - cols:
+          - kpi_open_issues
+          - kpi_opened_closed
+          - kpi_awaiting_triage
+      - cols:
+          - kpi_answered_48h
+          - kpi_median_close
+          - kpi_customer_reported
 
   - title: "Is the backlog shrinking?"
     cols:

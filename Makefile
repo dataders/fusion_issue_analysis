@@ -2,18 +2,18 @@ PORT ?= 8081
 MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql chartjs mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
+.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql glyf chartjs tanstack mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
 ## serve        Build all static exports and open the bakeoff at localhost:PORT
 serve: build kill-server
 	@echo "Serving bakeoff at http://localhost:$(PORT)"
-	@cd dashboard && uv run python3 -m http.server $(PORT) &
+	@PORT=$(PORT) uv run python3 dashboard/serve_local.py &
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: data-freshness about prefab ggsql npm-dashboards mdv marimo quarto dac shaper dbt-charts chartjs
+build: data-freshness about prefab ggsql glyf npm-dashboards mdv marimo quarto dac shaper dbt-charts chartjs
 
 ## ui-test      Run Playwright checks against generated dashboard exports
 ui-test:
@@ -48,15 +48,24 @@ prefab:
 ggsql:
 	uv run dashboard/ggsql/build.py
 
+## glyf         Build Glyf dashboard
+glyf:
+	uv run dashboard/glyf/build.py
+
 ## chartjs     Bake the tile contract into one self-contained Chart.js page
 chartjs:
 	uv run python dashboard/chartjs/build.py
+
+## tanstack     Build TanStack Charts from the shared dbt snapshot
+tanstack:
+	npm --prefix dashboard/tanstack ci --prefer-offline --no-audit --no-fund --silent
+	npm run build:tanstack
 
 ## mviz         Generate data files and render mviz dashboard
 mviz:
 	npm run build:mviz
 
-## npm-dashboards Build mviz, Observable, and Evidence in one npm command
+## npm-dashboards Build TanStack Charts, mviz, Observable, and Evidence in one npm command
 npm-dashboards:
 	npm run build:npm-dashboards
 
@@ -93,7 +102,8 @@ shaper:
 
 ## dbt-charts   Render dbt charts dashboard to self-contained interactive HTML
 dbt-charts:
-	cd transform && uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
+	scripts/snapshot_dashboard_db.sh
+	scripts/render_dbt_charts.sh
 
 ## graphene-mcp  Start the FastMCP server for the Graphene dashboard (builds snapshot on start)
 graphene-mcp:
@@ -121,6 +131,7 @@ clean:
 	rm -f  dashboard/prefab/app.html dashboard/prefab/app_reactive.html dashboard/prefab/app_myspace.html dashboard/prefab/app_windows_2000.html
 	rm -f  dashboard/data_freshness.json
 	rm -f  dashboard/ggsql/index.html dashboard/chartjs/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
+	rm -rf dashboard/tanstack/data dashboard/tanstack/dist
 	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html
 	rm -rf dashboard/quarto/index_files dashboard/quarto/.quarto

@@ -944,6 +944,8 @@ HERE = os.path.dirname(__file__)
 DATA_DIR = os.path.join(HERE, "data")
 QUERIES_DIR = os.path.join(HERE, "queries")
 ...
+
+
 def load_sql(name: str) -> str:
     with open(os.path.join(QUERIES_DIR, f"{name}.sql")) as f:
         return f.read()
@@ -978,7 +980,7 @@ For the KPI split out from summary:
 ```python
 summary = query(con, "SELECT * FROM summary_kpis")[0]
 net_flow = summary["closed_4w"] - summary["opened_4w"]
-median_close = summary["rolling_median_close_days"]   # NOTE: column renamed from median_close_days
+median_close = summary["rolling_median_close_days"]  # NOTE: column renamed from median_close_days
 sla_pct = summary["pct_responded_48h"]
 ```
 
@@ -1017,9 +1019,15 @@ Replace the cell containing the hardcoded path and `load_sql` helper with two ce
 @app.cell
 def _():
     import os
+
     PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "../.."))
-    DB_PATH = "md:fusion_issues" if os.environ.get("MOTHERDUCK_TOKEN") else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
+    DB_PATH = (
+        "md:fusion_issues"
+        if os.environ.get("MOTHERDUCK_TOKEN")
+        else os.path.join(PROJECT_ROOT, "data", "fusion_issues.duckdb")
+    )
     return (DB_PATH, PROJECT_ROOT)
+
 
 @app.cell
 def _(DB_PATH, PROJECT_ROOT, duckdb):
@@ -1030,6 +1038,7 @@ def _(DB_PATH, PROJECT_ROOT, duckdb):
         df = con.execute(sql).fetchdf()
         con.close()
         return df
+
     summary = query("SELECT * FROM summary_kpis").iloc[0]
     return query, summary
 ```

@@ -34,7 +34,7 @@ URL_CELL = re.compile(r"<td>(https://github\.com/[^<]+/issues/(\d+))</td>")
 
 
 def recolor(segment: str, colors: list[str]) -> str:
-    mapping = dict(zip(MDV_PALETTE, colors))
+    mapping = dict(zip(MDV_PALETTE, colors, strict=False))
     return re.sub("|".join(map(re.escape, mapping)), lambda m: mapping[m.group(0)], segment)
 
 

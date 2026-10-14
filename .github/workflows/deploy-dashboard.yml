@@ -11,7 +11,8 @@ on:
       - 'dashboard/**'
       - 'transform/charts/**'
       - 'transform/dbt_charts.yml'
-      - 'scripts/build_dbt_charts_db.*'
+      - 'scripts/snapshot_dashboard_db.*'
+      - 'scripts/render_dbt_charts.sh'
       - 'package.json'
       - 'package-lock.json'
       - '.github/workflows/deploy-dashboard.yml'
@@ -43,45 +44,11 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Wait for any running extract
-        env:
-          GH_TOKEN: ${{ github.token }}
-        run: scripts/wait_for_extract.sh
-
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
+      - name: Set up dashboard build
+        uses: ./.github/actions/dashboard-setup
         with:
-          enable-cache: true
-          cache-dependency-glob: uv.lock
-
-      - name: Cache npm packages
-        uses: actions/cache@v4
-        with:
-          path: ~/.npm
-          key: ${{ runner.os }}-dashboard-npm-${{ hashFiles('package.json', 'package-lock.json', 'dashboard/observable/package-lock.json', 'dashboard/evidence/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-dashboard-npm-
-
-      - name: Cache MDV build
-        uses: actions/cache@v4
-        with:
-          path: ${{ runner.temp }}/fusion-mdv-cache
-          key: ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-${{ hashFiles('dashboard/mdv/build.sh') }}
-          restore-keys: |
-            ${{ runner.os }}-mdv-${{ env.MDV_SHA }}-
-
-      - name: Install dependencies
-        run: uv sync
-
-      - name: Install DAC
-        run: |
-          curl -fsSL https://raw.githubusercontent.com/bruin-data/dac/main/install.sh | bash -s -- -b "$HOME/.local/bin"
-          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
-
-      - name: Install DuckDB ADBC driver (MotherDuck 1.5.2 pin)
-        run: |
-          curl -LsSf https://dbc.columnar.tech/install.sh | sh
-          dbc install "duckdb=1.5.2"
+          github-token: ${{ github.token }}
+          motherduck-token: ${{ secrets.MOTHERDUCK_TOKEN }}
 
       - name: Render About page
         run: uv run python3 dashboard/render_about.py
@@ -94,14 +61,12 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-        run: |
-          scripts/build_dbt_charts_db.sh --source md:fusion_issues
-          cd transform
-          uv run dct validate charts/fusion-issue-health.yml --strict
-          uv run dct render charts/fusion-issue-health.yml --format html --output ../dashboard/dbt-charts/fusion-issue-health.html
+        run: scripts/render_dbt_charts.sh
 
       - name: Write data freshness metadata
         env:
+          # dlt load metadata lives only in MotherDuck, not in the dashboard snapshot.
+          FUSION_DB: md:fusion_issues
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
         run: uv run python dashboard/write_data_freshness.py
 
@@ -137,15 +102,20 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          FUSION_DB: md:fusion_issues
         run: uv run dashboard/ggsql/build.py
+
+      - name: Build Glyf dashboard
+        id: glyf
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: uv run dashboard/glyf/build.py
 
       - name: Build Chart.js dashboard
         id: chartjs
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          FUSION_DB: md:fusion_issues
         run: uv run python dashboard/chartjs/build.py
 
       - name: Export Marimo dashboard
@@ -173,7 +143,6 @@ jobs:
         continue-on-error: true
         env:
           MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
-          DAC_ENVIRONMENT: prod
           DAC_OUTPUT: dashboard/dac/build
         run: |
           uv run python dashboard/dac/render.py
@@ -206,16 +175,19 @@ jobs:
             echo "|-----------|--------|"
             icon() { case $1 in success) echo "✅";; failure) echo "❌ **failed**";; *) echo "⚠️ $1";; esac; }
             echo "| Prefab | $(icon '${{ steps.prefab.outcome }}') |"
-            echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| npm (TanStack Charts + mviz + Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
             echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
             echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
+            echo "| Glyf | $(icon '${{ steps.glyf.outcome }}') |"
             echo "| Chart.js | $(icon '${{ steps.chartjs.outcome }}') |"
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
             echo "| dbt charts | $(icon '${{ steps.dbt_charts.outcome }}') |"
+            echo "| Graphene | static export — committed, no build step |"
             echo "| DuckDB WASM (live) | static — no build step |"
             echo "| Mosaic (live) | static — no build step |"
+            echo "| Semiotic (live) | static — no build step |"
             echo "| Observable (live) | $(icon '${{ steps.npm.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           # Fail the job so GitHub sends a notification email, but only after
@@ -225,6 +197,7 @@ jobs:
             '${{ steps.npm.outcome }}' \
             '${{ steps.mdv.outcome }}' \
             '${{ steps.ggsql.outcome }}' \
+            '${{ steps.glyf.outcome }}' \
             '${{ steps.chartjs.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \

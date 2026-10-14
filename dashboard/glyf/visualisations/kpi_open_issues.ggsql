@@ -1,0 +1,6 @@
+SELECT open_issues AS value, open_issues_28d_ago AS compare
+FROM {{ ref('headline_kpis') }}
+
+VISUALISE value AS value, compare AS compare
+DRAW kpi
+LABEL title => 'Open issues'

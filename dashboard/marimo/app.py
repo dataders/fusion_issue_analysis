@@ -101,10 +101,12 @@ def _(mo, tiles):
     _meta = tiles.one(tiles.MANIFEST["meta"]["model"])  # dashboard_meta
     _stale = _meta["days_stale"] > tiles.MANIFEST["meta"]["stale_after_days"]
     _note = tiles.freshness_note(_meta)
-    mo.vstack([
-        mo.md(f"# {tiles.MANIFEST['title']} · Marimo\n{tiles.MANIFEST['subtitle']}"),
-        mo.callout(mo.md(_note), kind="warn") if _stale else mo.md(f"*{_note}*"),
-    ])
+    mo.vstack(
+        [
+            mo.md(f"# {tiles.MANIFEST['title']} · Marimo\n{tiles.MANIFEST['subtitle']}"),
+            mo.callout(mo.md(_note), kind="warn") if _stale else mo.md(f"*{_note}*"),
+        ]
+    )
     return
 
 
@@ -128,8 +130,10 @@ def _(section):
 def _(mo, tiles):
     # headline_kpis, formatted per tiles.yml (values, context lines, '—' for nulls)
     mo.hstack(
-        [mo.stat(label=k["label"], value=k["value"], caption=k["context"] or None, bordered=True)
-         for k in tiles.kpis()],
+        [
+            mo.stat(label=k["label"], value=k["value"], caption=k["context"] or None, bordered=True)
+            for k in tiles.kpis()
+        ],
         wrap=True,
         justify="start",
     )
@@ -171,17 +175,19 @@ def _(
 @app.cell
 def _(frame, go, heading, mo, style, tiles):
     _df = frame("weekly_flow")  # weekly_flow
-    _fig = go.Figure([
-        go.Bar(
-            x=_df["week"],
-            y=_df[_s],
-            name=tiles.label("flow", _s),
-            marker_color=tiles.color("flow", _s),
-            customdata=_df[["net_change"]],
-            hovertemplate="%{y} " + _s + " · net change %{customdata[0]:+}<extra></extra>",
-        )
-        for _s in tiles.tile("weekly_flow")["series"]
-    ])
+    _fig = go.Figure(
+        [
+            go.Bar(
+                x=_df["week"],
+                y=_df[_s],
+                name=tiles.label("flow", _s),
+                marker_color=tiles.color("flow", _s),
+                customdata=_df[["net_change"]],
+                hovertemplate="%{y} " + _s + " · net change %{customdata[0]:+}<extra></extra>",
+            )
+            for _s in tiles.tile("weekly_flow")["series"]
+        ]
+    )
     _fig.update_layout(barmode="group", xaxis_title="Week", yaxis_title="Issues")
     mo.vstack([heading("weekly_flow"), style(_fig)])
     return
@@ -239,14 +245,24 @@ def _(frame, heading, mo, px, style, tiles):
 
 @app.cell
 def _(heading, issue_table, mo):
-    mo.vstack([
-        heading("triage_queue"),
-        issue_table("triage_queue", {
-            "issue_number": "#", "title": "Title", "issue_category": "Type", "age_days": "Age (days)",
-            "days_idle": "Idle (days)", "reactions": "Reactions", "comments": "Comments",
-            "is_customer_reported": "Customer",
-        }),
-    ])
+    mo.vstack(
+        [
+            heading("triage_queue"),
+            issue_table(
+                "triage_queue",
+                {
+                    "issue_number": "#",
+                    "title": "Title",
+                    "issue_category": "Type",
+                    "age_days": "Age (days)",
+                    "days_idle": "Idle (days)",
+                    "reactions": "Reactions",
+                    "comments": "Comments",
+                    "is_customer_reported": "Customer",
+                },
+            ),
+        ]
+    )
     return
 
 
@@ -288,15 +304,23 @@ def _(heading, issue_table, mo, tiles):
             f"<span>{pct:.0f}%</span></div>"
         )
 
-    mo.vstack([
-        heading("epic_progress"),  # epic_progress
-        issue_table(
-            "epic_progress",
-            {"epic_number": "#", "title": "Epic", "child_closed": "Closed", "child_total": "Sub-issues",
-             "pct_complete": "% complete", "milestone_title": "Milestone"},
-            extra_format={"% complete": _pct_bar},
-        ),
-    ])
+    mo.vstack(
+        [
+            heading("epic_progress"),  # epic_progress
+            issue_table(
+                "epic_progress",
+                {
+                    "epic_number": "#",
+                    "title": "Epic",
+                    "child_closed": "Closed",
+                    "child_total": "Sub-issues",
+                    "pct_complete": "% complete",
+                    "milestone_title": "Milestone",
+                },
+                extra_format={"% complete": _pct_bar},
+            ),
+        ]
+    )
     return
 
 
@@ -308,14 +332,25 @@ def _(section):
 
 @app.cell
 def _(heading, issue_table, mo):
-    mo.vstack([
-        heading("top_requested"),
-        issue_table("top_requested", {
-            "issue_number": "#", "title": "Title", "issue_category": "Type", "areas": "Areas",
-            "triage_status": "Triage", "reactions": "Reactions", "comments": "Comments",
-            "age_days": "Age (days)", "is_customer_reported": "Customer",
-        }),
-    ])
+    mo.vstack(
+        [
+            heading("top_requested"),
+            issue_table(
+                "top_requested",
+                {
+                    "issue_number": "#",
+                    "title": "Title",
+                    "issue_category": "Type",
+                    "areas": "Areas",
+                    "triage_status": "Triage",
+                    "reactions": "Reactions",
+                    "comments": "Comments",
+                    "age_days": "Age (days)",
+                    "is_customer_reported": "Customer",
+                },
+            ),
+        ]
+    )
     return
 
 

@@ -1,0 +1,107 @@
+-- GitHub issues for dbt-labs/dbt-core labeled engine:v2, one row per issue (issue_number).
+-- Epics live in the same table; most measures exclude them via is_work_item.
+table fct_issues (
+  issue_dlt_id VARCHAR
+  issue_number BIGINT
+  issue_url VARCHAR
+  title VARCHAR
+  state VARCHAR -- 'OPEN' or 'CLOSED'
+  issue_category VARCHAR -- feature, bug, task, other, epic
+  triage_status VARCHAR -- awaiting_triage, needs_repro, has_repro, awaiting_release, triaged
+  reactions_total_count BIGINT
+  comments_total_count BIGINT
+  created_at DATETIME
+  updated_at DATETIME
+  closed_at DATETIME
+  hours_to_close BIGINT
+  hours_to_first_response BIGINT
+  is_hard_blocker BOOLEAN
+  is_customer_reported BOOLEAN
+
+  join many fct_issue_labels as labels on issue_dlt_id = labels.issue_dlt_id
+
+  issue_type: case issue_category when 'feature' then 'Feature' when 'bug' then 'Bug' when 'task' then 'Task' when 'epic' then 'Epic' else 'Other' end
+  issue_type_order: case issue_category when 'feature' then 1 when 'bug' then 2 when 'task' then 3 when 'other' then 4 else 5 end
+  days_idle: date_diff('day', updated_at, current_date)
+  customer_reported: case when is_customer_reported then 'Yes' else 'No' end
+  triage_label: case triage_status
+    when 'awaiting_triage' then 'Awaiting Triage'
+    when 'needs_repro' then 'Needs Repro'
+    when 'has_repro' then 'Has Repro'
+    when 'awaiting_release' then 'Fixed, Awaiting Release'
+    when 'triaged' then 'Triaged Backlog'
+    else 'Other'
+  end
+  triage_order: case triage_status when 'awaiting_triage' then 1 when 'needs_repro' then 2 when 'has_repro' then 3 when 'awaiting_release' then 4 else 5 end
+  is_open: state = 'OPEN'
+  is_work_item: issue_category <> 'epic'
+  created_week: date_trunc('week', created_at)
+  closed_week: date_trunc('week', closed_at)
+  age_days: date_diff('day', created_at, current_date)
+  age_bucket_order: case when age_days <= 7 then 1 when age_days <= 30 then 2 when age_days <= 90 then 3 when age_days <= 180 then 4 else 5 end
+  age_bucket: case when age_days <= 7 then '0-7d' when age_days <= 30 then '8-30d' when age_days <= 90 then '31-90d' when age_days <= 180 then '91-180d' else '180d+' end
+
+  issue_count: count(*)
+  open_issues: sum(case when is_open and is_work_item then 1 else 0 end)
+  opened: sum(case when is_work_item then 1 else 0 end)
+  closed: sum(case when state = 'CLOSED' and is_work_item then 1 else 0 end)
+  open_features: sum(case when is_open and issue_category = 'feature' then 1 else 0 end)
+  open_bugs: sum(case when is_open and issue_category = 'bug' then 1 else 0 end)
+  open_tasks: sum(case when is_open and issue_category = 'task' then 1 else 0 end)
+  open_other: sum(case when is_open and issue_category = 'other' then 1 else 0 end)
+  closed_28d: sum(case when closed_at >= current_date - interval 28 day and is_work_item then 1 else 0 end)
+  opened_28d: sum(case when created_at >= current_date - interval 28 day and is_work_item then 1 else 0 end)
+  median_days_to_close: median(case when is_work_item then hours_to_close end) / 24.0
+  answered_48h_rate: avg(case when hours_to_first_response <= 48 then 1.0 else 0.0 end) #ratio
+  total_reactions: sum(reactions_total_count)
+)
+
+-- One row per label on an issue. label_dimension is the prefix (area, adapter, ...), label_value the rest.
+table fct_issue_labels (
+  issue_dlt_id VARCHAR
+  label_name VARCHAR
+  label_dimension VARCHAR
+  label_value VARCHAR
+
+  -- Display name for a label value: known acronyms/brands get their proper casing, everything else is title-cased.
+  label_title: case label_value
+    when 'cicd' then 'CI/CD'
+    when 'vscode' then 'VS Code'
+    when 'catalog-v2' then 'Catalog V2'
+    when 'static-analysis' then 'Static Analysis'
+    when 'duckdb' then 'DuckDB'
+    when 'bigquery' then 'BigQuery'
+    when 'clickhouse' then 'ClickHouse'
+    when 'postgres' then 'Postgres'
+    else upper(left(label_value, 1)) || substr(replace(label_value, '-', ' '), 2)
+  end
+
+  join one fct_issues as issue on issue_dlt_id = issue.issue_dlt_id
+)
+
+-- Open sub-issues closed per open epic. Pre-aggregated in the dbt layer; one row per epic (epic_number).
+table epic_progress (
+  epic_number BIGINT
+  title VARCHAR
+  issue_url VARCHAR
+  child_total BIGINT
+  child_closed BIGINT
+  child_open BIGINT
+  pct_complete DOUBLE
+  milestone_title VARCHAR
+)
+
+-- Open issues per assignee and type, one row per (assignee_login, issue_category). Unassigned issues are included.
+table assignee_workload (
+  assignee_login VARCHAR
+  issue_category VARCHAR
+  issue_count BIGINT
+  assignee_total BIGINT
+
+  assignee: case when assignee_login = '(unassigned)' then 'Unassigned' else assignee_login end
+  features: sum(case when issue_category = 'feature' then issue_count else 0 end)
+  bugs: sum(case when issue_category = 'bug' then issue_count else 0 end)
+  tasks: sum(case when issue_category = 'task' then issue_count else 0 end)
+  other: sum(case when issue_category = 'other' then issue_count else 0 end)
+  total: sum(issue_count)
+)

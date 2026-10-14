@@ -1,6 +1,6 @@
 from pathlib import Path
-import markdown
 
+import markdown
 
 ROOT = Path(__file__).resolve().parent
 SOURCE = ROOT / "about.md"
@@ -19,7 +19,7 @@ def render() -> str:
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>About | dbt-fusion Issue Analysis</title>
+  <title>About | dbt v2 Issue Analysis</title>
   <style>
     * {{ box-sizing: border-box; }}
 

@@ -116,8 +116,11 @@ def kpis(row: dict | None = None) -> list[dict]:
     row = row or one(t["model"])
     row = {k: int(v) if isinstance(v, float) and v.is_integer() else v for k, v in row.items()}
     return [
-        {"label": k["label"], "value": _fill(k["value"], row),
-         "context": _fill(k["context"], row) if "context" in k else ""}
+        {
+            "label": k["label"],
+            "value": _fill(k["value"], row),
+            "context": _fill(k["context"], row) if "context" in k else "",
+        }
         for k in t["kpis"]
     ]
 

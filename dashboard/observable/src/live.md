@@ -1,5 +1,5 @@
 ---
-title: dbt Fusion issue health (live)
+title: dbt v2 issue health (live)
 toc: false
 ---
 

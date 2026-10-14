@@ -1,0 +1,60 @@
+name: fusion_issue_health
+title: dbt v2 issue health
+description: Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)
+
+layout:
+  columns: 3
+
+summary:
+  - "{{ freshness() }}"
+
+sections:
+  - title: Where do things stand?
+    columns: 3
+    items:
+      - chart: kpi_open_issues
+      - chart: kpi_opened_closed
+      - chart: kpi_awaiting_triage
+      - chart: kpi_answered_48h
+      - chart: kpi_days_to_close
+      - chart: kpi_customer_reported
+
+  - title: Is the backlog shrinking?
+    columns: 3
+    items:
+      - chart: backlog_weekly
+        width: 3
+      - chart: weekly_flow
+        width: 3
+
+  - title: Are we keeping up with triage?
+    columns: 3
+    items:
+      - chart: triage_pipeline
+        width: 3
+      - chart: response_weekly
+        width: 3
+      - chart: triage_queue
+        width: 3
+
+  - title: Where is the work?
+    columns: 3
+    items:
+      - chart: open_by_area
+        width: 3
+      - chart: open_by_adapter
+        width: 3
+
+  - title: How close are the epics?
+    columns: 3
+    items:
+      - chart: epic_progress
+        width: 3
+
+  - title: What should we work on, and who is on it?
+    columns: 3
+    items:
+      - chart: top_requested
+        width: 3
+      - chart: assignee_workload
+        width: 3

@@ -1,5 +1,5 @@
 ---
-title: dbt Fusion issue health
+title: dbt v2 issue health
 theme: minimal
 data:
   dashboard_meta: ./data/dashboard_meta.csv
@@ -22,7 +22,7 @@ styles:
     radius: small
 ---
 
-# dbt Fusion issue health
+# dbt v2 issue health
 
 Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)
 

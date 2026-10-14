@@ -1,0 +1,6 @@
+SELECT pct_responded_48h_28d AS value
+FROM {{ ref('headline_kpis') }}
+
+VISUALISE value AS value
+DRAW kpi
+LABEL title => 'Answered within 48h (28d, %)'

@@ -1,0 +1,6 @@
+kind: Features
+body: Add a manifest-driven Chart.js dashboard to the bakeoff, built in CI from the shared dbt tile contract.
+time: 2026-10-14T12:32:54.794556-04:00
+custom:
+    Author: dataders claude
+    Issue: N/A

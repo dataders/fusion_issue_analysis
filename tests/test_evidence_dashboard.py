@@ -3,7 +3,6 @@ import unittest
 from pathlib import Path
 from tempfile import TemporaryDirectory
 
-
 REPO_ROOT = Path(__file__).resolve().parents[1]
 PACKAGE_JSON = REPO_ROOT / "package.json"
 EVIDENCE_VALIDATE = REPO_ROOT / "dashboard" / "evidence" / "validate_build.py"

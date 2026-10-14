@@ -2,18 +2,22 @@ const { expect, test } = require("@playwright/test");
 
 const DASHBOARD_TABS = [
   { label: "dbt charts", tab: "dbt-charts", src: "dbt-charts/fusion-issue-health.html" },
+  { label: "Graphene", tab: "graphene", src: "graphene/index.html" },
   { label: "Prefab", tab: "prefab", src: "prefab/app.html" },
   { label: "Evidence.dev", tab: "evidence", src: "evidence/build/" },
   { label: "DAC", tab: "dac", src: "dac/build/" },
   { label: "ggsql + Vega-Lite", tab: "ggsql", src: "ggsql/index.html" },
+  { label: "Glyf", tab: "glyf", src: "glyf/build/site/dashboards/fusion_issue_health.html" },
   { label: "mviz", tab: "mviz", src: "mviz/index.html" },
   { label: "MDV", tab: "mdv", src: "mdv/index.html" },
+  { label: "TanStack Charts", tab: "tanstack", src: "tanstack/dist/" },
   { label: "Observable", tab: "observable", src: "observable/dist/" },
   { label: "Marimo", tab: "marimo", src: "marimo.html" },
   { label: "Quarto", tab: "quarto", src: "quarto/index.html" },
   { label: "Shaper", tab: "shaper", src: "shaper/index.html" },
   { label: "DuckDB WASM", tab: "duckdb-wasm", src: "duckdb-wasm/index.html" },
   { label: "Mosaic", tab: "mosaic", src: "mosaic/index.html" },
+  { label: "Semiotic", tab: "semiotic", src: "semiotic/index.html" },
   { label: "Observable (live)", tab: "observable-live", src: "observable/dist/live.html" },
   { label: "About", tab: "about", src: "about.html" },
 ];
@@ -75,7 +79,7 @@ test.describe("dashboard bakeoff shell", () => {
     await page.goto("/index.html");
 
     await expect(page.locator(".header-title")).toHaveText(
-      "dbt-fusion Issue Analysis — Visualization Framework Bakeoff",
+      "dbt v2 Issue Analysis — Visualization Framework Bakeoff",
     );
     await expect(page.locator("nav.main-tabs")).toHaveAttribute("aria-label", "Dashboard framework");
 

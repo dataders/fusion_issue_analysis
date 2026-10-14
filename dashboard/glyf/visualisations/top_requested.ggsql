@@ -1,0 +1,9 @@
+SELECT issue_number, title AS issue, issue_category, areas, triage_status, reactions, comments, age_days, is_customer_reported
+FROM {{ ref('top_requested') }}
+ORDER BY reactions DESC, comments DESC, issue_number
+
+VISUALISE *
+DRAW table
+LABEL title => 'Most-requested open issues'
+LABEL subtitle => 'Ranked by reactions, then comments'
+CONFIG height => 420

@@ -1,4 +1,4 @@
-# Fusion Issue Health MCP App
+# v2 Issue Health MCP App
 
 Local-only MCP Apps spike for the dashboard bakeoff. The point is to test the
 Layer 7 question from the About page: an agent can open an issue-health command
@@ -47,7 +47,7 @@ the absolute path to your checkout:
 ```
 
 The `start:stdio` script runs `tsx main.ts --stdio`, which is the local
-transport Claude Desktop expects. Then ask Claude to show the Fusion issue
+transport Claude Desktop expects. Then ask Claude to show the v2 issue
 health dashboard. For HTTP transport, `make mcp-app-serve` starts the server at
 `http://127.0.0.1:3001/mcp` by default. Set `MCP_APP_HOST` only when you
 intentionally want to bind another interface.

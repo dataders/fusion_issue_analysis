@@ -17,10 +17,12 @@ MODELS_DIR = ROOT / "transform" / "models" / "dashboard"
 # Directories are scanned for SOURCE_SUFFIXES; list .html files explicitly.
 FRAMEWORKS = {
     "prefab": ["dashboard/prefab/app.py"],
-    "prefab-reactive": ["dashboard/prefab/app_reactive.py"],
-    "prefab-myspace": ["dashboard/prefab/app_myspace.py"],
-    "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py"],
+    "prefab-reactive": ["dashboard/prefab/app_reactive.py", "dashboard/prefab/prefab_common.py"],
+    "prefab-myspace": ["dashboard/prefab/app_myspace.py", "dashboard/prefab/prefab_common.py"],
+    "prefab-windows-2000": ["dashboard/prefab/app_windows_2000.py", "dashboard/prefab/prefab_common.py"],
     "ggsql": ["dashboard/ggsql"],
+    "glyf": ["dashboard/glyf"],
+    "tanstack": ["dashboard/tanstack/build_data.py", "dashboard/tanstack/src"],
     "mviz": ["dashboard/mviz"],
     "mdv": ["dashboard/mdv"],
     "observable": ["dashboard/observable/src/index.md", "dashboard/observable/src/data"],
@@ -34,13 +36,14 @@ FRAMEWORKS = {
     "duckdb-wasm": ["dashboard/duckdb-wasm/index.html"],
     "mosaic": ["dashboard/mosaic/index.html"],
     "chartjs": ["dashboard/chartjs/build.py", "dashboard/chartjs/template.html"],
+    "semiotic": ["dashboard/semiotic/index.html"],
     "mcp-app": ["dashboard/mcp-app/build_data.py", "dashboard/mcp-app/src"],
 }
-SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", ".mdv", ".sh"}
+SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", ".mdv", ".sh", ".ggsql"}
 NON_TILE_MODELS = {"metric_avg_time_to_close", "metric_open_issue_count"}
 # Renderers that loop over tiles.yml instead of naming each model. They get
 # every tile by construction, so they're checked for the loop instead.
-MANIFEST_DRIVEN = {"prefab": "tiles.sections()", "chartjs": "build_payload"}
+MANIFEST_DRIVEN = {"prefab": "tiles.sections()", "tanstack": "tiles.sections()", "chartjs": "build_payload"}
 
 
 def tile_models() -> list[str]:
@@ -54,9 +57,14 @@ def framework_source(paths: list[str]) -> str:
     text = []
     for rel in paths:
         path = ROOT / rel
-        files = [path] if path.is_file() else sorted(
-            p for p in path.rglob("*")
-            if p.is_file() and p.suffix in SOURCE_SUFFIXES and "node_modules" not in p.parts
+        files = (
+            [path]
+            if path.is_file()
+            else sorted(
+                p
+                for p in path.rglob("*")
+                if p.is_file() and p.suffix in SOURCE_SUFFIXES and "node_modules" not in p.parts
+            )
         )
         assert files, f"{rel} has no source files"
         text += [f.read_text() for f in files]
@@ -82,6 +90,7 @@ def test_exposure_covers_every_tile_model():
 
 def test_db_path_precedence(monkeypatch):
     import sys
+
     sys.path.insert(0, str(ROOT / "dashboard"))
     import tiles
 

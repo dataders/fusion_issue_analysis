@@ -1,0 +1,6 @@
+SELECT awaiting_triage AS value
+FROM {{ ref('headline_kpis') }}
+
+VISUALISE value AS value
+DRAW kpi
+LABEL title => 'Awaiting triage'

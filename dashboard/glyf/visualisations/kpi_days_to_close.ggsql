@@ -1,0 +1,6 @@
+SELECT median_days_to_close_28d AS value
+FROM {{ ref('headline_kpis') }}
+
+VISUALISE value AS value
+DRAW kpi
+LABEL title => 'Median days to close (28d)'

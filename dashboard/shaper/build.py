@@ -1,9 +1,8 @@
 from __future__ import annotations
 
+import re
 from html import escape
 from pathlib import Path
-import re
-
 
 HERE = Path(__file__).resolve().parent
 SOURCE = HERE / "fusion-issue-health.dashboard.sql"
@@ -35,7 +34,7 @@ def render_page(sql: str) -> str:
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shaper | dbt Fusion issue health</title>
+  <title>Shaper | dbt v2 issue health</title>
   <style>
     * {{ box-sizing: border-box; }}
     body {{

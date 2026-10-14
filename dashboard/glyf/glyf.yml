@@ -1,0 +1,6 @@
+visualisations_path: visualisations
+dashboards_path: dashboards
+dashboard:
+  theme: light
+  show_compiled_sql: true
+site_path: build/site
