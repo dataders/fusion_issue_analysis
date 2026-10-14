@@ -295,7 +295,7 @@
       <div id="compare-tools" class="compare-tools" hidden>
         <button id="add-pane">+ Add third</button>
         <label id="layout-control">Layout <select id="layout"><option value="side">Side by side</option><option value="stacked">Stacked</option></select></label>
-        <label title="Matches relative page position, not individual charts. Available for dashboards that scroll their page."><input id="link-scroll" type="checkbox"> Link scroll</label>
+        <label title="Keeps matching sections and charts together, even when their heights differ. Uses page position when no matching headings are available."><input id="link-scroll" type="checkbox"> Link scroll</label>
         <button id="share-comparison">Copy comparison link</button>
         <span id="share-status" role="status"></span>
         <input id="share-url" aria-label="Comparison link" readonly hidden>
@@ -659,35 +659,136 @@
       }
     });
 
-    // Same-origin page scrolling only. No chart filters or data are modified.
+    // Match shared tile IDs or visible headings. Measure on each scroll so responsive
+    // layouts, async chart rendering and table pagination need no fixed offsets.
     const scrollTargets = new WeakMap();
+    const attachedDocuments = new WeakSet();
+    const anchorSelector = 'h1,h2,h3,h4,h5,h6,[role="heading"],[data-slot="card-title"],.chart-title,[data-tile],[data-tile-id],[data-section]';
+    let lastScrollSource = frame;
+    let pendingScroll = null;
+    let scrollRequest = 0;
+    const normalizeAnchor = text => text.normalize('NFKC').toLowerCase().replace(/[^\p{L}\p{N}]+/gu, ' ').trim();
+
+    function scrollSurface(doc) {
+      const pageRoot = doc.scrollingElement;
+      const roots = new Map();
+      const anchors = [];
+      for (const element of doc.querySelectorAll(anchorSelector)) {
+        if (!element.getClientRects().length || doc.defaultView.getComputedStyle(element).visibility === 'hidden') continue;
+        let root = element.parentElement;
+        while (root && root !== pageRoot) {
+          if (root.scrollHeight > root.clientHeight + 1 && /^(auto|scroll)$/.test(doc.defaultView.getComputedStyle(root).overflowY)) break;
+          root = root.parentElement;
+        }
+        root ||= pageRoot;
+        const keys = ['data-tile', 'data-tile-id', 'data-section']
+          .map(name => element.getAttribute(name)).filter(Boolean).map(value => 'id:' + normalizeAnchor(value));
+        // Container text includes the whole tile, so only use short title text.
+        const text = element.textContent.trim();
+        if (text && text.length < 160) keys.push('text:' + normalizeAnchor(text));
+        if (!keys.length) continue;
+        roots.set(root, (roots.get(root) || 0) + 1);
+        anchors.push({ element, root, keys });
+      }
+      // A dashboard may scroll its main panel instead of the document. Selecting
+      // the panel containing most headings avoids synchronizing table scrollbars.
+      const root = [...roots].sort((a, b) => b[1] - a[1])[0]?.[0] || pageRoot;
+      if (!root) return null;
+      const origin = root === pageRoot ? 0 : root.getBoundingClientRect().top + root.clientTop;
+      return {
+        root,
+        range: Math.max(0, root.scrollHeight - root.clientHeight),
+        anchors: anchors.filter(anchor => anchor.root === root).map(anchor => ({
+          keys: anchor.keys,
+          top: anchor.element.getBoundingClientRect().top - origin + root.scrollTop - 24,
+        })),
+      };
+    }
+
+    function matchingScrollTop(source, target) {
+      const targetAnchors = new Map();
+      for (const anchor of target.anchors) {
+        for (const key of anchor.keys) if (!targetAnchors.has(key)) targetAnchors.set(key, anchor.top);
+      }
+      const pairs = source.anchors.flatMap(anchor => {
+        const key = anchor.keys.find(key => targetAnchors.has(key));
+        return key ? [{ from: anchor.top, to: targetAnchors.get(key) }] : [];
+      }).sort((a, b) => a.from - b.from);
+      const points = [{ from: 0, to: 0 }];
+      for (const pair of pairs) {
+        const previous = points[points.length - 1];
+        // Side-by-side tiles can share a row or change order at breakpoints.
+        // Allow a stationary target for tiles sharing a row, but never jump backwards.
+        if (pair.from > previous.from + 1 && pair.to >= previous.to - 1 &&
+            pair.from < source.range && pair.to < target.range) points.push({ ...pair, to: Math.max(previous.to, pair.to) });
+      }
+      points.push({ from: source.range, to: target.range });
+      const position = Math.max(0, Math.min(source.range, source.root.scrollTop));
+      const nextIndex = points.findIndex((point, index) => index > 0 && point.from >= position);
+      const next = points[nextIndex];
+      const previous = points[nextIndex - 1];
+      const fraction = (position - previous.from) / (next.from - previous.from);
+      return previous.to + fraction * (next.to - previous.to);
+    }
+
+    function syncScroll(iframe) {
+      if (!document.getElementById('link-scroll').checked || !comparisons.length) return;
+      try {
+        const source = scrollSurface(iframe.contentDocument);
+        if (!source || source.range <= 0) return;
+        for (const other of panes.querySelectorAll('iframe')) {
+          if (other === iframe) continue;
+          try {
+            const target = scrollSurface(other.contentDocument);
+            if (!target || target.range <= 0) continue;
+            const top = Math.round(matchingScrollTop(source, target));
+            scrollTargets.set(target.root, top);
+            target.root.scrollTo({ top, behavior: 'instant' });
+            scrollTargets.set(target.root, target.root.scrollTop);
+          } catch { /* External dashboards keep independent scrolling. */ }
+        }
+      } catch { /* A pane may have navigated while the animation frame waited. */ }
+    }
+
+    function queueScroll(iframe) {
+      pendingScroll = iframe;
+      if (scrollRequest) return;
+      scrollRequest = requestAnimationFrame(() => {
+        scrollRequest = 0;
+        syncScroll(pendingScroll);
+      });
+    }
+
     function attachScroll(iframe) {
       try {
         const doc = iframe.contentDocument;
-        if (!doc) return;
-        doc.addEventListener('scroll', () => {
+        if (!doc || attachedDocuments.has(doc)) return;
+        attachedDocuments.add(doc);
+        const takeControl = () => {
+          const surface = scrollSurface(doc);
+          if (surface) scrollTargets.delete(surface.root);
+          lastScrollSource = iframe;
+        };
+        for (const event of ['wheel', 'touchstart', 'pointerdown', 'keydown']) {
+          doc.addEventListener(event, takeControl, { passive: true, capture: true });
+        }
+        doc.addEventListener('scroll', event => {
           if (!document.getElementById('link-scroll').checked || !comparisons.length) return;
-          const root = doc.scrollingElement;
-          if (!root) return;
-          const expected = scrollTargets.get(iframe);
-          if (expected !== undefined && Math.abs(root.scrollTop - expected) < 2) return;
-          scrollTargets.delete(iframe);
-          const range = root.scrollHeight - root.clientHeight;
-          if (range <= 0) return;
-          const ratio = root.scrollTop / range;
-          panes.querySelectorAll('iframe').forEach(other => {
-            if (other === iframe) return;
-            try {
-              const target = other.contentDocument?.scrollingElement;
-              if (!target) return;
-              const top = Math.round(ratio * (target.scrollHeight - target.clientHeight));
-              scrollTargets.set(other, top);
-              target.scrollTop = top;
-            } catch { /* External dashboards keep independent scrolling. */ }
-          });
-        }, { passive: true });
+          const surface = scrollSurface(doc);
+          if (!surface) return;
+          const scrolled = event.target === doc ? doc.scrollingElement : event.target;
+          if (scrolled !== surface.root) return;
+          const expected = scrollTargets.get(surface.root);
+          if (expected !== undefined && Math.abs(surface.root.scrollTop - expected) < 2) return;
+          scrollTargets.delete(surface.root);
+          lastScrollSource = iframe;
+          queueScroll(iframe);
+        }, { passive: true, capture: true });
       } catch { /* External dashboards keep independent scrolling. */ }
     }
+    document.getElementById('link-scroll').addEventListener('change', () => {
+      if (document.getElementById('link-scroll').checked) queueScroll(lastScrollSource.isConnected ? lastScrollSource : frame);
+    });
     frame.addEventListener('load', () => attachScroll(frame));
     attachScroll(frame);
     loadTabFromHash();

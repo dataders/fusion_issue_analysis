@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Shaper | dbt Fusion issue health</title>
+  <title>Shaper | dbt v2 issue health</title>
   <style>
     * { box-sizing: border-box; }
     body {
@@ -217,7 +217,7 @@
 -- the tile&#x27;s order_by. Shaper-specific work is limited to type casts, labels,
 -- palette colors (tiles.yml palette, via ::COLOR) and light unpivots.
 
-SELECT &#x27;dbt Fusion issue health&#x27;::SECTION,
+SELECT &#x27;dbt v2 issue health&#x27;::SECTION,
   &#x27;Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)&#x27;::SUBTITLE;
 
 -- Freshness banner (dashboard_meta). The warning row only exists when
@@ -423,7 +423,7 @@ FROM top_requested
 ORDER BY reactions DESC, comments DESC;
 
 SELECT &#x27;Open issues by assignee&#x27;::LABEL,
-  &#x27;Top 15, including unassigned&#x27;::SUBTITLE;
+  &#x27;Top 15, excluding unassigned&#x27;::SUBTITLE;
 
 SELECT
   assignee_login::YAXIS AS &quot;Assignee&quot;,

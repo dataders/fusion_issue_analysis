@@ -6,7 +6,7 @@ test.beforeEach(async ({ page }) => {
   await page.route('**/*', async route => {
     const request = route.request();
     if (request.isNavigationRequest() && request.frame().parentFrame()) {
-      return route.fulfill({ contentType: 'text/html', headers: { 'Cross-Origin-Embedder-Policy': 'credentialless' }, body: '<!doctype html><html><body style="margin:0;height:4000px"><h1>Dashboard fixture</h1><input aria-label="Dashboard filter"></body></html>' });
+      return route.fulfill({ contentType: 'text/html', headers: { 'Cross-Origin-Embedder-Policy': 'credentialless' }, body: `<!doctype html><html><body style="margin:0;height:${request.url().includes('tanstack') ? 6000 : 4000}px"><h1>Dashboard fixture</h1><input aria-label="Dashboard filter"></body></html>` });
     }
     if (new URL(request.url()).hostname !== '127.0.0.1') return route.abort();
     return route.continue();
@@ -113,4 +113,96 @@ test('copy comparison link offers a usable fallback when clipboard is unavailabl
   await page.getByRole('button', { name: 'Copy comparison link' }).click();
   await expect(page.getByRole('textbox', { name: 'Comparison link', exact: true })).toHaveValue(page.url());
   await expect(page.getByRole('status')).toHaveText('Copy the selected link');
+});
+
+// Unequal KPI and chart heights mirror the Prefab/mviz comparison. Prefab uses
+// card-title divs, mviz uses headings; case and punctuation are presentation.
+async function semanticFixtures(page, { nested = false } = {}) {
+  await page.route('**/*', async route => {
+    if (!route.request().isNavigationRequest() || !route.request().frame().parentFrame()) return route.fallback();
+    const index = route.request().url().includes('chartjs') ? 0 : route.request().url().includes('tanstack') ? 1 : 2;
+    const positions = [[1100, 1700, 2700], [350, 950, 1900], [650, 1200, 2200]][index];
+    const html = `<style>html,body{margin:0}${nested ? 'body{overflow:hidden}main{height:100vh;overflow:auto;position:relative}' : ''}
+      .content{height:5000px;position:relative}h2,[data-slot]{position:absolute;margin:0;font-size:20px}</style>
+      <main><div class="content"><h2 style="top:40px">Where do things stand?</h2>
+      <h2 id="backlog" style="top:${positions[0]}px">${index ? 'IS THE BACKLOG SHRINKING?' : 'Is the backlog shrinking?'}</h2>
+      <${index ? 'h2' : 'div data-slot="card-title"'} id="chart" style="top:${positions[1]}px">Open issues over time</${index ? 'h2' : 'div'}>
+      <h2 id="triage" style="top:${positions[2]}px">Are we keeping up with triage?</h2>
+      <div id="table" style="position:absolute;top:3000px;height:100px;overflow:auto"><div style="height:900px">Independent table rows</div></div>
+      </div></main>`;
+    await route.fulfill({ contentType: 'text/html', headers: { 'Cross-Origin-Embedder-Policy': 'credentialless' }, body: html });
+  });
+}
+
+async function scrollAnchor(frame, id, offset = 24, nested = false) {
+  await frame.evaluate((iframe, { id, offset, nested }) => {
+    const doc = iframe.contentDocument;
+    const root = nested ? doc.querySelector('main') : doc.scrollingElement;
+    root.scrollTop = doc.getElementById(id).offsetTop - offset;
+  }, { id, offset, nested });
+}
+
+async function expectAligned(page, id, offset = 24) {
+  await expect.poll(() => page.locator('#panes iframe').evaluateAll((frames, { id, offset }) =>
+    Math.max(...frames.map(frame => Math.abs(frame.contentDocument.getElementById(id).getBoundingClientRect().top - offset))),
+  { id, offset })).toBeLessThan(2);
+}
+
+test('linked scroll aligns real-style section and chart titles in both directions across three panes', async ({ page }) => {
+  await semanticFixtures(page);
+  await page.goto('/index.html?tab=chartjs&compare=tanstack,mviz&scroll=linked');
+  await expect(page.frameLocator('#frame').locator('#backlog')).toBeAttached();
+  await expect(page.locator('#panes iframe')).toHaveCount(3);
+  await expect(page.frameLocator('.comparison-pane iframe').first().locator('#backlog')).toBeAttached();
+  await scrollAnchor(page.locator('#frame'), 'backlog');
+  await expectAligned(page, 'backlog');
+  // Halfway between matching titles stays halfway despite different spacing.
+  await page.locator('#frame').evaluate(frame => { frame.contentDocument.scrollingElement.scrollTop = 1376; });
+  await expect.poll(() => page.locator('.comparison-pane iframe').first().evaluate(frame => frame.contentDocument.scrollingElement.scrollTop)).toBe(626);
+  await expect.poll(() => page.locator('.comparison-pane iframe').last().evaluate(frame => frame.contentDocument.scrollingElement.scrollTop)).toBe(901);
+  await scrollAnchor(page.locator('#frame'), 'chart');
+  await expectAligned(page, 'chart');
+  // A follower can immediately become the driver, without a timeout or bounce.
+  await scrollAnchor(page.locator('.comparison-pane iframe').last(), 'triage');
+  await expectAligned(page, 'triage');
+  await page.waitForTimeout(200);
+  await expectAligned(page, 'triage');
+  // Re-measure after a responsive/content height change.
+  await page.locator('#frame').evaluate(frame => { frame.contentDocument.getElementById('chart').style.top = '1900px'; });
+  await scrollAnchor(page.locator('#frame'), 'chart');
+  await expectAligned(page, 'chart');
+});
+
+test('linked scroll supports a main scrolling panel and leaves nested tables independent', async ({ page }) => {
+  await semanticFixtures(page, { nested: true });
+  await page.goto('/index.html?tab=chartjs&compare=tanstack&scroll=linked');
+  await expect(page.frameLocator('.comparison-pane iframe').locator('#backlog')).toBeAttached();
+  await scrollAnchor(page.locator('#frame'), 'backlog', 24, true);
+  await expectAligned(page, 'backlog');
+  await page.locator('#frame').evaluate(frame => { frame.contentDocument.getElementById('table').scrollTop = 200; });
+  await page.waitForTimeout(100);
+  await expectAligned(page, 'backlog');
+  await expect.poll(() => page.locator('.comparison-pane iframe').evaluate(frame => frame.contentDocument.getElementById('table').scrollTop)).toBe(0);
+});
+
+test('enabling linked scroll immediately aligns the current chart', async ({ page }) => {
+  await semanticFixtures(page);
+  await page.goto('/index.html?tab=chartjs&compare=tanstack');
+  await expect(page.frameLocator('.comparison-pane iframe').locator('#chart')).toBeAttached();
+  await scrollAnchor(page.locator('#frame'), 'chart');
+  await page.getByLabel('Link scroll').check();
+  await expectAligned(page, 'chart');
+});
+
+
+test('stacked source charts can align with charts sharing one row in the other framework', async ({ page }) => {
+  await semanticFixtures(page);
+  await page.goto('/index.html?tab=chartjs&compare=tanstack&scroll=linked');
+  await expect(page.frameLocator('.comparison-pane iframe').locator('#chart')).toBeAttached();
+  await page.locator('.comparison-pane iframe').evaluate(frame => {
+    const doc = frame.contentDocument;
+    doc.getElementById('chart').style.top = doc.getElementById('backlog').style.top;
+  });
+  await scrollAnchor(page.locator('#frame'), 'chart');
+  await expectAligned(page, 'chart');
 });
