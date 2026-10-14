@@ -244,18 +244,9 @@ limit 15
 ```gsql assignees
 from assignee_workload
 select assignee, features, bugs, tasks, other, total
-where assignee_login <> '(unassigned)'
 order by total desc
 limit 15
 ```
-
-```gsql unassigned
-from assignee_workload
-select total
-where assignee_login = '(unassigned)'
-```
-
-<div class="callout"><strong><Value data=unassigned column=total /></strong> open issues are unassigned. The chart below shows the 15 busiest assignees.</div>
 
 <ECharts data=assignees height=420px>
     title: {text: 'Open issues by assignee (top 15, excluding unassigned)'},

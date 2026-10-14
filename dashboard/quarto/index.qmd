@@ -300,7 +300,7 @@ issue_table("top_requested", {
 ```
 
 ### Open issues by assignee
-[Top 15, including unassigned]{.tile-subtitle}
+[Top 15, excluding unassigned]{.tile-subtitle}
 
 ```{python}
 category_bar("assignee_workload", "assignee_login", "assignee_total")

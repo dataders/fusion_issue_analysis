@@ -8,6 +8,7 @@ const DASHBOARD_TABS = [
   { label: "DAC", tab: "dac", src: "dac/build/" },
   { label: "ggsql + Vega-Lite", tab: "ggsql", src: "ggsql/index.html" },
   { label: "Glyf", tab: "glyf", src: "glyf/build/site/dashboards/fusion_issue_health.html" },
+  { label: "Chart.js", tab: "chartjs", src: "chartjs/index.html" },
   { label: "mviz", tab: "mviz", src: "mviz/index.html" },
   { label: "MDV", tab: "mdv", src: "mdv/index.html" },
   { label: "TanStack Charts", tab: "tanstack", src: "tanstack/dist/" },
@@ -97,6 +98,7 @@ test.describe("dashboard bakeoff shell", () => {
       await expectRouteToExist(request, dashboard.src);
 
       const tab = page.locator(`.main-tabs button[data-tab="${dashboard.tab}"]`);
+      await page.getByRole("button", { name: "Choose dashboard framework" }).click();
       await tab.click();
 
       await expect(tab).toHaveClass(/active/);
@@ -134,7 +136,8 @@ test.describe("dashboard bakeoff shell", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/index.html?tab=quarto#quarto");
 
-    await expect(page.locator(".main-tabs")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Choose dashboard framework" })).toBeVisible();
+    await expect(page.locator(".main-tabs")).toBeHidden();
     await expect(page.locator(".main-tabs button[data-tab='quarto']")).toHaveClass(/active/);
     await expect(page.locator("#frame")).toBeVisible();
 
@@ -168,6 +171,7 @@ test.describe("dashboard UI controls", () => {
     await expect(page).toHaveURL(/[?&]tab=prefab/);
     await expect(page).toHaveURL(/[?&]theme=reactive/);
 
+    await page.getByRole("button", { name: "Choose dashboard framework" }).click();
     await page.locator('.main-tabs button[data-tab="mviz"]').click();
     await expect(page.locator("#prefab-themes")).toBeHidden();
     await expect(page.locator("#frame")).toHaveAttribute("src", /mviz\/index\.html$/);
@@ -196,6 +200,7 @@ test.describe("dashboard UI controls", () => {
     await expect(frame.getByText(/Showing all types/).first()).toBeVisible();
 
     await expectRouteToExist(request, "evidence/build/");
+    await page.getByRole("button", { name: "Choose dashboard framework" }).click();
     await page.locator('.main-tabs button[data-tab="evidence"]').click();
     await expectFrameToHaveText(page);
 

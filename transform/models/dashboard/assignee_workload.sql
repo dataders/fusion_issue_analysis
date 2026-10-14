@@ -1,7 +1,7 @@
 {#
   Q: Who is carrying the open work?
   Top 15 assignees by open non-epic issues, by type. Long format.
-  '(unassigned)' is included so the gap is visible.
+  Issues without an assignee are excluded before ranking.
 #}
 
 with open_issues as (
@@ -11,9 +11,10 @@ with open_issues as (
 ),
 
 assigned as (
-    select o.issue_category, coalesce(a.assignee_login, '(unassigned)') as assignee_login
+    select o.issue_category, a.assignee_login
     from open_issues o
-    left join {{ ref('stg_issue_assignees') }} a using (issue_dlt_id)
+    inner join {{ ref('stg_issue_assignees') }} a using (issue_dlt_id)
+    where a.assignee_login is not null
 ),
 
 ranked as (

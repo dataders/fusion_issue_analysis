@@ -23,11 +23,14 @@
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
+    html { color-scheme: dark; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
       display: flex;
       flex-direction: column;
       height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       background: #111;
     }
@@ -51,7 +54,7 @@
     .header-title {
       font-size: 0.78rem;
       font-weight: 400;
-      color: #666;
+      color: #aaa;
       letter-spacing: 0.04em;
       text-transform: uppercase;
       min-width: 0;
@@ -65,7 +68,7 @@
       align-items: center;
       gap: 10px;
       flex: 0 0 auto;
-      color: #777;
+      color: #aaa;
       font-size: 0.76rem;
       white-space: nowrap;
     }
@@ -94,67 +97,49 @@
       height: 16px;
     }
 
-    nav {
-      display: flex;
-      gap: 2px;
-      overflow-x: auto;
-      scrollbar-width: thin;
+    button, select, input { font: inherit; }
+    button, select { cursor: pointer; }
+    button:focus-visible, select:focus-visible, input:focus-visible, a:focus-visible {
+      outline: 2px solid #98baff; outline-offset: 3px;
     }
-
-    nav button,
-    .subnav button {
-      padding: 7px 18px;
-      border: 1px solid transparent;
-      background: transparent;
-      color: #888;
-      cursor: pointer;
-      font-size: 0.875rem;
-      font-family: inherit;
-      transition: color 0.1s;
-      flex: 0 0 auto;
-      white-space: nowrap;
+    [hidden] { display: none !important; }
+    .toolbar { display: flex; align-items: center; gap: 10px; padding-bottom: 12px; flex-wrap: wrap; }
+    .toolbar button, .pane-header button, .pane-header select, .toolbar select {
+      padding: 8px 12px; border: 1px solid #444; border-radius: 7px;
+      background: #252525; color: #eee; font-size: .82rem;
     }
-
-    nav button {
-      border-bottom: none;
-      border-radius: 5px 5px 0 0;
-      position: relative;
-      bottom: -1px;
+    .toolbar button:hover, .pane-header button:hover { background: #353535; }
+    #picker-toggle { min-width: 210px; display: flex; justify-content: space-between; gap: 24px; text-align: left; }
+    .picker { position: relative; }
+    .picker-panel {
+      position: absolute; top: calc(100% + 8px); left: 0; z-index: 10;
+      width: min(370px, calc(100vw - 24px)); padding: 12px;
+      border: 1px solid #444; border-radius: 12px; background: #1c1c1c;
+      box-shadow: 0 16px 48px #0008; color: #eee;
     }
-
-    .tab-divider {
-      display: flex;
-      align-items: center;
-      padding: 0 6px;
-      color: #444;
-      font-size: 0.65rem;
-      font-weight: 600;
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      white-space: nowrap;
-      flex: 0 0 auto;
-      gap: 5px;
-      position: relative;
-      bottom: -1px;
-    }
-    .tab-divider::before {
-      content: '';
-      display: block;
-      width: 1px;
-      height: 14px;
-      background: #333;
-    }
-
-    nav button:hover {
-      color: #ccc;
-    }
-
-    nav button.active {
-      background: #fff;
-      color: #111;
-      border-color: #333;
-      font-weight: 600;
-    }
+    #framework-search { width: 100%; padding: 10px 12px; background: #111; border: 1px solid #555; border-radius: 7px; color: #fff; }
+    .main-tabs { display: flex; flex-direction: column; max-height: min(60vh, 480px); overflow-y: auto; margin-top: 10px; gap: 2px; }
+    .main-tabs button { text-align: left; padding: 9px 12px; background: transparent; border: 0; border-radius: 5px; color: #bbb; white-space: nowrap; }
+    .main-tabs button:hover { background: #333; color: #fff; }
+    .main-tabs button.active { background: #fff; color: #111; font-weight: 600; }
+    .tab-divider { padding: 12px 12px 5px; color: #999; font-size: .68rem; text-transform: uppercase; letter-spacing: .1em; }
+    #no-frameworks { padding: 18px 12px; font-size: .85rem; color: #aaa; }
+    .toolbar .primary-action { background: #e8ecff; color: #182243; border-color: #e8ecff; }
+    .toolbar .primary-action:hover { background: #fff; }
+    .toolbar a { color: #aaa; font-size: .82rem; text-decoration: none; margin-left: auto; }
+    .toolbar a:hover { color: #fff; }
+    .compare-tools { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+    .compare-tools label { font-size: .8rem; color: #bbb; display: flex; align-items: center; gap: 6px; }
+    #share-status { font-size: .76rem; color: #b6c9ff; }
+    #share-url { width: 240px; max-width: 100%; }
+    #panes { display: flex; flex: 1; min-height: 0; min-width: 0; gap: 1px; background: #555; }
+    .pane { display: flex; flex-direction: column; flex: 1; min-width: 0; min-height: 0; background: #fff; }
+    .pane-header { display: flex; align-items: center; gap: 8px; background: #202020; color: #ddd; padding: 8px 12px; min-height: 52px; }
+    .pane-header strong { font-size: .82rem; min-width: 0; flex: 1; }
+    .pane-header select { min-width: 0; width: 100%; flex: 1; }
+    .pane-header button { padding: 6px 9px; }
+    #panes.stacked { flex-direction: column; }
+    .subnav button { padding: 7px 18px; color: #aaa; font-size: .875rem; }
 
     .subnav {
       display: flex;
@@ -190,12 +175,18 @@
 
     iframe {
       flex: 1;
+      min-height: 0;
       width: 100%;
       border: none;
       background: #fff;
     }
 
     @media (max-width: 720px) {
+      #panes { flex-direction: column; }
+      #layout-control { display: none; }
+      .compare-tools { width: 100%; }
+      .pane-header { padding: 6px 10px; }
+
       header {
         padding-right: 12px;
         padding-left: 12px;
@@ -240,7 +231,15 @@
         </a>
       </div>
     </div>
+    <div class="toolbar">
+      <div class="picker">
+        <button id="picker-toggle" aria-expanded="false" aria-controls="framework-picker" aria-label="Choose dashboard framework">
+          <span id="selected-framework">dbt charts</span><span aria-hidden="true">⌄</span>
+        </button>
+        <div class="picker-panel" id="framework-picker" hidden>
+          <input id="framework-search" type="search" placeholder="Find a framework…" aria-label="Search frameworks" autocomplete="off">
     <nav class="main-tabs" aria-label="Dashboard framework">
+      <span class="tab-divider">Snapshot dashboards</span>
       <button class="active" data-src="dbt-charts/fusion-issue-health.html" data-tab="dbt-charts" onclick="switchTab(this)">dbt charts</button>
       <button data-src="graphene/index.html" data-tab="graphene" onclick="switchTab(this)">Graphene</button>
       <button data-src="prefab/app.html" data-tab="prefab" onclick="switchTab(this)">Prefab</button>
@@ -256,13 +255,28 @@
       <button data-src="marimo.html" data-tab="marimo" onclick="switchTab(this)">Marimo</button>
       <button data-src="quarto/index.html" data-tab="quarto" onclick="switchTab(this)">Quarto</button>
       <button data-src="shaper/index.html" data-tab="shaper" onclick="switchTab(this)">Shaper</button>
-      <span class="tab-divider">live</span>
+      <span class="tab-divider">Live dashboards</span>
       <button data-src="duckdb-wasm/index.html" data-tab="duckdb-wasm" onclick="switchTab(this)">DuckDB WASM</button>
       <button data-src="mosaic/index.html" data-tab="mosaic" onclick="switchTab(this)">Mosaic</button>
       <button data-src="semiotic/index.html" data-tab="semiotic" onclick="switchTab(this)">Semiotic</button>
       <button data-src="observable/dist/live.html" data-tab="observable-live" onclick="switchTab(this)">Observable (live)</button>
+      <span class="tab-divider">Project</span>
       <button data-src="about.html" data-tab="about" onclick="switchTab(this)">About</button>
     </nav>
+          <p id="no-frameworks" hidden>No frameworks found.</p>
+        </div>
+      </div>
+      <button id="compare-toggle" class="primary-action" aria-pressed="false">Compare frameworks</button>
+      <div id="compare-tools" class="compare-tools" hidden>
+        <button id="add-pane">+ Add third</button>
+        <label id="layout-control">Layout <select id="layout"><option value="side">Side by side</option><option value="stacked">Stacked</option></select></label>
+        <label title="Matches relative page position, not individual charts. Available for dashboards that scroll their page."><input id="link-scroll" type="checkbox"> Link scroll</label>
+        <button id="share-comparison">Copy comparison link</button>
+        <span id="share-status" role="status"></span>
+        <input id="share-url" aria-label="Comparison link" readonly hidden>
+      </div>
+      <a href="?tab=about#about">About the bakeoff ↗</a>
+    </div>
     <div class="subnav" id="prefab-themes" hidden aria-label="Prefab theme">
       <button class="active" data-src="prefab/app.html" data-theme="vanilla" onclick="switchPrefabTheme(this)">Vanilla</button>
       <button data-src="prefab/app_reactive.html" data-theme="reactive" onclick="switchPrefabTheme(this)">Reactive</button>
@@ -274,7 +288,12 @@
       <button data-src="duckdb-wasm/metricflow/index.html" data-view="metricflow" onclick="switchDuckDBView(this)">MetricFlow</button>
     </div>
   </header>
-  <iframe id="frame" src="dbt-charts/fusion-issue-health.html" title="dbt charts"></iframe>
+  <main id="panes" aria-label="Dashboard views">
+    <section class="pane" id="primary-pane" aria-label="Primary dashboard">
+      <div class="pane-header" id="primary-heading" hidden><strong id="primary-name">dbt charts</strong><button id="focus-primary" title="Return to this dashboard alone">View only</button></div>
+      <iframe id="frame" src="dbt-charts/fusion-issue-health.html" title="dbt charts"></iframe>
+    </section>
+  </main>
 
   <script>
     const tabs = Array.from(document.querySelectorAll('.main-tabs button'));
@@ -342,8 +361,14 @@
     }
 
     function switchTab(btn, options = {}) {
+      // Keep pane choices distinct when switching the primary framework.
+      const previous = tabs.find(button => button.classList.contains('active'));
+      comparisons = comparisons.map(id => id === btn.dataset.tab ? previous.dataset.tab : id);
       tabs.forEach(b => b.classList.remove('active'));
       btn.classList.add('active');
+      document.getElementById('selected-framework').textContent = btn.textContent.trim();
+      document.getElementById('primary-name').textContent = btn.textContent.trim();
+      closePicker();
       const isPrefab = btn.dataset.tab === "prefab";
       const isDuckDBWasm = btn.dataset.tab === "duckdb-wasm";
       prefabThemeBar.hidden = !isPrefab;
@@ -368,6 +393,9 @@
         frame.title = btn.textContent.trim();
         updateUrl(btn.dataset.tab);
       }
+      if (btn.dataset.tab === 'about') comparisons = [];
+      renderComparisons();
+      writeComparisonUrl();
     }
 
     function switchPrefabTheme(btn) {
@@ -404,7 +432,12 @@
       let tab = params.get("tab") || window.location.hash.replace(/^#/, "");
       let theme = params.get("theme");
       let view = params.get("view");
-      if (!tab) return;
+      comparisons = (params.get('compare') || '').split(',').filter((id, index, ids) =>
+        tabs.some(button => button.dataset.tab === id && id !== 'about') && ids.indexOf(id) === index
+      );
+      document.getElementById('layout').value = params.get('layout') === 'stacked' ? 'stacked' : 'side';
+      document.getElementById('link-scroll').checked = params.get('scroll') === 'linked';
+      if (!tab) tab = 'dbt-charts';
 
       tab = legacyTabAliases[tab] || tab;
 
@@ -416,10 +449,189 @@
         theme = "vanilla";
       }
 
-      const match = tabs.find(btn => btn.dataset.tab === tab);
+      const match = tabs.find(btn => btn.dataset.tab === tab) || tabs[0];
+      comparisons = comparisons.filter(id => id !== match.dataset.tab).slice(0, 2);
       if (match) switchTab(match, { theme, view });
     }
 
+    let comparisons = [];
+    const picker = document.getElementById('framework-picker');
+    const pickerToggle = document.getElementById('picker-toggle');
+    const search = document.getElementById('framework-search');
+    const panes = document.getElementById('panes');
+    const compareToggle = document.getElementById('compare-toggle');
+    const catalog = tabs.filter(button => button.dataset.tab !== 'about');
+
+    function closePicker() {
+      const hadFocus = picker.contains(document.activeElement);
+      picker.hidden = true;
+      pickerToggle.setAttribute('aria-expanded', 'false');
+      if (hadFocus) pickerToggle.focus();
+    }
+    function filterFrameworks() {
+      const query = search.value.trim().toLowerCase();
+      tabs.forEach(button => { button.hidden = !button.textContent.toLowerCase().includes(query); });
+      document.querySelectorAll('.tab-divider').forEach(heading => {
+        let item = heading.nextElementSibling;
+        let visible = false;
+        while (item && !item.classList.contains('tab-divider')) {
+          visible ||= !item.hidden;
+          item = item.nextElementSibling;
+        }
+        heading.hidden = !visible;
+      });
+      document.getElementById('no-frameworks').hidden = tabs.some(button => !button.hidden);
+    }
+    pickerToggle.addEventListener('click', () => {
+      if (!picker.hidden) return closePicker();
+      picker.hidden = false;
+      pickerToggle.setAttribute('aria-expanded', 'true');
+      search.value = '';
+      filterFrameworks();
+      search.focus();
+    });
+    search.addEventListener('input', filterFrameworks);
+    picker.addEventListener('keydown', event => {
+      if (event.key === 'Escape') { event.preventDefault(); closePicker(); }
+      const visible = tabs.filter(button => !button.hidden);
+      if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+        event.preventDefault();
+        const index = visible.indexOf(document.activeElement);
+        const next = event.key === 'ArrowDown' ? index + 1 : (index < 0 ? visible.length - 1 : index - 1);
+        visible[(next + visible.length) % visible.length]?.focus();
+      }
+      if (event.key === 'Enter' && event.target === search && visible.length) {
+        event.preventDefault(); switchTab(visible[0]);
+      }
+    });
+    document.addEventListener('click', event => {
+      if (!event.target.closest('.picker')) closePicker();
+    });
+    document.addEventListener('focusin', event => {
+      if (!event.target.closest('.picker')) closePicker();
+    });
+
+    function primaryId() { return tabs.find(button => button.classList.contains('active')).dataset.tab; }
+    function writeComparisonUrl() {
+      const url = new URL(location.href);
+      ['compare', 'layout', 'scroll'].forEach(key => url.searchParams.delete(key));
+      if (comparisons.length) {
+        url.searchParams.set('compare', comparisons.join(','));
+        if (document.getElementById('layout').value === 'stacked') url.searchParams.set('layout', 'stacked');
+        if (document.getElementById('link-scroll').checked) url.searchParams.set('scroll', 'linked');
+      }
+      history.replaceState(null, '', url);
+      document.getElementById('share-status').textContent = '';
+      document.getElementById('share-url').hidden = true;
+    }
+    function addComparison() {
+      if (primaryId() === 'about') switchTab(tabs[0]);
+      const next = catalog.find(button => button.dataset.tab !== primaryId() && !comparisons.includes(button.dataset.tab));
+      if (next && comparisons.length < 2) comparisons.push(next.dataset.tab);
+      renderComparisons(); writeComparisonUrl();
+    }
+    function renderComparisons() {
+      const comparing = comparisons.length > 0;
+      compareToggle.textContent = comparing ? 'Exit comparison' : 'Compare frameworks';
+      compareToggle.setAttribute('aria-pressed', String(comparing));
+      document.getElementById('compare-tools').hidden = !comparing;
+      document.getElementById('primary-heading').hidden = !comparing;
+      document.getElementById('add-pane').hidden = comparisons.length >= 2;
+      panes.classList.toggle('stacked', document.getElementById('layout').value === 'stacked');
+      // Retain unchanged frames so selecting another pane never resets their filters.
+      const existing = Array.from(panes.querySelectorAll('.comparison-pane'));
+      comparisons.forEach((id, index) => {
+        const button = catalog.find(item => item.dataset.tab === id);
+        let pane = existing[index];
+        if (!pane) {
+          pane = document.createElement('section');
+          pane.className = 'pane comparison-pane';
+          pane.innerHTML = '<div class="pane-header"><select></select><button class="view-only">View only</button><button class="remove-pane">×</button></div><iframe></iframe>';
+          panes.append(pane);
+          pane.querySelector('iframe').addEventListener('load', event => attachScroll(event.target));
+          pane.querySelector('select').addEventListener('change', event => {
+            comparisons[index] = event.target.value;
+            renderComparisons(); writeComparisonUrl();
+          });
+          pane.querySelector('.remove-pane').addEventListener('click', () => {
+            comparisons.splice(index, 1); renderComparisons(); writeComparisonUrl();
+            (comparisons.length ? panes.querySelector('.comparison-pane select') : compareToggle).focus();
+          });
+          pane.querySelector('.view-only').addEventListener('click', () => {
+            const selected = comparisons[index]; comparisons = [];
+            switchTab(catalog.find(item => item.dataset.tab === selected));
+            pickerToggle.focus();
+          });
+        }
+        pane.setAttribute('aria-label', `Comparison ${index + 2}`);
+        const select = pane.querySelector('select');
+        select.setAttribute('aria-label', `Framework ${index + 2}`);
+        select.replaceChildren(...catalog.map(item => {
+          const option = new Option(item.textContent.trim(), item.dataset.tab);
+          option.disabled = item.dataset.tab === primaryId() || comparisons.some((value, i) => i !== index && value === item.dataset.tab);
+          return option;
+        }));
+        select.value = id;
+        pane.querySelector('.remove-pane').setAttribute('aria-label', `Remove comparison ${index + 2}`);
+        const iframe = pane.querySelector('iframe');
+        iframe.title = button.textContent.trim();
+        if (iframe.getAttribute('src') !== button.dataset.src) iframe.src = button.dataset.src;
+      });
+      existing.slice(comparisons.length).forEach(pane => pane.remove());
+    }
+    compareToggle.addEventListener('click', () => {
+      if (!comparisons.length) return addComparison();
+      comparisons = []; renderComparisons(); writeComparisonUrl();
+    });
+    document.getElementById('add-pane').addEventListener('click', addComparison);
+    document.getElementById('focus-primary').addEventListener('click', () => {
+      comparisons = []; renderComparisons(); writeComparisonUrl(); pickerToggle.focus();
+    });
+    document.getElementById('layout').addEventListener('change', () => { renderComparisons(); writeComparisonUrl(); });
+    document.getElementById('link-scroll').addEventListener('change', writeComparisonUrl);
+    document.getElementById('share-comparison').addEventListener('click', async () => {
+      const status = document.getElementById('share-status');
+      try {
+        await navigator.clipboard.writeText(location.href);
+        status.textContent = 'Link copied';
+      } catch {
+        const input = document.getElementById('share-url');
+        input.hidden = false; input.value = location.href; input.focus(); input.select();
+        status.textContent = 'Copy the selected link';
+      }
+    });
+
+    // Same-origin page scrolling only. No chart filters or data are modified.
+    const scrollTargets = new WeakMap();
+    function attachScroll(iframe) {
+      try {
+        const doc = iframe.contentDocument;
+        if (!doc) return;
+        doc.addEventListener('scroll', () => {
+          if (!document.getElementById('link-scroll').checked || !comparisons.length) return;
+          const root = doc.scrollingElement;
+          if (!root) return;
+          const expected = scrollTargets.get(iframe);
+          if (expected !== undefined && Math.abs(root.scrollTop - expected) < 2) return;
+          scrollTargets.delete(iframe);
+          const range = root.scrollHeight - root.clientHeight;
+          if (range <= 0) return;
+          const ratio = root.scrollTop / range;
+          panes.querySelectorAll('iframe').forEach(other => {
+            if (other === iframe) return;
+            try {
+              const target = other.contentDocument?.scrollingElement;
+              if (!target) return;
+              const top = Math.round(ratio * (target.scrollHeight - target.clientHeight));
+              scrollTargets.set(other, top);
+              target.scrollTop = top;
+            } catch { /* External dashboards keep independent scrolling. */ }
+          });
+        }, { passive: true });
+      } catch { /* External dashboards keep independent scrolling. */ }
+    }
+    frame.addEventListener('load', () => attachScroll(frame));
+    attachScroll(frame);
     loadTabFromHash();
     loadDataFreshness();
     window.addEventListener("popstate", loadTabFromHash);

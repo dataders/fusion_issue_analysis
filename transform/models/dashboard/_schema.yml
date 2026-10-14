@@ -144,7 +144,7 @@ models:
       - name: areas
 
   - name: assignee_workload
-    description: Top 15 assignees (incl. '(unassigned)') by open non-epic issues, by type. Long format.
+    description: Top 15 assignees (excluding unassigned issues) by open non-epic issues, by type. Long format.
     columns:
       - name: assignee_login
         tests: [not_null]

@@ -313,7 +313,7 @@ charts:
     query: assignee_workload
     type: bar
     title: "Open issues by assignee"
-    subtitle: "Top 15, including unassigned"
+    subtitle: "Top 15, excluding unassigned"
     x: assignee_login
     y: issue_count
     color: issue_category
