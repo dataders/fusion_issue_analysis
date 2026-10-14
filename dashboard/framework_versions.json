@@ -1,0 +1,119 @@
+{
+  "checked_at": "2026-10-14T17:39:20.141728+00:00",
+  "frameworks": {
+    "dbt-charts": {
+      "installed": "0.9.1",
+      "latest": "0.9.1",
+      "status": "current",
+      "source": "https://pypi.org/pypi/dbt-charts/json"
+    },
+    "graphene": {
+      "installed": "0.0.30",
+      "latest": "0.0.30",
+      "status": "snapshot",
+      "source": "https://registry.npmjs.org/%40graphenedata%2Fcli/latest"
+    },
+    "prefab": {
+      "installed": "0.20.2",
+      "latest": "0.20.2",
+      "status": "current",
+      "source": "https://pypi.org/pypi/prefab-ui/json"
+    },
+    "evidence": {
+      "installed": "40.1.8",
+      "latest": "40.1.8",
+      "status": "current",
+      "source": "https://registry.npmjs.org/%40evidence-dev%2Fevidence/latest"
+    },
+    "dac": {
+      "installed": "0.26.0",
+      "latest": "0.26.0",
+      "status": "current",
+      "source": "https://api.github.com/repos/bruin-data/dac/releases/latest"
+    },
+    "ggsql": {
+      "installed": "0.5.2",
+      "latest": "0.5.2",
+      "status": "current",
+      "source": "https://pypi.org/pypi/ggsql/json"
+    },
+    "glyf": {
+      "installed": "0.18.0",
+      "latest": "0.18.0",
+      "status": "current",
+      "source": "https://pypi.org/pypi/glyf-core/json"
+    },
+    "chartjs": {
+      "installed": "4.5.1",
+      "latest": "4.5.1",
+      "status": "current",
+      "source": "https://registry.npmjs.org/chart.js/latest"
+    },
+    "mviz": {
+      "installed": "1.7.0",
+      "latest": "1.7.0",
+      "status": "current",
+      "source": "https://registry.npmjs.org/mviz/latest"
+    },
+    "mdv": {
+      "installed": "e079b27b4a84848d17e70176200401cb80b78291",
+      "latest": "e079b27b4a84848d17e70176200401cb80b78291",
+      "status": "current",
+      "source": "https://api.github.com/repos/drasimwagan/mdv/commits/HEAD"
+    },
+    "tanstack": {
+      "installed": "1.1.0",
+      "latest": "1.1.0",
+      "status": "current",
+      "source": "https://registry.npmjs.org/%40tanstack%2Fcharts/latest"
+    },
+    "observable": {
+      "installed": "1.13.4",
+      "latest": "1.13.4",
+      "status": "current",
+      "source": "https://registry.npmjs.org/%40observablehq%2Fframework/latest"
+    },
+    "marimo": {
+      "installed": "0.25.1",
+      "latest": "0.25.1",
+      "status": "current",
+      "source": "https://pypi.org/pypi/marimo/json"
+    },
+    "quarto": {
+      "installed": "1.10.19",
+      "latest": "1.10.19",
+      "status": "current",
+      "source": "https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest"
+    },
+    "shaper": {
+      "installed": null,
+      "latest": "0.25.1",
+      "status": "untracked",
+      "source": "https://api.github.com/repos/taleshape-com/shaper/releases/latest"
+    },
+    "duckdb-wasm": {
+      "installed": "1.5.5-r.1",
+      "latest": "1.5.5-r.1",
+      "status": "current",
+      "source": "https://registry.npmjs.org/%40motherduck%2Fwasm-client/latest"
+    },
+    "mosaic": {
+      "installed": "0.33.0",
+      "latest": "0.33.0",
+      "status": "current",
+      "source": "https://registry.npmjs.org/%40uwdata%2Fvgplot/latest"
+    },
+    "semiotic": {
+      "installed": "3.12.1",
+      "latest": "3.12.1",
+      "status": "current",
+      "source": "https://registry.npmjs.org/semiotic/latest"
+    },
+    "observable-live": {
+      "installed": "1.13.4",
+      "latest": "1.13.4",
+      "status": "current",
+      "source": "https://registry.npmjs.org/%40observablehq%2Fframework/latest"
+    }
+  }
+}

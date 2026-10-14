@@ -67,6 +67,10 @@ test.describe("dashboard bakeoff shell", () => {
     const refreshLabel = page.locator("#data-refreshed");
     await expect(refreshLabel).toHaveText(/^Data refreshed: .+/);
     await expect(refreshLabel).not.toHaveText(/Invalid Date/);
+    await expect(page.locator("#versions-checked")).toHaveText(/^Versions checked: .+/);
+    const tanstackVersion = page.locator('[data-tab="tanstack"] .version-badge');
+    await expect(tanstackVersion).toHaveText(/^v\d+\.\d+\.\d+ ✓$/);
+    await expect(tanstackVersion).toHaveClass(/current/);
 
     const repoLink = page.getByRole("link", { name: "Open source repository" });
     await expect(repoLink).toHaveAttribute("href", "https://github.com/dataders/fusion_issue_analysis");
@@ -86,7 +90,7 @@ test.describe("dashboard bakeoff shell", () => {
 
     const labels = await page.locator(".main-tabs button").evaluateAll((buttons) =>
       buttons.map((button) => ({
-        label: button.textContent.trim(),
+        label: button.dataset.label || button.firstChild.textContent.trim(),
         tab: button.dataset.tab,
         src: button.dataset.src,
       })),
@@ -98,6 +102,7 @@ test.describe("dashboard bakeoff shell", () => {
       await expectRouteToExist(request, dashboard.src);
 
       const tab = page.locator(`.main-tabs button[data-tab="${dashboard.tab}"]`);
+      await page.getByRole("button", { name: "Choose dashboard framework" }).click();
       await tab.click();
 
       await expect(tab).toHaveClass(/active/);
@@ -135,7 +140,8 @@ test.describe("dashboard bakeoff shell", () => {
     await page.setViewportSize({ width: 390, height: 844 });
     await page.goto("/index.html?tab=quarto#quarto");
 
-    await expect(page.locator(".main-tabs")).toBeVisible();
+    await expect(page.getByRole("button", { name: "Choose dashboard framework" })).toBeVisible();
+    await expect(page.locator(".main-tabs")).toBeHidden();
     await expect(page.locator(".main-tabs button[data-tab='quarto']")).toHaveClass(/active/);
     await expect(page.locator("#frame")).toBeVisible();
 
@@ -169,6 +175,7 @@ test.describe("dashboard UI controls", () => {
     await expect(page).toHaveURL(/[?&]tab=prefab/);
     await expect(page).toHaveURL(/[?&]theme=reactive/);
 
+    await page.getByRole("button", { name: "Choose dashboard framework" }).click();
     await page.locator('.main-tabs button[data-tab="mviz"]').click();
     await expect(page.locator("#prefab-themes")).toBeHidden();
     await expect(page.locator("#frame")).toHaveAttribute("src", /mviz\/index\.html$/);
@@ -197,6 +204,7 @@ test.describe("dashboard UI controls", () => {
     await expect(frame.getByText(/Showing all types/).first()).toBeVisible();
 
     await expectRouteToExist(request, "evidence/build/");
+    await page.getByRole("button", { name: "Choose dashboard framework" }).click();
     await page.locator('.main-tabs button[data-tab="evidence"]').click();
     await expectFrameToHaveText(page);
 

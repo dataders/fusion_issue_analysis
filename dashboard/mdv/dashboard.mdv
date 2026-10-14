@@ -113,7 +113,7 @@ Ranked by reactions, then comments
 
 ### Open issues by assignee
 
-Top 15, including unassigned
+Top 15, excluding unassigned
 
 ```table data=assignee_workload
 ```

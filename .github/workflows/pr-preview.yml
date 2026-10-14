@@ -1,7 +1,7 @@
 name: PR Dashboard Preview
 
 env:
-  MDV_SHA: b9d5a8c1bb66b094a8745775cb9bf1389f08403f
+  MDV_SHA: e079b27b4a84848d17e70176200401cb80b78291
 
 on:
   pull_request:
@@ -159,6 +159,12 @@ jobs:
         run: |
           uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' preview/dac/index.html
+
+      - name: Check dashboard framework versions
+        if: github.actor != 'dependabot[bot]'
+        run: |
+          uv run python dashboard/write_framework_versions.py
+          cp dashboard/framework_versions.json preview/framework_versions.json
 
       - name: Upload preview artifact
         if: github.actor != 'dependabot[bot]'

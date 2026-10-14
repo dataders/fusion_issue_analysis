@@ -258,6 +258,6 @@ order by assignee_total desc, assignee_login
   seriesOrder={['Feature', 'Bug', 'Task', 'Other']}
   seriesColors={{Feature: '#2a78d6', Bug: '#eb6834', Task: '#1baf7a', Other: '#898781'}}
   title="Open issues by assignee"
-  subtitle="Top 15, including unassigned"
+  subtitle="Top 15, excluding unassigned"
   yAxisTitle="Open issues"
 />

@@ -56,8 +56,8 @@
     // Tiles come from dashboard/tiles.yml; data is queried live from the dbt
     // dashboard models in MotherDuck as `SELECT * FROM <model> ORDER BY <order_by>`.
     // The page only selects, renames, formats and lightly pivots model columns.
-    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
-    import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6/+esm';
+    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@1.5.5-r.1';
+    import * as Plot from 'https://cdn.jsdelivr.net/npm/@observablehq/plot@0.6.17/+esm';
     import yaml from 'https://esm.sh/js-yaml@4.1.0';
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';

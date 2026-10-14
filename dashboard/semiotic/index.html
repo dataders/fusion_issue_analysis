@@ -7,10 +7,10 @@
   <!-- One React copy for the page and for Semiotic (loaded with ?external=react,react-dom). -->
   <script type="importmap">
     {"imports": {
-      "react": "https://esm.sh/react@19.1.0",
-      "react/": "https://esm.sh/react@19.1.0/",
-      "react-dom": "https://esm.sh/react-dom@19.1.0",
-      "react-dom/": "https://esm.sh/react-dom@19.1.0/"
+      "react": "https://esm.sh/react@19.3.1",
+      "react/": "https://esm.sh/react@19.3.1/",
+      "react-dom": "https://esm.sh/react-dom@19.3.1",
+      "react-dom/": "https://esm.sh/react-dom@19.3.1/"
     }}
   </script>
   <style>
@@ -79,9 +79,9 @@
     // the other (LinkedCharts x-position hover); legend clicks highlight a series.
     import {createElement as h, Fragment} from 'react';
     import {createRoot} from 'react-dom/client';
-    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@0.8.1';
+    import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@1.5.5-r.1';
     import {StackedAreaChart, GroupedBarChart, StackedBarChart, LineChart, LinkedCharts}
-      from 'https://esm.sh/semiotic@3.11.0?external=react,react-dom';
+      from 'https://esm.sh/semiotic@3.12.1?external=react,react-dom';
     import yaml from 'https://esm.sh/js-yaml@4.1.0';
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
