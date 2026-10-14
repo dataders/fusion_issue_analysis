@@ -8,6 +8,7 @@ const DASHBOARD_TABS = [
   { label: "DAC", tab: "dac", src: "dac/build/" },
   { label: "ggsql + Vega-Lite", tab: "ggsql", src: "ggsql/index.html" },
   { label: "Glyf", tab: "glyf", src: "glyf/build/site/dashboards/fusion_issue_health.html" },
+  { label: "Chart.js", tab: "chartjs", src: "chartjs/index.html" },
   { label: "mviz", tab: "mviz", src: "mviz/index.html" },
   { label: "MDV", tab: "mdv", src: "mdv/index.html" },
   { label: "TanStack Charts", tab: "tanstack", src: "tanstack/dist/" },
