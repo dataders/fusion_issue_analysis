@@ -181,6 +181,7 @@ dashboard/mdv/index.html
 dashboard/mdv/data/
 dashboard/marimo.html
 dashboard/ggsql/index.html
+dashboard/chartjs/index.html
 dashboard/__marimo__/
 dashboard/marimo/__marimo__/
 dashboard/observable/dist/

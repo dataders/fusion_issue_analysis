@@ -135,6 +135,13 @@ jobs:
           FUSION_DB: md:fusion_issues
         run: uv run dashboard/ggsql/build.py
 
+      - name: Smoke-test Chart.js
+        if: github.actor != 'dependabot[bot]'
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: uv run python dashboard/chartjs/build.py
+
       - name: Smoke-test MDV
         if: github.actor != 'dependabot[bot]'
         env:

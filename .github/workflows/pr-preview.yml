@@ -138,6 +138,18 @@ jobs:
           uv run dashboard/ggsql/build.py
           cp dashboard/ggsql/index.html preview/ggsql/index.html
 
+      - name: Build Chart.js dashboard
+        id: chartjs
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+          FUSION_DB: md:fusion_issues
+        run: |
+          mkdir -p preview/chartjs
+          uv run python dashboard/chartjs/build.py
+          cp dashboard/chartjs/index.html preview/chartjs/index.html
+
       - name: Export Marimo dashboard
         id: marimo
         if: github.actor != 'dependabot[bot]'
@@ -202,6 +214,7 @@ jobs:
               `| Prefab MySpace | \`prefab/app_myspace.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               `| Prefab Windows 2000 | \`prefab/app_windows_2000.html\` | ${fmt('${{ steps.prefab.outcome }}')} |`,
               `| ggsql + Vega-Lite | \`ggsql/index.html\` | ${fmt('${{ steps.ggsql.outcome }}')} |`,
+              `| Chart.js | \`chartjs/index.html\` | ${fmt('${{ steps.chartjs.outcome }}')} |`,
               `| mviz | \`mviz/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
               `| MDV | \`mdv/index.html\` | ${fmt('${{ steps.mdv.outcome }}')} |`,
               `| Observable | \`observable/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
@@ -254,6 +267,7 @@ jobs:
             echo "| npm (Observable + Evidence) | $(icon '${{ steps.npm.outcome }}') |"
             echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
             echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
+            echo "| Chart.js | $(icon '${{ steps.chartjs.outcome }}') |"
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
@@ -264,6 +278,7 @@ jobs:
             '${{ steps.npm.outcome }}' \
             '${{ steps.mdv.outcome }}' \
             '${{ steps.ggsql.outcome }}' \
+            '${{ steps.chartjs.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
             '${{ steps.dbt_charts.outcome }}'; do
