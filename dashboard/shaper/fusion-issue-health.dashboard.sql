@@ -211,7 +211,7 @@ FROM top_requested
 ORDER BY reactions DESC, comments DESC;
 
 SELECT 'Open issues by assignee'::LABEL,
-  'Top 15, including unassigned'::SUBTITLE;
+  'Top 15, excluding unassigned'::SUBTITLE;
 
 SELECT
   assignee_login::YAXIS AS "Assignee",

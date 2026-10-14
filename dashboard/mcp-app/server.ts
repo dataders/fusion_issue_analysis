@@ -54,7 +54,7 @@ export function createServer(): McpServer {
     server,
     resourceUri,
     resourceUri,
-    { mimeType: RESOURCE_MIME_TYPE },
+    {},
     async () => {
       const html = await fs.readFile(path.join(DIST_DIR, "issue-health.html"), "utf-8");
       return {

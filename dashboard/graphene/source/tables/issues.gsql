@@ -91,14 +91,14 @@ table epic_progress (
   milestone_title VARCHAR
 )
 
--- Open issues per assignee and type, one row per (assignee_login, issue_category). Unassigned issues are included.
+-- Open issues per assignee and type, one row per (assignee_login, issue_category). Unassigned issues are excluded.
 table assignee_workload (
   assignee_login VARCHAR
   issue_category VARCHAR
   issue_count BIGINT
   assignee_total BIGINT
 
-  assignee: case when assignee_login = '(unassigned)' then 'Unassigned' else assignee_login end
+  assignee: assignee_login
   features: sum(case when issue_category = 'feature' then issue_count else 0 end)
   bugs: sum(case when issue_category = 'bug' then issue_count else 0 end)
   tasks: sum(case when issue_category = 'task' then issue_count else 0 end)

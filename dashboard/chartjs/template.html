@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>dbt Fusion issue health</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1" integrity="sha384-jb8JQMbMoBUzgWatfe6COACi2ljcDdZQ2OxczGA3bGNeWe+6DChMTBJemed7ZnvJ" crossorigin="anonymous"></script>
+<style>
+:root{--bg:#f6f7f9;--card:#fff;--text:#1d2125;--muted:#667085;--line:#e4e7ec;--warn-bg:#fff4e5;--warn:#b54708;--link:#2a78d6;--bar:#2a78d6}
+@media (prefers-color-scheme:dark){:root{--bg:#111316;--card:#1a1d21;--text:#e8eaed;--muted:#9aa1ab;--line:#2c3036;--warn-bg:#3a2a12;--warn:#fdb022;--link:#6aa7f0;--bar:#3987e5}}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text);line-height:1.45}
+.wrap{max-width:1300px;margin:0 auto;padding:20px 16px 40px}
+header h1{font-size:22px}header p{color:var(--muted);font-size:14px;margin-top:2px}
+.fresh{margin-top:8px;font-size:13px;color:var(--muted)}
+.fresh.stale{background:var(--warn-bg);color:var(--warn);padding:8px 12px;border-radius:8px}
+h2{font-size:17px;margin:28px 0 12px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,460px),1fr));gap:16px}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:16px 18px;min-width:0}
+.card.full{grid-column:1/-1}
+.kpi .l{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em}
+.kpi .v{font-size:28px;font-weight:700;margin:2px 0}.kpi .c{font-size:13px;color:var(--muted)}
+.card h3{font-size:14px}.card .sub{font-size:12px;color:var(--muted);margin-bottom:10px}
+.chart{position:relative}
+.tablewrap{overflow:auto;max-height:420px}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{position:sticky;top:0;background:var(--card);text-align:left;color:var(--muted);font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:8px;border-bottom:2px solid var(--line);cursor:pointer;white-space:nowrap}
+td{padding:7px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+td.num{text-align:right;font-variant-numeric:tabular-nums}
+a{color:var(--link);text-decoration:none}a:hover{text-decoration:underline}
+.pbar{display:inline-block;width:90px;height:8px;background:var(--line);border-radius:4px;vertical-align:middle;margin-right:6px;overflow:hidden}
+.pbar i{display:block;height:100%;background:var(--bar)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--muted);margin-bottom:8px}
+.legend span::before{content:"";display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:5px;background:var(--c)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header><h1 id="title"></h1><p id="subtitle"></p><div class="fresh" id="fresh"></div></header>
+  <main id="main"></main>
+</div>
+<script>
+const P = __PAYLOAD__;
+const M = P.manifest, PAL = M.palette;
+const dark = () => matchMedia("(prefers-color-scheme: dark)").matches;
+const mode = () => dark() ? "dark" : "light";
+const col = (key, name) => { const e = PAL[key][name]; return typeof e === "object" ? e[mode()] : e; };
+const lab = (key, name) => { const e = PAL[key][name]; return (e && e.label) || name; };
+const fmt = v => v == null ? "—" : typeof v === "number" ? v.toLocaleString(undefined, {maximumFractionDigits: 1}) : v;
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const title = s => s.replace(/_/g, " ").replace(/^./, c => c.toUpperCase());
+const charts = [];
+const draws = [];
+
+document.getElementById("title").textContent = M.title;
+document.getElementById("subtitle").textContent = M.subtitle;
+const fr = document.getElementById("fresh");
+fr.textContent = P.freshness_note; if (P.is_stale) fr.classList.add("stale");
+
+const uniq = (rows, k) => [...new Set(rows.map(r => r[k]))];
+const sumBy = (rows, k, v) => rows.reduce((m, r) => (m[r[k]] = (m[r[k]] || 0) + r[v], m), {});
+
+function card(parent, t, extra = "") {
+  const el = document.createElement("div"); el.className = "card " + extra;
+  el.innerHTML = `<h3>${esc(t.title)}</h3><div class="sub">${esc(t.subtitle || "")}</div><div class="body"></div>`;
+  parent.appendChild(el); return el.querySelector(".body");
+}
+function legend(body, keys, pk) {
+  const d = document.createElement("div"); d.className = "legend"; body.appendChild(d);
+  draws.push(() => { d.innerHTML = keys.map(k => `<span style="--c:${col(pk, k)}">${esc(lab(pk, k))}</span>`).join(""); });
+}
+function chartBox(body, h) {
+  const box = document.createElement("div"); box.className = "chart"; box.style.height = h + "px";
+  const cv = document.createElement("canvas"); box.appendChild(cv); body.appendChild(box); return cv;
+}
+function mk(cv, build) {
+  let ch; draws.push(() => {
+    const cs = getComputedStyle(document.body);
+    Chart.defaults.color = cs.getPropertyValue("--muted").trim();
+    Chart.defaults.borderColor = cs.getPropertyValue("--line").trim();
+    if (ch) ch.destroy(); ch = new Chart(cv, build());
+  });
+}
+const base = (extra = {}) => ({responsive: true, maintainAspectRatio: false, animation: false, ...extra});
+
+function stackedArea(body, t, rows) {
+  const keys = Object.keys(PAL[t.color]), xs = uniq(rows, t.x);
+  legend(body, keys, t.color);
+  mk(chartBox(body, 280), () => ({type: "line", data: {labels: xs, datasets: keys.map(k => ({
+    label: lab(t.color, k), borderColor: col(t.color, k), backgroundColor: col(t.color, k) + "cc", fill: true, pointRadius: 0, borderWidth: 1.5,
+    data: xs.map(x => rows.filter(r => r[t.x] === x && r[t.color] === k).reduce((a, r) => a + r[t.y], 0))}))},
+    options: base({interaction: {mode: "index", intersect: false}, plugins: {legend: {display: false}},
+      scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 10}}, y: {stacked: true, beginAtZero: true}}})}));
+}
+function groupedBar(body, t, rows) {
+  legend(body, t.series, "flow");
+  mk(chartBox(body, 280), () => ({type: "bar", data: {labels: rows.map(r => r[t.x]), datasets: t.series.map(s => ({
+    label: lab("flow", s), backgroundColor: col("flow", s), data: rows.map(r => r[s]), borderRadius: 2}))},
+    options: base({interaction: {mode: "index", intersect: false}, plugins: {legend: {display: false},
+      tooltip: {callbacks: {afterBody: items => (t.tooltip || []).map(k => `${title(k)}: ${fmt(rows[items[0].dataIndex][k])}`)}}},
+      scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 10}}, y: {beginAtZero: true}}})}));
+}
+function hBar(body, t, rows) {
+  const ys = uniq(rows, t.y), keys = Object.keys(PAL[t.color]).filter(k => rows.some(r => r[t.color] === k));
+  legend(body, keys, t.color);
+  mk(chartBox(body, Math.max(160, ys.length * 26 + 50)), () => ({type: "bar", data: {labels: ys, datasets: keys.map(k => ({
+    label: lab(t.color, k), backgroundColor: col(t.color, k),
+    data: ys.map(y => rows.filter(r => r[t.y] === y && r[t.color] === k).reduce((a, r) => a + r[t.x], 0))}))},
+    options: base({indexAxis: "y", interaction: {mode: "nearest", axis: "y", intersect: false}, plugins: {legend: {display: false}},
+      scales: {x: {stacked: true, beginAtZero: true}, y: {stacked: true, grid: {display: false}}}})}));
+}
+function lineChart(body, t, rows) {
+  mk(chartBox(body, 260), () => ({type: "line", data: {labels: rows.map(r => r[t.x]), datasets: [{
+    label: title(t.y), data: rows.map(r => r[t.y]), borderColor: PAL.single_series.light && (dark() ? "#3987e5" : PAL.single_series),
+    pointRadius: 2, tension: .25, borderWidth: 2}]},
+    options: base({interaction: {mode: "index", intersect: false}, plugins: {legend: {display: false},
+      tooltip: {callbacks: {label: c => `${fmt(c.parsed.y)}%`, afterBody: items => (t.tooltip || []).map(k => `${title(k)}: ${fmt(rows[items[0].dataIndex][k])}`)}}},
+      scales: {x: {grid: {display: false}, ticks: {maxTicksLimit: 10}}, y: {min: 0, max: 100, ticks: {callback: v => v + "%"}}}})}));
+}
+function table(body, t, rows, withBar) {
+  let sort = null, dir = -1;
+  const wrap = document.createElement("div"); wrap.className = "tablewrap"; body.appendChild(wrap);
+  const render = () => {
+    const data = sort ? [...rows].sort((a, b) => (a[sort] > b[sort] ? 1 : a[sort] < b[sort] ? -1 : 0) * dir) : rows;
+    const numeric = c => rows.some(r => typeof r[c] === "number");
+    wrap.innerHTML = `<table><thead><tr>${t.columns.map(c => `<th data-c="${c}">${title(c)}${sort === c ? (dir > 0 ? " ▲" : " ▼") : ""}</th>`).join("")}</tr></thead><tbody>${data.map(r =>
+      `<tr>${t.columns.map(c => {
+        let v = r[c];
+        if (c === "pct_complete" && withBar) return `<td class="num"><span class="pbar"><i style="width:${v}%"></i></span>${fmt(v)}%</td>`;
+        if (typeof v === "boolean") v = v ? "yes" : "";
+        let s = c === "issue_category" && v ? `<span style="color:var(--text)"><b style="color:${col("issue_category", v)}">●</b> ${esc(lab("issue_category", v))}</span>` : esc(fmt(v));
+        if (t.link && (c === "title" || c === "issue_number" || c === "epic_number") && r[t.link]) s = `<a href="${esc(r[t.link])}" target="_blank" rel="noopener">${s}</a>`;
+        return `<td class="${numeric(c) ? "num" : ""}">${s}</td>`;
+      }).join("")}</tr>`).join("")}</tbody></table>`;
+    wrap.querySelectorAll("th").forEach(th => th.onclick = () => { const c = th.dataset.c; dir = sort === c ? -dir : -1; sort = c; render(); });
+  };
+  render();
+}
+
+const main = document.getElementById("main");
+for (const sec of M.sections) {
+  const h = document.createElement("h2"); h.textContent = sec.question; main.appendChild(h);
+  const grid = document.createElement("div"); grid.className = "grid"; main.appendChild(grid);
+  for (const t of sec.tiles) {
+    const data = P.models[t.model];
+    if (t.form === "kpi_row") {
+      const k = document.createElement("div"); k.className = "kpis"; k.style.gridColumn = "1/-1";
+      k.innerHTML = P.kpis.map(x => `<div class="card kpi"><div class="l">${esc(x.label)}</div><div class="v">${esc(x.value)}</div><div class="c">${esc(x.context)}</div></div>`).join("");
+      grid.appendChild(k); continue;
+    }
+    const wide = ["table", "table_with_bar"].includes(t.form);
+    const body = card(grid, t, wide ? "full" : "");
+    ({stacked_area: stackedArea, grouped_bar: groupedBar, horizontal_stacked_bar: hBar, line: lineChart,
+      table: (b, tt, r) => table(b, tt, r, false), table_with_bar: (b, tt, r) => table(b, tt, r, true)})[t.form](body, t, data);
+  }
+}
+const drawAll = () => draws.forEach(f => f());
+drawAll();
+matchMedia("(prefers-color-scheme: dark)").addEventListener("change", drawAll);
+</script>
+</body>
+</html>

@@ -155,7 +155,7 @@ sections:
         model: assignee_workload
         order_by: assignee_total desc, assignee_login
         title: Open issues by assignee
-        subtitle: Top 15, including unassigned
+        subtitle: Top 15, excluding unassigned
         form: horizontal_stacked_bar
         y: assignee_login
         x: issue_count

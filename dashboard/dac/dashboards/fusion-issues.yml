@@ -256,7 +256,7 @@ rows:
           - { name: issue_url, label: Link }
   - widgets:
       - name: Open issues by assignee
-        description: Top 15, including unassigned
+        description: Top 15, excluding unassigned
         type: chart
         chart: bar
         stacked: true

@@ -1,7 +1,7 @@
 name: PR Dashboard Preview
 
 env:
-  MDV_SHA: b9d5a8c1bb66b094a8745775cb9bf1389f08403f
+  MDV_SHA: e079b27b4a84848d17e70176200401cb80b78291
 
 on:
   pull_request:
@@ -113,6 +113,17 @@ jobs:
           mkdir -p preview/glyf
           cp -r dashboard/glyf/build preview/glyf/build
 
+      - name: Build Chart.js dashboard
+        id: chartjs
+        if: github.actor != 'dependabot[bot]'
+        continue-on-error: true
+        env:
+          MOTHERDUCK_TOKEN: ${{ secrets.MOTHERDUCK_TOKEN }}
+        run: |
+          mkdir -p preview/chartjs
+          uv run python dashboard/chartjs/build.py
+          cp dashboard/chartjs/index.html preview/chartjs/index.html
+
       - name: Export Marimo dashboard
         id: marimo
         if: github.actor != 'dependabot[bot]'
@@ -149,6 +160,12 @@ jobs:
           uv run python dashboard/dac/render.py
           ! grep -q 'bruin query failed' preview/dac/index.html
 
+      - name: Check dashboard framework versions
+        if: github.actor != 'dependabot[bot]'
+        run: |
+          uv run python dashboard/write_framework_versions.py
+          cp dashboard/framework_versions.json preview/framework_versions.json
+
       - name: Upload preview artifact
         if: github.actor != 'dependabot[bot]'
         uses: actions/upload-artifact@v4
@@ -182,6 +199,7 @@ jobs:
               `| TanStack Charts | \`tanstack/dist/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
               `| Evidence.dev | \`evidence/index.html\` | ${fmt('${{ steps.npm.outcome }}')} |`,
               `| Glyf | \`glyf/build/site/dashboards/fusion_issue_health.html\` | ${fmt('${{ steps.glyf.outcome }}')} |`,
+              `| Chart.js | \`chartjs/index.html\` | ${fmt('${{ steps.chartjs.outcome }}')} |`,
               `| Marimo | \`marimo.html\` | ${fmt('${{ steps.marimo.outcome }}')} |`,
               `| Quarto | \`quarto/index.html\` | ${fmt('${{ steps.quarto.outcome }}')} |`,
               `| DAC | \`dac/index.html\` | ${fmt('${{ steps.dac.outcome }}')} |`,
@@ -231,6 +249,7 @@ jobs:
             echo "| MDV | $(icon '${{ steps.mdv.outcome }}') |"
             echo "| ggsql | $(icon '${{ steps.ggsql.outcome }}') |"
             echo "| Glyf | $(icon '${{ steps.glyf.outcome }}') |"
+            echo "| Chart.js | $(icon '${{ steps.chartjs.outcome }}') |"
             echo "| Marimo | $(icon '${{ steps.marimo.outcome }}') |"
             echo "| Quarto | $(icon '${{ steps.quarto.outcome }}') |"
             echo "| DAC | $(icon '${{ steps.dac.outcome }}') |"
@@ -242,6 +261,7 @@ jobs:
             '${{ steps.mdv.outcome }}' \
             '${{ steps.ggsql.outcome }}' \
             '${{ steps.glyf.outcome }}' \
+            '${{ steps.chartjs.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
             '${{ steps.dbt_charts.outcome }}'; do

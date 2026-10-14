@@ -2,7 +2,7 @@
 # requires-python = ">=3.11"
 # dependencies = [
 #     "duckdb>=1.5.2",
-#     "glyf-core>=0.18",
+#     "glyf-core==0.18.0",
 #     "pandas>=2",
 #     "pyyaml>=6",
 # ]

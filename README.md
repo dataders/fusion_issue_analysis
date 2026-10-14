@@ -11,6 +11,13 @@ Start here:
 - About, context, and findings: [dashboard-bakeoff.anders.omg.lol/?tab=about](https://dashboard-bakeoff.anders.omg.lol/?tab=about)
 - Contributing: [CONTRIBUTING.md](./CONTRIBUTING.md)
 
+Use the searchable framework picker to switch dashboards. **Compare frameworks**
+opens two views; **Add third** opens another. Each pane keeps its own filters.
+Choose side-by-side or stacked layout (mobile stacks automatically), use **Link
+scroll** to match relative page position in dashboards with page scrolling, and
+**Copy comparison link** to share the selected frameworks and layout. Links do not
+include filters inside dashboards; live views may show newer data than snapshots.
+
 ## Local Development
 
 Prerequisites:

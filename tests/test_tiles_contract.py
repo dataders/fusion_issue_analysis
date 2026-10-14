@@ -35,6 +35,7 @@ FRAMEWORKS = {
     "dbt-charts": ["transform/charts"],
     "duckdb-wasm": ["dashboard/duckdb-wasm/index.html"],
     "mosaic": ["dashboard/mosaic/index.html"],
+    "chartjs": ["dashboard/chartjs/build.py", "dashboard/chartjs/template.html"],
     "semiotic": ["dashboard/semiotic/index.html"],
     "mcp-app": ["dashboard/mcp-app/build_data.py", "dashboard/mcp-app/src"],
 }
@@ -42,7 +43,7 @@ SOURCE_SUFFIXES = {".py", ".sql", ".md", ".qmd", ".yml", ".yaml", ".js", ".ts", 
 NON_TILE_MODELS = {"metric_avg_time_to_close", "metric_open_issue_count"}
 # Renderers that loop over tiles.yml instead of naming each model. They get
 # every tile by construction, so they're checked for the loop instead.
-MANIFEST_DRIVEN = {"prefab": "tiles.sections()", "tanstack": "tiles.sections()"}
+MANIFEST_DRIVEN = {"prefab": "tiles.sections()", "tanstack": "tiles.sections()", "chartjs": "build_payload"}
 
 
 def tile_models() -> list[str]:

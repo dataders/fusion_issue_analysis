@@ -12,6 +12,6 @@
     "apache-arrow": "^17"
   },
   "devDependencies": {
-    "@motherduck/wasm-client": "^0.8"
+    "@motherduck/wasm-client": "^1.5.5-r.1"
   }
 }

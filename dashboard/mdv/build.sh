@@ -2,7 +2,7 @@
 set -euo pipefail
 
 HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-MDV_SHA="${MDV_SHA:-b9d5a8c1bb66b094a8745775cb9bf1389f08403f}"
+MDV_SHA="${MDV_SHA:-e079b27b4a84848d17e70176200401cb80b78291}"
 MDV_CACHE_ROOT="${XDG_CACHE_HOME:-${HOME:-${TMPDIR:-/tmp}}/.cache}/fusion_issue_analysis"
 MDV_CACHE_DIR="${MDV_CACHE_DIR:-${MDV_CACHE_ROOT}/mdv-${MDV_SHA}}"
 NPM_CACHE_DIR="${npm_config_cache:-${NPM_CONFIG_CACHE:-${HOME:-${TMPDIR:-/tmp}}/.npm}}"

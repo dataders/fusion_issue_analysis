@@ -2,7 +2,7 @@ PORT ?= 8081
 MCP_APP_PORT ?= 3001
 
 .DEFAULT_GOAL := help
-.PHONY: serve build ui-test data-freshness about dbt extract prefab ggsql glyf tanstack mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
+.PHONY: serve build ui-test data-freshness framework-versions about dbt extract prefab ggsql glyf chartjs tanstack mviz npm-dashboards mdv marimo observable evidence quarto dac shaper dbt-charts graphene-mcp mcp-app mcp-app-serve kill-server clean help
 
 # ── Top-level ────────────────────────────────────────────────────────────────
 
@@ -13,7 +13,10 @@ serve: build kill-server
 	@sleep 1 && open http://localhost:$(PORT)
 
 ## build        Build every dashboard's static output (no serve)
-build: data-freshness about prefab ggsql glyf npm-dashboards mdv marimo quarto dac shaper dbt-charts
+build: data-freshness framework-versions about prefab ggsql glyf npm-dashboards mdv marimo quarto dac shaper dbt-charts chartjs
+
+framework-versions:
+	uv run python dashboard/write_framework_versions.py
 
 ## ui-test      Run Playwright checks against generated dashboard exports
 ui-test:
@@ -51,6 +54,10 @@ ggsql:
 ## glyf         Build Glyf dashboard
 glyf:
 	uv run dashboard/glyf/build.py
+
+## chartjs     Bake the tile contract into one self-contained Chart.js page
+chartjs:
+	uv run python dashboard/chartjs/build.py
 
 ## tanstack     Build TanStack Charts from the shared dbt snapshot
 tanstack:
@@ -126,7 +133,7 @@ kill-server:
 clean:
 	rm -f  dashboard/prefab/app.html dashboard/prefab/app_reactive.html dashboard/prefab/app_myspace.html dashboard/prefab/app_windows_2000.html
 	rm -f  dashboard/data_freshness.json
-	rm -f  dashboard/ggsql/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
+	rm -f  dashboard/ggsql/index.html dashboard/chartjs/index.html dashboard/mviz/index.html dashboard/mdv/index.html dashboard/marimo.html
 	rm -rf dashboard/tanstack/data dashboard/tanstack/dist
 	rm -rf dashboard/mviz/data dashboard/mdv/data dashboard/observable/dist dashboard/evidence/build
 	rm -f  dashboard/quarto/index.html
