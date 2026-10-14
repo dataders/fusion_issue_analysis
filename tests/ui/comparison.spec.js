@@ -1,12 +1,14 @@
 const { test, expect } = require('@playwright/test');
+test.use({ serviceWorkers: 'block' });
 
 // Exercise the shell independently of generated dashboards and network data.
 // Tall same-origin fixtures make linked scrolling deterministic.
 test.beforeEach(async ({ page }) => {
   await page.route('**/*', async route => {
     const request = route.request();
+    if (/\/comparison-(core|adapters)\.js$/.test(new URL(request.url()).pathname)) return route.fulfill({ contentType: 'text/javascript', body: '' });
     if (request.isNavigationRequest() && request.frame().parentFrame()) {
-      return route.fulfill({ contentType: 'text/html', headers: { 'Cross-Origin-Embedder-Policy': 'credentialless' }, body: `<!doctype html><html><body style="margin:0;height:${request.url().includes('tanstack') ? 6000 : 4000}px"><h1>Dashboard fixture</h1><input aria-label="Dashboard filter"></body></html>` });
+      return route.fulfill({ contentType: 'text/html', headers: { 'Cross-Origin-Embedder-Policy': 'credentialless' }, body: `<!doctype html><html><style>#scheme-probe {color:black} html[data-appearance="dark"] #scheme-probe{color:white}</style><body style="margin:0;height:${request.url().includes('tanstack') ? 6000 : 4000}px"><h1 id="scheme-probe">Dashboard fixture</h1><input aria-label="Dashboard filter"><script>addEventListener("message", e => {if(e.data?.type === "bakeoff:appearance") document.documentElement.dataset.appearance=e.data.appearance;});</script></body></html>` });
     }
     if (new URL(request.url()).hostname !== '127.0.0.1') return route.abort();
     return route.continue();
@@ -72,6 +74,30 @@ test('normalizes invalid comparison URLs and avoids duplicate frameworks when sw
   await page.getByRole('button', { name: 'Exit comparison' }).click();
   await expect(page.locator('#panes iframe')).toHaveCount(1);
   await expect(page).not.toHaveURL(/compare=/);
+});
+
+test('comparison appearance overrides system for every pane without resetting filters', async ({ page }) => {
+  await page.emulateMedia({ colorScheme: 'light' });
+  await page.goto('/index.html?tab=chartjs&compare=tanstack&appearance=dark');
+  await expect(page.getByLabel('Appearance')).toHaveValue('dark');
+  await expect(page.frameLocator('#frame').locator('#scheme-probe')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await expect(page.frameLocator('.comparison-pane iframe').locator('#scheme-probe')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await page.frameLocator('#frame').getByLabel('Dashboard filter').fill('retain this');
+  await page.getByLabel('Appearance').selectOption('light');
+  await expect(page.frameLocator('#frame').locator('#scheme-probe')).toHaveCSS('color', 'rgb(0, 0, 0)');
+  await expect(page.frameLocator('.comparison-pane iframe').locator('#scheme-probe')).toHaveCSS('color', 'rgb(0, 0, 0)');
+  await expect(page.frameLocator('#frame').getByLabel('Dashboard filter')).toHaveValue('retain this');
+  await expect(page).toHaveURL(/appearance=light/);
+  await page.reload();
+  await expect(page.getByLabel('Appearance')).toHaveValue('light');
+  await page.getByLabel('Appearance').selectOption('system');
+  await page.emulateMedia({ colorScheme: 'dark' });
+  await expect(page.frameLocator('#frame').locator('#scheme-probe')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await page.getByRole('button', { name: '+ Add third' }).click();
+  await expect(page.frameLocator('.comparison-pane iframe').last().locator('#scheme-probe')).toHaveCSS('color', 'rgb(255, 255, 255)');
+  await page.getByRole('button', { name: 'Exit comparison' }).click();
+  await expect(page.getByLabel('Appearance')).toBeHidden();
+  await expect(page).not.toHaveURL(/appearance=/);
 });
 
 test('linked scrolling follows relative position and can be turned off', async ({ page }) => {

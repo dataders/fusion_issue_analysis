@@ -139,6 +139,28 @@
     .pane-header select { min-width: 0; width: 100%; flex: 1; }
     .pane-header button { padding: 6px 9px; }
     #panes.stacked { flex-direction: column; }
+    .appearance-note { color: #bbb; font-size: .7rem; max-width: 220px; }
+    html[data-appearance="light"] { color-scheme: light; }
+    html[data-appearance="light"] body,
+    html[data-appearance="light"] header { background: #f7f8fa; }
+    html[data-appearance="light"] header { border-color: #d1d5db; }
+    html[data-appearance="light"] .header-title,
+    html[data-appearance="light"] .chrome-meta,
+    html[data-appearance="light"] .compare-tools label,
+    html[data-appearance="light"] .toolbar a,
+    html[data-appearance="light"] .appearance-note { color: #4b5563; }
+    html[data-appearance="light"] .toolbar button,
+    html[data-appearance="light"] .toolbar select,
+    html[data-appearance="light"] .pane-header,
+    html[data-appearance="light"] .pane-header button,
+    html[data-appearance="light"] .pane-header select,
+    html[data-appearance="light"] .picker-panel { background: #fff; color: #172033; border-color: #c7cdd6; }
+    html[data-appearance="light"] .toolbar .primary-action { background: #e0e7ff; }
+    html[data-appearance="light"] #framework-search { background: #f7f8fa; color: #172033; border-color: #c7cdd6; }
+    html[data-appearance="light"] .main-tabs button { color: #374151; }
+    html[data-appearance="light"] .main-tabs button:hover,
+    html[data-appearance="light"] .main-tabs button.active { background: #e0e7ff; color: #172033; }
+    html[data-appearance="light"] #share-status { color: #334a88; }
     .subnav button { padding: 7px 18px; color: #aaa; font-size: .875rem; }
 
     .version-badge {
@@ -295,6 +317,7 @@
       <div id="compare-tools" class="compare-tools" hidden>
         <button id="add-pane">+ Add third</button>
         <label id="layout-control">Layout <select id="layout"><option value="side">Side by side</option><option value="stacked">Stacked</option></select></label>
+        <label>Appearance <select id="appearance"><option value="system">System</option><option value="light">Light</option><option value="dark">Dark</option></select></label>
         <label title="Keeps matching sections and charts together, even when their heights differ. Uses page position when no matching headings are available."><input id="link-scroll" type="checkbox"> Link scroll</label>
         <button id="share-comparison">Copy comparison link</button>
         <span id="share-status" role="status"></span>
@@ -320,6 +343,8 @@
     </section>
   </main>
 
+  <script src="comparison-core.js"></script>
+  <script src="comparison-adapters.js"></script>
   <script>
     const tabs = Array.from(document.querySelectorAll('.main-tabs button'));
     const prefabThemes = Array.from(document.querySelectorAll('#prefab-themes button'));
@@ -426,6 +451,7 @@
       btn.classList.add('active');
       document.getElementById('selected-framework').textContent = frameworkLabel(btn);
       document.getElementById('primary-name').textContent = frameworkLabel(btn);
+      frame.dataset.framework = btn.dataset.tab;
       closePicker();
       const isPrefab = btn.dataset.tab === "prefab";
       const isDuckDBWasm = btn.dataset.tab === "duckdb-wasm";
@@ -495,6 +521,7 @@
       );
       document.getElementById('layout').value = params.get('layout') === 'stacked' ? 'stacked' : 'side';
       document.getElementById('link-scroll').checked = params.get('scroll') === 'linked';
+      document.getElementById('appearance').value = ['light', 'dark'].includes(params.get('appearance')) ? params.get('appearance') : 'system';
       if (!tab) tab = 'dbt-charts';
 
       tab = legacyTabAliases[tab] || tab;
@@ -519,6 +546,47 @@
     const panes = document.getElementById('panes');
     const compareToggle = document.getElementById('compare-toggle');
     const catalog = tabs.filter(button => button.dataset.tab !== 'about');
+    const appearanceSelect = document.getElementById('appearance');
+    const systemAppearance = matchMedia('(prefers-color-scheme: dark)');
+
+    function resolvedAppearance() {
+      return appearanceSelect.value === 'system' ? (systemAppearance.matches ? 'dark' : 'light') : appearanceSelect.value;
+    }
+
+    function applyPaneAppearance(iframe) {
+      const comparison = comparisons.length > 0;
+      const appearance = resolvedAppearance();
+      // Hint native browser controls; framework bridges also update chart
+      // palettes and explicit themes (which may ignore iframe color-scheme).
+      iframe.style.colorScheme = comparison ? appearance : '';
+      let support = null;
+      try {
+        const settings = { appearance, comparison };
+        support = window.applyCoreComparisonAdapter?.(iframe, settings)
+          || window.applyComparisonAdapter?.(iframe, settings);
+        iframe.contentWindow?.postMessage({ type: 'bakeoff:appearance', ...settings, appearance: comparison ? appearance : 'system' }, location.origin);
+      } catch { support = { theme: false, layout: false, note: 'This view controls its own appearance.' }; }
+      const header = iframe.closest('.pane').querySelector('.pane-header');
+      let note = header.querySelector('.appearance-note');
+      const message = comparison && support && (!support.theme || !support.layout)
+        ? support.note || 'Some appearance settings are unavailable.' : '';
+      if (message && !note) {
+        note = document.createElement('span');
+        note.className = 'appearance-note';
+        header.append(note);
+      }
+      if (note) { note.textContent = message; note.hidden = !message; }
+    }
+
+    function applyComparisonAppearance() {
+      if (comparisons.length) document.documentElement.dataset.appearance = resolvedAppearance();
+      else delete document.documentElement.dataset.appearance;
+      panes.querySelectorAll('iframe').forEach(applyPaneAppearance);
+    }
+    appearanceSelect.addEventListener('change', () => { applyComparisonAppearance(); writeComparisonUrl(); });
+    systemAppearance.addEventListener('change', () => {
+      if (appearanceSelect.value === 'system') applyComparisonAppearance();
+    });
 
     function closePicker() {
       const hadFocus = picker.contains(document.activeElement);
@@ -572,11 +640,12 @@
     function primaryId() { return tabs.find(button => button.classList.contains('active')).dataset.tab; }
     function writeComparisonUrl() {
       const url = new URL(location.href);
-      ['compare', 'layout', 'scroll'].forEach(key => url.searchParams.delete(key));
+      ['compare', 'layout', 'scroll', 'appearance'].forEach(key => url.searchParams.delete(key));
       if (comparisons.length) {
         url.searchParams.set('compare', comparisons.join(','));
         if (document.getElementById('layout').value === 'stacked') url.searchParams.set('layout', 'stacked');
         if (document.getElementById('link-scroll').checked) url.searchParams.set('scroll', 'linked');
+        if (appearanceSelect.value !== 'system') url.searchParams.set('appearance', appearanceSelect.value);
       }
       history.replaceState(null, '', url);
       document.getElementById('share-status').textContent = '';
@@ -606,7 +675,7 @@
           pane.className = 'pane comparison-pane';
           pane.innerHTML = '<div class="pane-header"><select></select><button class="view-only">View only</button><button class="remove-pane">×</button></div><iframe></iframe>';
           panes.append(pane);
-          pane.querySelector('iframe').addEventListener('load', event => attachScroll(event.target));
+          pane.querySelector('iframe').addEventListener('load', event => { attachScroll(event.target); applyPaneAppearance(event.target); });
           pane.querySelector('select').addEventListener('change', event => {
             comparisons[index] = event.target.value;
             renderComparisons(); writeComparisonUrl();
@@ -632,10 +701,12 @@
         select.value = id;
         pane.querySelector('.remove-pane').setAttribute('aria-label', `Remove comparison ${index + 2}`);
         const iframe = pane.querySelector('iframe');
+        iframe.dataset.framework = id;
         iframe.title = frameworkLabel(button);
         if (iframe.getAttribute('src') !== button.dataset.src) iframe.src = button.dataset.src;
       });
       existing.slice(comparisons.length).forEach(pane => pane.remove());
+      applyComparisonAppearance();
     }
     compareToggle.addEventListener('click', () => {
       if (!comparisons.length) return addComparison();
@@ -663,7 +734,7 @@
     // layouts, async chart rendering and table pagination need no fixed offsets.
     const scrollTargets = new WeakMap();
     const attachedDocuments = new WeakSet();
-    const anchorSelector = 'h1,h2,h3,h4,h5,h6,[role="heading"],[data-slot="card-title"],.chart-title,[data-tile],[data-tile-id],[data-section]';
+    const anchorSelector = 'h1,h2,h3,h4,h5,h6,[role="heading"],[data-slot="card-title"],.chart-title,[data-tile],[data-tile-id],[data-section],[data-chart-id]';
     let lastScrollSource = frame;
     let pendingScroll = null;
     let scrollRequest = 0;
@@ -681,10 +752,10 @@
           root = root.parentElement;
         }
         root ||= pageRoot;
-        const keys = ['data-tile', 'data-tile-id', 'data-section']
+        const keys = ['data-tile', 'data-tile-id', 'data-section', 'data-chart-id']
           .map(name => element.getAttribute(name)).filter(Boolean).map(value => 'id:' + normalizeAnchor(value));
         // Container text includes the whole tile, so only use short title text.
-        const text = element.textContent.trim();
+        const text = (element.getAttribute('data-chart-title') || element.textContent).trim();
         if (text && text.length < 160) keys.push('text:' + normalizeAnchor(text));
         if (!keys.length) continue;
         roots.set(root, (roots.get(root) || 0) + 1);
@@ -789,7 +860,7 @@
     document.getElementById('link-scroll').addEventListener('change', () => {
       if (document.getElementById('link-scroll').checked) queueScroll(lastScrollSource.isConnected ? lastScrollSource : frame);
     });
-    frame.addEventListener('load', () => attachScroll(frame));
+    frame.addEventListener('load', () => { attachScroll(frame); applyPaneAppearance(frame); });
     attachScroll(frame);
     loadTabFromHash();
     loadDataFreshness();

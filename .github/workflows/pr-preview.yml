@@ -59,6 +59,7 @@ jobs:
         run: |
           mkdir -p preview/prefab
           cp dashboard/index.html preview/index.html
+          cp dashboard/comparison-core.js dashboard/comparison-adapters.js preview/
           cp dashboard/about.html preview/about.html
           cp dashboard/data_freshness.json preview/data_freshness.json
           mkdir -p preview/shaper

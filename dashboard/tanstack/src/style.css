@@ -37,14 +37,20 @@ a { color: #256abf; text-decoration: none; }
 a:hover { text-decoration: underline; }
 progress { width: 80px; accent-color: #2a78d6; }
 .empty { padding: 24px 0; }
-@media (max-width: 760px) {
+@media (max-width: 759.98px) {
   main { padding: 16px; }
   .tiles { grid-template-columns: minmax(0, 1fr); }
   .kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .tile { padding: 14px; }
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #141920; --surface: #1c232d; --text: #e5eaf1; --muted: #acb8c8; --border: #354151; }
-  a { color: #82b8ff; }
-  .stale { color: #f0ba67; }
+  :root:not([data-chart-appearance="light"]) { --bg: #141920; --surface: #1c232d; --text: #e5eaf1; --muted: #acb8c8; --border: #354151; }
+  :root:not([data-chart-appearance="light"]) a { color: #82b8ff; }
+  :root:not([data-chart-appearance="light"]) .stale { color: #f0ba67; }
 }
+
+:root[data-chart-appearance="dark"] { color-scheme:dark; --bg:#141920; --surface:#1c232d; --text:#e5eaf1; --muted:#acb8c8; --border:#354151; }
+:root[data-chart-appearance="dark"] a { color:#82b8ff; }
+:root[data-chart-appearance="dark"] .stale { color:#f0ba67; }
+:root[data-chart-appearance="light"] { color-scheme:light; }
+@media(max-width:419.98px) { .kpis { grid-template-columns:minmax(0,1fr); } }
