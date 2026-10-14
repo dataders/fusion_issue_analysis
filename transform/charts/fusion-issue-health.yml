@@ -12,6 +12,17 @@ source: fusion_issues
 style:
   title: { font: { case: none } }
   charts:
+    # Keep legends above the plot and let the renderer wrap at chart width.
+    legend: { position: top, direction: horizontal }
+    category_colors:
+      age_bucket:
+        # Bind values explicitly so legend/stack ordering cannot shift colors.
+        values:
+          "0-7d": "#b7d3f6"
+          "8-30d": "#86b6ef"
+          "31-90d": "#5598e7"
+          "91-180d": "#256abf"
+          "180d+": "#104281"
     kpi: { label: { font: { case: none } } }
     table: { header: { font: { case: none } } }
 
@@ -191,10 +202,6 @@ charts:
       orientation: horizontal
       stack: zero
       stack_order: data
-      color:
-        categorical:
-          # stops follow the alphabetical domain: 0-7d, 180d+, 31-90d, 8-30d, 91-180d
-          palette: ["#b7d3f6", "#104281", "#5598e7", "#86b6ef", "#256abf"]
       endpoint_labels: { visible: false }
       legend:
         position: top

@@ -28,6 +28,8 @@ type ChartRow = { category: string; value: number | null; series: string; source
 const data = snapshot as Payload;
 const app = document.querySelector<HTMLElement>('#app')!;
 const dark = window.matchMedia('(prefers-color-scheme: dark)');
+let appearanceOverride: 'light' | 'dark' | null = null;
+const isDark = () => appearanceOverride ? appearanceOverride === 'dark' : dark.matches;
 const number = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
 const hosts: { destroy(): void }[] = [];
 
@@ -50,7 +52,7 @@ function palette(tile: Tile): Palette {
   return (data.manifest.palette[tile.form === 'grouped_bar' ? 'flow' : tile.color ?? ''] ?? {}) as Palette;
 }
 function color(entry: Palette[string]) {
-  return typeof entry === 'string' ? entry : entry[dark.matches ? 'dark' : 'light'];
+  return typeof entry === 'string' ? entry : entry[isDark() ? 'dark' : 'light'];
 }
 function seriesLabel(key: string, colors: Palette) {
   const entry = colors[key];
@@ -193,6 +195,7 @@ function chart(card: HTMLElement, tile: Tile, rows: Row[]) {
   hosts.push(mountChart(container, { ...options, definition }));
 }
 function render() {
+  const scrollTop = window.scrollY;
   for (const host of hosts.splice(0)) host.destroy();
   app.replaceChildren();
   const header = element('header');
@@ -229,9 +232,19 @@ function render() {
       }
     }
   }
+  window.scrollTo({ top: scrollTop, behavior: 'instant' });
 }
 render();
-dark.addEventListener('change', render);
+window.addEventListener('message', (event) => {
+  if (event.source !== window.parent || event.origin !== location.origin || event.data?.type !== 'bakeoff:appearance') return;
+  const next = event.data.comparison && ['light', 'dark'].includes(event.data.appearance) ? event.data.appearance as 'light' | 'dark' : null;
+  if (next === appearanceOverride) return;
+  appearanceOverride = next;
+  if (next) document.documentElement.dataset.chartAppearance = next;
+  else delete document.documentElement.dataset.chartAppearance;
+  render();
+});
+dark.addEventListener('change', () => { if (!appearanceOverride) render(); });
 window.addEventListener('pagehide', (event) => {
   if (!event.persisted) hosts.forEach((host) => host.destroy());
 });

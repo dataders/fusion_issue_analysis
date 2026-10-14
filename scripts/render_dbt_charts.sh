@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
-# Render the dbt Charts dashboard in light and dark variants.
+# Render dbt Charts in light and dark themes, with native comparison layouts.
 #
 #   scripts/render_dbt_charts.sh [output_dir]   (default: dashboard/dbt-charts)
 #
 # dct output is always one fixed theme and never follows prefers-color-scheme,
-# so we render both themes and let dashboard/dbt-charts/fusion-issue-health.html
-# (a checked-in switcher) pick one. Each render declares its color scheme so a
+# so we render both themes and three comparison widths, then let the checked-in
+# switcher/runtime select the appropriate layout. Each declares its scheme so a
 # browser's forced-dark mode doesn't repaint it (dark SVG text on a darkened
 # background is unreadable). Reads the snapshot at data/serve/fusion_issues.duckdb
 # (scripts/snapshot_dashboard_db.sh).
@@ -19,13 +19,15 @@ uv run dct validate charts/fusion-issue-health-dark.yml --strict
 
 render() {  # <board> <output file> <color-scheme>
   uv run dct render "charts/$1" --format html --output "$OUT/$2"
-  sed -i.bak "s|<head>|<head><meta name=\"color-scheme\" content=\"$3\">|" "$OUT/$2"
+  sed -i.bak -e "s|<head>|<head><meta name=\"color-scheme\" content=\"$3\">|" -e 's|</body>|<script src="comparison.js"></script></body>|' "$OUT/$2"
   rm -f "$OUT/$2.bak"
 }
 render fusion-issue-health.yml fusion-issue-health-light.html "only light"
 render fusion-issue-health-dark.yml fusion-issue-health-dark.html "only dark"
+uv run python "$ROOT/dashboard/dbt-charts/render_comparison.py" "$OUT"
 
 # The switcher lives next to the renders; copy it when rendering elsewhere (PR previews).
 if [ "$OUT" != "$ROOT/dashboard/dbt-charts" ]; then
   cp "$ROOT/dashboard/dbt-charts/fusion-issue-health.html" "$OUT/"
+  cp "$ROOT/dashboard/dbt-charts/comparison.js" "$OUT/"
 fi

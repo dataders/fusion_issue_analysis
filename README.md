@@ -14,9 +14,19 @@ Start here:
 Use the searchable framework picker to switch dashboards. **Compare frameworks**
 opens two views; **Add third** opens another. Each pane keeps its own filters.
 Choose side-by-side or stacked layout (mobile stacks automatically), use **Link
-scroll** to match relative page position in dashboards with page scrolling, and
+scroll** to keep matching sections and charts aligned despite different heights, and
 **Copy comparison link** to share the selected frameworks and layout. Links do not
 include filters inside dashboards; live views may show newer data than snapshots.
+**Appearance** applies Light, Dark, or System to all comparison panes and is saved
+in the comparison link. Comparison layouts use the pane width: charts have two
+columns from 760px and one below; KPIs use three, two, or one column (below 420px).
+These presentation rules leave the underlying data and series colors intact.
+dbt Charts uses native pre-rendered layouts at those breakpoints and still scales
+within each tier; wide tables retain the renderer's constraints. Source previews
+and unsupported external views show a note instead of claiming theme parity.
+Linked scrolling follows shared tile IDs or headings in the main scrolling panel,
+leaves table scrollbars independent, and falls back to relative page position when
+headings do not match. Pages hosted on another origin scroll independently.
 
 ## Local Development
 

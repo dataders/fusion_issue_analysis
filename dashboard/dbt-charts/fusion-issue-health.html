@@ -2,13 +2,18 @@
 <html lang="en">
 <head>
   <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="color-scheme" content="light dark">
   <title>dbt charts | dbt v2 issue health</title>
   <script>
     // dct renders one fixed theme, so scripts/render_dbt_charts.sh renders a
-    // light and a dark variant; send the viewer to the one matching their system.
-    const dark = window.matchMedia && matchMedia("(prefers-color-scheme: dark)").matches;
-    location.replace((dark ? "fusion-issue-health-dark.html" : "fusion-issue-health-light.html") + location.hash);
+    // light and dark variants; honor the shared comparison preference first.
+    const params = new URLSearchParams(location.search);
+    const preference = params.get('appearance');
+    const dark = preference === 'dark' || (preference !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches);
+    const layout = innerWidth < 420 ? 'mobile' : innerWidth < 760 ? 'narrow' : 'wide';
+    const suffix = params.get('comparison') === '1' ? `-${layout}` : '';
+    location.replace(`fusion-issue-health-${dark ? 'dark' : 'light'}${suffix}.html${location.search}${location.hash}`);
   </script>
 </head>
 <body>
