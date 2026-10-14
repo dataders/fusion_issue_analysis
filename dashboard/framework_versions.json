@@ -1,5 +1,5 @@
 {
-  "checked_at": "2026-10-14T17:08:35.673998+00:00",
+  "checked_at": "2026-10-14T17:39:20.141728+00:00",
   "frameworks": {
     "dbt-charts": {
       "installed": "0.9.1",
@@ -26,9 +26,9 @@
       "source": "https://registry.npmjs.org/%40evidence-dev%2Fevidence/latest"
     },
     "dac": {
-      "installed": "0.4.0",
+      "installed": "0.26.0",
       "latest": "0.26.0",
-      "status": "outdated",
+      "status": "current",
       "source": "https://api.github.com/repos/bruin-data/dac/releases/latest"
     },
     "ggsql": {
@@ -80,9 +80,9 @@
       "source": "https://pypi.org/pypi/marimo/json"
     },
     "quarto": {
-      "installed": "1.10.18",
+      "installed": "1.10.19",
       "latest": "1.10.19",
-      "status": "outdated",
+      "status": "current",
       "source": "https://api.github.com/repos/quarto-dev/quarto-cli/releases/latest"
     },
     "shaper": {
