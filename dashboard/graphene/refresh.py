@@ -26,9 +26,9 @@ DEFAULT_HTML = Path(__file__).with_name("index.html")
 MARKER = re.compile(r"window\.\$GRAPHENE_STANDALONE\s*=\s*")
 OLD_CALLOUT = (
     '<div class="callout"><strong><!></strong> open issues are unassigned. '
-    'The chart below shows the 15 busiest assignees.</div>'
+    "The chart below shows the 15 busiest assignees.</div>"
 )
-EMPTY_CALLOUT = '<div hidden><strong><!></strong></div>'
+EMPTY_CALLOUT = "<div hidden><strong><!></strong></div>"
 OLD_NOTE = (
     "This is a static HTML export of a Graphene page. For live pages, "
     "use Graphene's local dev server, or Graphene Cloud."
@@ -79,8 +79,7 @@ def refresh(source: Path, output: Path) -> int:
             if columns != [field["name"] for field in result["fields"]]:
                 raise ValueError(f"Graphene result schema changed: {columns}")
             result["rows"] = [
-                dict(zip(columns, (json_value(value) for value in row), strict=True))
-                for row in cursor.fetchall()
+                dict(zip(columns, (json_value(value) for value in row), strict=True)) for row in cursor.fetchall()
             ]
             result["sql"] = sql
             result["runAt"] = run_at
