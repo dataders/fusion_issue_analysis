@@ -188,7 +188,7 @@ rows:
         y: { field: issue_count, type: number }
         color: { field: issue_category }
       - name: Open issues by adapter
-        description: (none) = adapter-agnostic
+        description: Issues with adapter labels
         type: chart
         chart: bar
         stacked: true

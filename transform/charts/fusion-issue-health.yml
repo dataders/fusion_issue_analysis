@@ -261,7 +261,7 @@ charts:
     query: open_by_adapter
     type: bar
     title: "Open issues by adapter"
-    subtitle: "(none) = adapter-agnostic"
+    subtitle: "Issues with adapter labels"
     x: adapter
     y: issue_count
     color: issue_category

@@ -1,7 +1,7 @@
 {#
   Q: Which adapters carry the most open work?
   Open non-epic issues per `adapter:*` label, by type. An issue with two
-  adapters counts in both; '(none)' = adapter-agnostic.
+  adapters counts in both; issues without an adapter label are excluded.
 #}
 
 with open_issues as (
@@ -18,11 +18,11 @@ tagged as (
 
 counted as (
     select
-        coalesce(t.adapter, '(none)') as adapter,
+        t.adapter,
         o.issue_category,
         count(*) as issue_count
     from open_issues o
-    left join tagged t using (issue_dlt_id)
+    inner join tagged t using (issue_dlt_id)
     group by all
 )
 
