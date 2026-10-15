@@ -11,6 +11,16 @@ judge**, and each report states its capture date. This keeps the frequent data
 refresh and dashboard deployment fast and avoids putting the OpenAI key in a PR
 workflow that checks out untrusted changes.
 
+The results page also shows a score status beside each view. Its 2026-10-14
+cards have no recorded build fingerprint, so they start as **Freshness
+unverified**. On the deployed site, a data-dependent view changes to **Needs
+review · new data** when the latest source load is on a later day than the
+capture. This is a conservative change signal, not a revised score or proof
+that the visible page differs. Graphene's committed export and Shaper's source
+preview are not rebuilt from that data load and remain unverified. A future
+evaluation can record per-view input fingerprints to distinguish **Current**
+from **Needs review** after code or generated-artifact changes.
+
 ## Incremental judge refresh
 
 For a future trusted refresh workflow, start with the changes to each view's
