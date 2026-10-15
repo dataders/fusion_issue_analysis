@@ -1,0 +1,762 @@
+artifact_id: tanstack
+rubric_version: 2.8.0
+formula: baseline
+judges:
+- openai:gpt-5.6-terra
+rows:
+- criterion_id: DEL-01
+  category: delivery
+  checker: program
+  verdict: 'yes'
+  points_possible: 10
+  points_earned: 10.0
+  evidence: ''
+  agreement: null
+  votes: 0
+- criterion_id: DEL-02
+  category: delivery
+  checker: program
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -4.0
+  evidence: 1 console errors
+  agreement: null
+  votes: 0
+- criterion_id: DEL-03
+  category: delivery
+  checker: program
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: ''
+  agreement: null
+  votes: 0
+- criterion_id: COR-01
+  category: correctness
+  checker: program
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: the brief has no reference numbers
+  agreement: null
+  votes: 0
+- criterion_id: BRF-01
+  category: answers_brief
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Checked all six brief questions against the visible dashboard sections: current health KPIs;
+    backlog trend and weekly opened/closed chart; triage age/status, 48-hour response trend, and oldest-first
+    queue; area and adapter charts; epic completion table; requested-issue table and assignee chart.'
+  agreement: 1.0
+  votes: 1
+- criterion_id: BRF-02
+  category: answers_brief
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared the visible page area devoted to requested dashboard content with content not requested
+    in the brief.
+  agreement: 1.0
+  votes: 1
+- criterion_id: WRK-01
+  category: working
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed the page for a crash/error state and for widespread empty, loading, or failed panels.
+  agreement: 1.0
+  votes: 1
+- criterion_id: WRK-02
+  category: working
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed all visible KPI cards, charts, and tables for blank states, error messages, spinners,
+    or placeholders instead of data.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-01
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked the value-axis baselines on the stacked area chart and all horizontal/vertical bar
+    charts.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-02
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared rate/share/% labels with the plotted values and KPI values, including “Answered within
+    48h (28d)” and “New issues answered within 48 hours.”
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-03
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Compared repeated issue-type colors across charts: Feature is blue, Bug orange, Task green,
+    and Other gray in the backlog, area, adapter, and assignee charts.'
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-04
+  category: honesty
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked visible charts for independent dual value axes and ambiguous series-to-axis mappings.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-05
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared the side-by-side “Open issues by area” and “Open issues by adapter” charts; their
+    differing visible axis ranges are labeled on each chart.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-06
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked line charts for connections between unordered categories; the visible line chart is
+    plotted by week, an ordered time sequence.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-01
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed all chart forms for inappropriate encodings of trends, rankings, or part-to-whole
+    comparisons.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-02
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked whether two or more charts use forms that hide their primary comparison.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-03
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed multi-series charts, including issue type stacks and age-band stacks, against their
+    legends.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-04
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Checked ordering of categorical comparisons: areas, adapters, assignees, requested issues,
+    epics, and triage queue.'
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-05
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked KPI cards and charts for single values presented as gauges or one-bar charts.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-07
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared charts for duplicated datasets displayed in the same form.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-08
+  category: form
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -8.0
+  evidence: '"Opened vs closed per week" — the roughly 440 opened-issues bar around 05-25 forces the axis
+    to 500, making the much smaller weekly opened/closed comparisons difficult to read'
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-06
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed the start and end points of the weekly time-series charts and the displayed as-of
+    date for an unexplained partial-period spike or drop.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-01
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked chart titles, legends, axis/category labels, ticks, and table-adjacent chart text
+    across the full-resolution tiles.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-02
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked whether overlapping chart text appears in three or more charts.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-03
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked titles, chart labels, axis labels, table headers, and table values within their respective
+    cards for clipping, ellipses, or overflow.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-04
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked text legibility using the full-resolution tiles, including chart ticks, legends, supporting
+    subtitles, and table text.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-05
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked whether plotted bars, lines, stacked segments, or table cells are too compressed to
+    distinguish in their displayed cards.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-01
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked all headline metrics, chart axes, legends, subtitles, and table columns for units.
+    Counts are identified by labels such as “Open issues” or “Issues”; durations use “days,” “hours,”
+    or “Age days”; and rates are marked with “%.”
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-02
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked page titles, chart titles, axes, legends, and table headers for raw field names, code-like
+    names, or placeholders.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-03
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked the page header and subtitles for scope and time coverage.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-04
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked headline tiles for periods or page-level temporal context. The page states “Data as
+    of 2026-10-14,” while period-specific metrics are labeled “(28d)” or “+52 in 28 days.”
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-05
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked every visible chart and table for a descriptive title or label, including the triage
+    queue, epic table, requested-issues table, and assignee chart.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-07
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked visible percentages and shares. “Answered within 48h (28d)” identifies the response-time
+    condition and period; the weekly chart further states “By week opened; unanswered issues count as
+    misses.” Epic percentages are labeled “Pct complete” alongside “Child closed” and “Child total.”
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-08
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked chart titles, axes, subtitles, and plotted measures for mismatches. Issue charts use
+    an “Issues” axis; the response chart uses “Answered within 48h (%)”; and the epic table’s completion
+    percentage corresponds with child-closed and child-total columns.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-09
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked headline figures against related statements and visible charts/tables. The “+52 in
+    28 days” open-issue change is consistent with “Opened / closed (28d) 123 / 71” (a net increase of
+    52), and there is one displayed as-of date.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-01
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: The final “Open issues by assignee” card occupies only the left half of its row, leaving a
+    large unused blank region to its right.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-02
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Card edges, row bottoms, and spacing between adjacent cards across the dashboard.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-04
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether tables, filters, or minor visuals are placed above or given substantially more prominence
+    than the headline metrics and primary charts.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-05
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visual weight of card borders, fills, headers, shadows, icons, and other decoration relative
+    to the charts and tables.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-06
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether chart colors have explained, meaningful encodings and are used consistently.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-07
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible page text and components for placeholder content, debug output, test elements, or
+    other leftover scaffolding.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-01
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 10
+  points_earned: 0.0
+  evidence: Page title and chart evidence for a declarative main finding
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-03
+  category: excellence
+  checker: judge
+  verdict: 'yes'
+  points_possible: 3
+  points_earned: 3.0
+  evidence: “Open issues 511” with “+52 in 28 days”
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-04
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 6
+  points_earned: 0.0
+  evidence: Charts for an in-place annotation, target line, or deliberately highlighted point/series
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-06
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 5
+  points_earned: 0.0
+  evidence: Use of neutral-gray data with a single accent reserved for the focal subject
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-07
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 4
+  points_earned: 0.0
+  evidence: Multi-series charts for direct series labels rather than reliance on legends
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-08
+  category: excellence
+  checker: judge
+  verdict: 'yes'
+  points_possible: 5
+  points_earned: 5.0
+  evidence: “Open at the end of each week, by type” | “By week opened; unanswered issues count as misses”
+    | “Issues with several areas count in each” | “(none) = adapter-agnostic” | “Top 15, excluding unassigned”
+  agreement: 1.0
+  votes: 1
+score: 0.527
+category_scores:
+  delivery: 0.6
+  excellence: 0.242
+agreement: 1.0
+judge_errors: []
+votes:
+- criterion_id: BRF-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Checked all six brief questions against the visible dashboard sections: current health KPIs;
+    backlog trend and weekly opened/closed chart; triage age/status, 48-hour response trend, and oldest-first
+    queue; area and adapter charts; epic completion table; requested-issue table and assignee chart.'
+  round: 1
+- criterion_id: BRF-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared the visible page area devoted to requested dashboard content with content not requested
+    in the brief.
+  round: 1
+- criterion_id: WRK-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed the page for a crash/error state and for widespread empty, loading, or failed panels.
+  round: 1
+- criterion_id: WRK-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed all visible KPI cards, charts, and tables for blank states, error messages, spinners,
+    or placeholders instead of data.
+  round: 1
+- criterion_id: HON-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked the value-axis baselines on the stacked area chart and all horizontal/vertical bar
+    charts.
+  round: 1
+- criterion_id: HON-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared rate/share/% labels with the plotted values and KPI values, including “Answered within
+    48h (28d)” and “New issues answered within 48 hours.”
+  round: 1
+- criterion_id: HON-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Compared repeated issue-type colors across charts: Feature is blue, Bug orange, Task green,
+    and Other gray in the backlog, area, adapter, and assignee charts.'
+  round: 1
+- criterion_id: HON-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Checked visible charts for independent dual value axes and ambiguous series-to-axis mappings.
+  round: 1
+- criterion_id: HON-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared the side-by-side “Open issues by area” and “Open issues by adapter” charts; their
+    differing visible axis ranges are labeled on each chart.
+  round: 1
+- criterion_id: HON-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked line charts for connections between unordered categories; the visible line chart is
+    plotted by week, an ordered time sequence.
+  round: 1
+- criterion_id: FRM-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed all chart forms for inappropriate encodings of trends, rankings, or part-to-whole
+    comparisons.
+  round: 1
+- criterion_id: FRM-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked whether two or more charts use forms that hide their primary comparison.
+  round: 1
+- criterion_id: FRM-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed multi-series charts, including issue type stacks and age-band stacks, against their
+    legends.
+  round: 1
+- criterion_id: FRM-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Checked ordering of categorical comparisons: areas, adapters, assignees, requested issues,
+    epics, and triage queue.'
+  round: 1
+- criterion_id: FRM-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked KPI cards and charts for single values presented as gauges or one-bar charts.
+  round: 1
+- criterion_id: FRM-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared charts for duplicated datasets displayed in the same form.
+  round: 1
+- criterion_id: FRM-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: '"Opened vs closed per week" — the roughly 440 opened-issues bar around 05-25 forces the axis
+    to 500, making the much smaller weekly opened/closed comparisons difficult to read'
+  round: 1
+- criterion_id: FRM-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed the start and end points of the weekly time-series charts and the displayed as-of
+    date for an unexplained partial-period spike or drop.
+  round: 1
+- criterion_id: LEG-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked chart titles, legends, axis/category labels, ticks, and table-adjacent chart text
+    across the full-resolution tiles.
+  round: 1
+- criterion_id: LEG-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked whether overlapping chart text appears in three or more charts.
+  round: 1
+- criterion_id: LEG-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked titles, chart labels, axis labels, table headers, and table values within their respective
+    cards for clipping, ellipses, or overflow.
+  round: 1
+- criterion_id: LEG-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked text legibility using the full-resolution tiles, including chart ticks, legends, supporting
+    subtitles, and table text.
+  round: 1
+- criterion_id: LEG-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked whether plotted bars, lines, stacked segments, or table cells are too compressed to
+    distinguish in their displayed cards.
+  round: 1
+- criterion_id: LBL-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked all headline metrics, chart axes, legends, subtitles, and table columns for units.
+    Counts are identified by labels such as “Open issues” or “Issues”; durations use “days,” “hours,”
+    or “Age days”; and rates are marked with “%.”
+  round: 1
+- criterion_id: LBL-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked page titles, chart titles, axes, legends, and table headers for raw field names, code-like
+    names, or placeholders.
+  round: 1
+- criterion_id: LBL-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked the page header and subtitles for scope and time coverage.
+  round: 1
+- criterion_id: LBL-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked headline tiles for periods or page-level temporal context. The page states “Data as
+    of 2026-10-14,” while period-specific metrics are labeled “(28d)” or “+52 in 28 days.”
+  round: 1
+- criterion_id: LBL-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked every visible chart and table for a descriptive title or label, including the triage
+    queue, epic table, requested-issues table, and assignee chart.
+  round: 1
+- criterion_id: LBL-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked visible percentages and shares. “Answered within 48h (28d)” identifies the response-time
+    condition and period; the weekly chart further states “By week opened; unanswered issues count as
+    misses.” Epic percentages are labeled “Pct complete” alongside “Child closed” and “Child total.”
+  round: 1
+- criterion_id: LBL-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked chart titles, axes, subtitles, and plotted measures for mismatches. Issue charts use
+    an “Issues” axis; the response chart uses “Answered within 48h (%)”; and the epic table’s completion
+    percentage corresponds with child-closed and child-total columns.
+  round: 1
+- criterion_id: LBL-09
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked headline figures against related statements and visible charts/tables. The “+52 in
+    28 days” open-issue change is consistent with “Opened / closed (28d) 123 / 71” (a net increase of
+    52), and there is one displayed as-of date.
+  round: 1
+- criterion_id: LAY-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: The final “Open issues by assignee” card occupies only the left half of its row, leaving a
+    large unused blank region to its right.
+  round: 1
+- criterion_id: LAY-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Card edges, row bottoms, and spacing between adjacent cards across the dashboard.
+  round: 1
+- criterion_id: LAY-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Whether tables, filters, or minor visuals are placed above or given substantially more prominence
+    than the headline metrics and primary charts.
+  round: 1
+- criterion_id: LAY-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visual weight of card borders, fills, headers, shadows, icons, and other decoration relative
+    to the charts and tables.
+  round: 1
+- criterion_id: LAY-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Whether chart colors have explained, meaningful encodings and are used consistently.
+  round: 1
+- criterion_id: LAY-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible page text and components for placeholder content, debug output, test elements, or
+    other leftover scaffolding.
+  round: 1
+- criterion_id: EXC-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Page title and chart evidence for a declarative main finding
+  round: 1
+- criterion_id: EXC-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Open issues 511” with “+52 in 28 days”
+  round: 1
+- criterion_id: EXC-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Charts for an in-place annotation, target line, or deliberately highlighted point/series
+  round: 1
+- criterion_id: EXC-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Use of neutral-gray data with a single accent reserved for the focal subject
+  round: 1
+- criterion_id: EXC-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Multi-series charts for direct series labels rather than reliance on legends
+  round: 1
+- criterion_id: EXC-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Open at the end of each week, by type” | “By week opened; unanswered issues count as misses”
+    | “Issues with several areas count in each” | “(none) = adapter-agnostic” | “Top 15, excluding unassigned”
+  round: 1

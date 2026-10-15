@@ -1,0 +1,744 @@
+artifact_id: shaper
+rubric_version: 2.8.0
+formula: baseline
+judges:
+- openai:gpt-5.6-terra
+rows:
+- criterion_id: DEL-01
+  category: delivery
+  checker: program
+  verdict: 'yes'
+  points_possible: 10
+  points_earned: 10.0
+  evidence: ''
+  agreement: null
+  votes: 0
+- criterion_id: DEL-02
+  category: delivery
+  checker: program
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -4.0
+  evidence: 1 console errors
+  agreement: null
+  votes: 0
+- criterion_id: DEL-03
+  category: delivery
+  checker: program
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: ''
+  agreement: null
+  votes: 0
+- criterion_id: COR-01
+  category: correctness
+  checker: program
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: the brief has no reference numbers
+  agreement: null
+  votes: 0
+- criterion_id: BRF-01
+  category: answers_brief
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -15.0
+  evidence: '"Where do things stand?" | "Is the backlog shrinking?" | "Are we keeping up with triage?"
+    | "Where is the work?" | "How close are the epics?" | "What should we work on, and who is on it?"'
+  agreement: 1.0
+  votes: 1
+- criterion_id: BRF-02
+  category: answers_brief
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: '"Dashboard source" code panel | "Bakeoff fit" explanatory panel | Shaper introduction and
+    link buttons | Shaper dashboard screenshot preview'
+  agreement: 1.0
+  votes: 1
+- criterion_id: WRK-01
+  category: working
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible page state, cards, source panel, and dashboard preview.
+  agreement: 1.0
+  votes: 1
+- criterion_id: WRK-02
+  category: working
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible chart/table-like panels for blank states, errors, spinners, or placeholders.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-01
+  category: honesty
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: The bar/area charts visible only within the small dashboard preview for value-axis baselines.
+  agreement: null
+  votes: 1
+- criterion_id: HON-02
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible labels and chart-preview titles for rates/shares paired with count or amount values.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-03
+  category: honesty
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Repeated color-coded categories across the visible dashboard-preview charts.
+  agreement: null
+  votes: 1
+- criterion_id: HON-04
+  category: honesty
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible charts for unlabeled dual independent value axes.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-05
+  category: honesty
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible side-by-side peer charts for the same measure on undisclosed different scales.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-06
+  category: honesty
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible line charts for connections between unordered categories.
+  agreement: null
+  votes: 1
+- criterion_id: FRM-01
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible dashboard-preview charts were checked for pies/donuts, 3D forms, trends rendered as
+    tables or pies, and rankings rendered as lines.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-02
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: All visible chart previews were checked for two or more instances of a form that hides its
+    main comparison.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-03
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: The visible multi-series preview charts were checked for series that cannot be distinguished
+    by color or matched to a visible legend.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-04
+  category: form
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible category-comparison previews were checked for an arbitrary or alphabetical ordering
+    instead of a meaningful or value-based order.
+  agreement: null
+  votes: 1
+- criterion_id: FRM-05
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible content was checked for a gauge or one-bar chart used only to display a single number.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-07
+  category: form
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible chart previews were checked for duplicate charts showing the same data in the same
+    form.
+  agreement: null
+  votes: 1
+- criterion_id: FRM-08
+  category: form
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible chart previews were checked for unreadable comparisons caused by scale, shared axes,
+    outliers, or unnatural time-bin ordering.
+  agreement: null
+  votes: 1
+- criterion_id: FRM-06
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: The visible time-series previews were checked for a sharp first or final partial-period spike
+    or drop without a partial-period disclosure.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-01
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: All visible headings, card text, preview graphics, and the source panel for text-on-text or
+    text-on-mark collisions.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-02
+  category: legibility
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible chart cards on the page.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-03
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Titles, card copy, buttons, and the source panel within their respective cards; the source
+    panel continuation across tiles was treated as continuous.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-04
+  category: legibility
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: SQL text in the “Dashboard source” panel is extremely faint against its pale line backgrounds
+    and cannot be read reliably at the displayed size.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-05
+  category: legibility
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether any visible chart cards have marks too compressed to distinguish.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-01
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked the visible numeric values, including “36” and the demo-dashboard total “10 486,”
+    along with their nearby labels.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-02
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked visible titles, chart labels, legend-like text, and the four summary-card headings
+    for raw field names or placeholders.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-03
+  category: labeling
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -6.0
+  evidence: No date, month, year, or relative reporting period is visible anywhere on the page.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-04
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Checked headline-style numbers: “36” is labeled “SQL statements in the tracked Shaper dashboard
+    file,” and “10 486” in the demo image is labeled “Total issues.”'
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-05
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Checked the visible panels and visual areas for labels: the text/source areas are headed
+    “Bakeoff fit” and “Dashboard source,” and the demo image is headed “Shaper Demo Dashboard.”'
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-07
+  category: labeling
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked for displayed percentage or share values. The page contains a code reference to “LINECHART_PERCENT,”
+    but no visible percentage metric.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-08
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked visible metric labels, chart-like visuals, and nearby values for mismatched units
+    or labels.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-09
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked the visible statements, summary cards, source panel, and demo image for conflicting
+    numbers, dates, or references to absent content.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-01
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: Large blank region below the “Bakeoff fit” card beside the much taller “Dashboard source”
+    card
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-02
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: “Bakeoff fit” and “Dashboard source” share a top edge but have strongly ragged bottom edges,
+    leaving the left side of that row empty
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-04
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: The large “Dashboard source” code panel is given substantially more space than the four summary
+    KPI cards
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-05
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -4.0
+  evidence: The very large dark filled “Dashboard source” panel carries substantially more visual weight
+    than the surrounding content
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-06
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible chart and UI colors for unexplained, arbitrary, or misleading encodings.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-07
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible content for placeholder text, starter material, debug output, or stray test elements.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-01
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 10
+  points_earned: 0.0
+  evidence: Page title, descriptive copy, and the visible dashboard screenshot/chart preview.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-03
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 3
+  points_earned: 0.0
+  evidence: 'Visible headline/stat cards: “36,” “DuckDB,” “dbt marts,” and “No static export.”'
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-04
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 6
+  points_earned: 0.0
+  evidence: Visible chart preview and the page’s displayed content.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-06
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 5
+  points_earned: 0.0
+  evidence: Visible chart preview colors and the displayed source panel.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-07
+  category: excellence
+  checker: judge
+  verdict: cannot_determine
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visible multi-series charts in the dashboard preview.
+  agreement: null
+  votes: 1
+- criterion_id: EXC-08
+  category: excellence
+  checker: judge
+  verdict: 'yes'
+  points_possible: 5
+  points_earned: 5.0
+  evidence: “Freshness warning renders only when `dashboard_meta.days_stale` exceeds 3 days.” | “Every
+    section and tile of `dashboard/tiles.yml`, each a thin read of one dbt dashboard model such as `headline_kpis`,
+    `backlog_weekly`, and `triage_queue`.”
+  agreement: 1.0
+  votes: 1
+score: 0.129
+category_scores:
+  delivery: 0.6
+  excellence: 0.172
+agreement: 1.0
+judge_errors: []
+votes:
+- criterion_id: BRF-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: '"Where do things stand?" | "Is the backlog shrinking?" | "Are we keeping up with triage?"
+    | "Where is the work?" | "How close are the epics?" | "What should we work on, and who is on it?"'
+  round: 1
+- criterion_id: BRF-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: '"Dashboard source" code panel | "Bakeoff fit" explanatory panel | Shaper introduction and
+    link buttons | Shaper dashboard screenshot preview'
+  round: 1
+- criterion_id: WRK-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible page state, cards, source panel, and dashboard preview.
+  round: 1
+- criterion_id: WRK-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible chart/table-like panels for blank states, errors, spinners, or placeholders.
+  round: 1
+- criterion_id: HON-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: The bar/area charts visible only within the small dashboard preview for value-axis baselines.
+  round: 1
+- criterion_id: HON-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible labels and chart-preview titles for rates/shares paired with count or amount values.
+  round: 1
+- criterion_id: HON-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: Repeated color-coded categories across the visible dashboard-preview charts.
+  round: 1
+- criterion_id: HON-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Visible charts for unlabeled dual independent value axes.
+  round: 1
+- criterion_id: HON-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Visible side-by-side peer charts for the same measure on undisclosed different scales.
+  round: 1
+- criterion_id: HON-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: Visible line charts for connections between unordered categories.
+  round: 1
+- criterion_id: FRM-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible dashboard-preview charts were checked for pies/donuts, 3D forms, trends rendered as
+    tables or pies, and rankings rendered as lines.
+  round: 1
+- criterion_id: FRM-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: All visible chart previews were checked for two or more instances of a form that hides its
+    main comparison.
+  round: 1
+- criterion_id: FRM-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: The visible multi-series preview charts were checked for series that cannot be distinguished
+    by color or matched to a visible legend.
+  round: 1
+- criterion_id: FRM-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: Visible category-comparison previews were checked for an arbitrary or alphabetical ordering
+    instead of a meaningful or value-based order.
+  round: 1
+- criterion_id: FRM-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible content was checked for a gauge or one-bar chart used only to display a single number.
+  round: 1
+- criterion_id: FRM-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: Visible chart previews were checked for duplicate charts showing the same data in the same
+    form.
+  round: 1
+- criterion_id: FRM-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: Visible chart previews were checked for unreadable comparisons caused by scale, shared axes,
+    outliers, or unnatural time-bin ordering.
+  round: 1
+- criterion_id: FRM-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: The visible time-series previews were checked for a sharp first or final partial-period spike
+    or drop without a partial-period disclosure.
+  round: 1
+- criterion_id: LEG-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: All visible headings, card text, preview graphics, and the source panel for text-on-text or
+    text-on-mark collisions.
+  round: 1
+- criterion_id: LEG-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Visible chart cards on the page.
+  round: 1
+- criterion_id: LEG-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Titles, card copy, buttons, and the source panel within their respective cards; the source
+    panel continuation across tiles was treated as continuous.
+  round: 1
+- criterion_id: LEG-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: SQL text in the “Dashboard source” panel is extremely faint against its pale line backgrounds
+    and cannot be read reliably at the displayed size.
+  round: 1
+- criterion_id: LEG-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Whether any visible chart cards have marks too compressed to distinguish.
+  round: 1
+- criterion_id: LBL-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked the visible numeric values, including “36” and the demo-dashboard total “10 486,”
+    along with their nearby labels.
+  round: 1
+- criterion_id: LBL-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked visible titles, chart labels, legend-like text, and the four summary-card headings
+    for raw field names or placeholders.
+  round: 1
+- criterion_id: LBL-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: No date, month, year, or relative reporting period is visible anywhere on the page.
+  round: 1
+- criterion_id: LBL-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Checked headline-style numbers: “36” is labeled “SQL statements in the tracked Shaper dashboard
+    file,” and “10 486” in the demo image is labeled “Total issues.”'
+  round: 1
+- criterion_id: LBL-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Checked the visible panels and visual areas for labels: the text/source areas are headed
+    “Bakeoff fit” and “Dashboard source,” and the demo image is headed “Shaper Demo Dashboard.”'
+  round: 1
+- criterion_id: LBL-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Checked for displayed percentage or share values. The page contains a code reference to “LINECHART_PERCENT,”
+    but no visible percentage metric.
+  round: 1
+- criterion_id: LBL-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked visible metric labels, chart-like visuals, and nearby values for mismatched units
+    or labels.
+  round: 1
+- criterion_id: LBL-09
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked the visible statements, summary cards, source panel, and demo image for conflicting
+    numbers, dates, or references to absent content.
+  round: 1
+- criterion_id: LAY-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: Large blank region below the “Bakeoff fit” card beside the much taller “Dashboard source”
+    card
+  round: 1
+- criterion_id: LAY-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Bakeoff fit” and “Dashboard source” share a top edge but have strongly ragged bottom edges,
+    leaving the left side of that row empty
+  round: 1
+- criterion_id: LAY-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: The large “Dashboard source” code panel is given substantially more space than the four summary
+    KPI cards
+  round: 1
+- criterion_id: LAY-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: The very large dark filled “Dashboard source” panel carries substantially more visual weight
+    than the surrounding content
+  round: 1
+- criterion_id: LAY-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible chart and UI colors for unexplained, arbitrary, or misleading encodings.
+  round: 1
+- criterion_id: LAY-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible content for placeholder text, starter material, debug output, or stray test elements.
+  round: 1
+- criterion_id: EXC-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Page title, descriptive copy, and the visible dashboard screenshot/chart preview.
+  round: 1
+- criterion_id: EXC-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Visible headline/stat cards: “36,” “DuckDB,” “dbt marts,” and “No static export.”'
+  round: 1
+- criterion_id: EXC-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible chart preview and the page’s displayed content.
+  round: 1
+- criterion_id: EXC-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visible chart preview colors and the displayed source panel.
+  round: 1
+- criterion_id: EXC-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: cannot_determine
+  evidence: Visible multi-series charts in the dashboard preview.
+  round: 1
+- criterion_id: EXC-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Freshness warning renders only when `dashboard_meta.days_stale` exceeds 3 days.” | “Every
+    section and tile of `dashboard/tiles.yml`, each a thin read of one dbt dashboard model such as `headline_kpis`,
+    `backlog_weekly`, and `triage_queue`.”
+  round: 1

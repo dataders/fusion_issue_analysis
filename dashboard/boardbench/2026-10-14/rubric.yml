@@ -1,0 +1,397 @@
+# Dashboard judge rubric. Every criterion is one observable yes/no question with signed points.
+#
+# polarity negative: a defect. "yes" costs its points, in absolute score points.
+# polarity positive: excellence. "yes" earns a share of the points above the baseline.
+# A clean board with no excellence scores the baseline; defects pull it down, excellence lifts it.
+# checker program: code answers from page text / console / reference numbers; the model is never asked.
+# implies: a "how widespread" item that can only be yes when its target is yes; a contradiction is
+# recorded as a judge error.
+# needs_brief: asked only when a brief was given.
+#
+# Every question is about what a reader can see in one screenshot of a page from any tool.
+# Changing a question, its points, or its checker is a new rubric_version.
+rubric_version: 2.8.0
+
+scoring:
+  formula: baseline
+  baseline: 60
+
+categories:
+  delivery: Did a working page arrive
+  working: Did every panel draw
+  correctness: Are the numbers on the page right
+  answers_brief: Does the page answer what was asked
+  honesty: Do the charts tell the truth about the data
+  form: Is each chart the right form for its question
+  legibility: Can everything be read
+  labeling: Can every number be understood without guessing
+  layout: Does the page hold together
+  excellence: What a reviewer who does this for a living would praise
+  requested: Were the change requests carried out
+  dark_version: Can the dark version be read
+
+groups:
+  - [answers_brief]
+  - [working, honesty]
+  - [form]
+  - [legibility]
+  - [labeling]
+  - [layout]
+  - [excellence]
+  - [requested]
+  - [dark_version]
+dark_group: [dark_version]
+
+criteria:
+  # ---------------------------------------------------------------- delivery (program)
+  - id: DEL-01
+    category: delivery
+    polarity: positive
+    points: 10
+    checker: program
+    gate: true
+    question: Did the artifact's own run instructions produce a page with content?
+  - id: DEL-02
+    category: delivery
+    polarity: negative
+    points: -4
+    checker: program
+    question: Did the browser console report errors while the page loaded?
+  - id: DEL-03
+    category: delivery
+    polarity: negative
+    points: -15
+    checker: program
+    question: Does the visible text contain NaN, undefined, null, Invalid Date, or a traceback?
+
+  - id: COR-01
+    category: correctness
+    polarity: negative
+    points: -15
+    checker: program
+    question: What share of the brief's reference numbers are missing from the page? (scored proportionally)
+
+  # ---------------------------------------------------------------- answers_brief (needs a brief)
+  - id: BRF-01
+    category: answers_brief
+    polarity: negative
+    points: -15
+    checker: judge
+    needs_brief: true
+    question: Is there a question in the brief that no element on the page answers?
+    how_to_check: Go through the brief's questions one at a time and name the element that answers each. Quote any question with no element.
+  - id: BRF-02
+    category: answers_brief
+    polarity: negative
+    points: -5
+    checker: judge
+    needs_brief: true
+    question: Do elements the brief did not ask for take up more of the page than the elements it did ask for?
+
+  # ---------------------------------------------------------------- working
+  - id: WRK-01
+    category: working
+    polarity: negative
+    points: -25
+    checker: judge
+    gate: true
+    question: Is the page a crash or error screen, or a shell where most panels show no data (error messages, spinners, blank cards, "failed to load"), instead of a working dashboard?
+    how_to_check: A working page with one broken panel is WRK-02, not this. Quote the error or name the empty panels.
+  - id: WRK-02
+    category: working
+    polarity: negative
+    points: -15
+    checker: judge
+    question: Is any chart or table panel blank, an error message, a loading spinner, or a placeholder where data should be?
+    how_to_check: Name the panel and quote what it shows instead of data. A chart legitimately empty because a filter excludes everything, saying so, does not count.
+
+  # ---------------------------------------------------------------- honesty
+  - id: HON-01
+    category: honesty
+    polarity: negative
+    points: -20
+    checker: judge
+    question: Does a bar or area chart whose bar length shows an amount have a value axis that starts above zero, so small differences look large?
+    how_to_check: Read the lowest tick on each bar and area chart's value axis. When the axis is hidden, compare bar lengths with their value labels — a bar labeled $1.5M beside one labeled $4.9M should be about a third as long; if it is far shorter, the axis does not start at zero. Floating bars that show a range on purpose (waterfalls, gantts, ranges) do not count.
+    na_when: The page has no bar or area charts.
+  - id: HON-02
+    category: honesty
+    polarity: negative
+    points: -20
+    checker: judge
+    question: Does a chart or number promise a rate or share in its title or label ("rate", "share", "%") while its values are plainly counts or amounts?
+    how_to_check: Compare each title's wording with its values and axis ticks. "Win rate" with values 12 to 140 is a yes. Share labels on a pie or a funnel are not counts. A title naming a measure the chart does not plot at all is LBL-08, not this.
+  - id: HON-03
+    category: honesty
+    polarity: negative
+    points: -12
+    checker: judge
+    question: Does the same category appear in different colors in different charts?
+    how_to_check: Pick each category that is told apart by color in more than one chart (a region, plan, channel) and compare its color. Quote both colors. A single-series chart drawn in one default color does not count.
+    na_when: No category appears in more than one chart.
+  - id: HON-04
+    category: honesty
+    polarity: negative
+    points: -12
+    checker: judge
+    question: Does a chart put two measures on two independent value axes with nothing telling the reader which series reads against which axis?
+    na_when: No chart has two value axes.
+  - id: HON-05
+    category: honesty
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Are side-by-side charts or small multiples of the same measure drawn on different scales with nothing saying so, so equal heights mean different amounts?
+    how_to_check: Compare the top ticks of peer charts that show the same measure.
+    na_when: No two charts show the same measure side by side.
+  - id: HON-06
+    category: honesty
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Does a line connect categories that have no order (products, regions, channels), implying a trend between them?
+    how_to_check: A line across time, funnel stages, or another ordered sequence is fine; so is a slopegraph or dumbbell between two points.
+
+  # ---------------------------------------------------------------- form
+  - id: FRM-01
+    category: form
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Does any chart use a form that hides its main comparison — a pie or donut whose slices are too many or too similar to compare, a 3D chart, a trend shown as a table or pie, or a ranking shown as a line?
+    how_to_check: Name the chart, its form, and the comparison it seems to exist for.
+  - id: FRM-02
+    category: form
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Do two or more charts on the page hide their main comparison through their form?
+    implies: FRM-01
+  - id: FRM-03
+    category: form
+    polarity: negative
+    points: -8
+    checker: judge
+    question: In any chart with several series or categories, can some not be told apart — similar colors with no labels, or more series than distinct colors?
+    how_to_check: Name the series you cannot match to a label or legend entry.
+    na_when: No chart has more than one series or colored category.
+  - id: FRM-04
+    category: form
+    polarity: negative
+    points: -3
+    checker: judge
+    question: Are the categories of a ranked comparison in an arbitrary or alphabetical order when the point is which is largest?
+    how_to_check: A natural order (funnel stage, weekday, priority) is fine; so is value order. Name the chart and its order.
+    na_when: No chart compares categories.
+  - id: FRM-05
+    category: form
+    polarity: negative
+    points: -3
+    checker: judge
+    question: Is a single number drawn as a chart (a gauge, a one-bar chart) where the number alone would do?
+  - id: FRM-07
+    category: form
+    polarity: negative
+    points: -3
+    checker: judge
+    question: Do two charts show the same data in the same form, so one adds nothing?
+    how_to_check: A table beside a chart of the same numbers is fine, and so is a headline number repeated in a table's total row; those are different forms doing different jobs.
+  - id: FRM-08
+    category: form
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Is a chart's point destroyed by its scale or ordering — one outlier flattening everything else, two measures of very different size sharing one axis so one is a flat line, or histogram or time bins sorted out of their natural order?
+    how_to_check: Name the chart and what cannot be read. A log scale labeled as one is fine, and so is one dominant value when that value is the chart's point.
+  - id: FRM-06
+    category: form
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Does a time series start or end with a sudden drop or spike that comes from an incomplete period (a week or month still in progress, a partial first period), with nothing on the page saying the period is partial?
+    how_to_check: First look at the first and last point of every time series; if one breaks sharply from its neighbors, check the page's as-of date, window, and notes to see whether that period is incomplete and whether the page says so. A note anywhere on the page that names the partial period counts as saying so, and so does a partial point drawn differently (dotted, hollow, shaded).
+    na_when: No time series.
+
+  # ---------------------------------------------------------------- legibility
+  - id: LEG-01
+    category: legibility
+    polarity: negative
+    points: -6
+    checker: judge
+    question: Does any text overlap other text or cover the mark it labels (tick labels running together, data labels on top of each other, a title over a chart)?
+    how_to_check: Quote the overlapping text and name the chart.
+  - id: LEG-02
+    category: legibility
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Do three or more charts on the page have overlapping text?
+    implies: LEG-01
+  - id: LEG-03
+    category: legibility
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Is any title, label, or table column cut off, ended with an ellipsis that hides words, or pushed outside its card?
+    how_to_check: Quote the cut-off text. Judge from within one tile; text that runs across the edge between two consecutive tiles is not cut off. Text inside an error message does not count.
+  - id: LEG-04
+    category: legibility
+    polarity: negative
+    points: -5
+    checker: judge
+    question: Is any text too small or too faint to read at the page's normal size — tiny tick labels, pale gray titles or values?
+    how_to_check: Use the full-resolution tiles, not the overview. Muted small supporting text that still reads is fine.
+  - id: LEG-05
+    category: legibility
+    polarity: negative
+    points: -8
+    checker: judge
+    question: Are charts squeezed into cards too small for them, so their bars, lines, or cells cannot be told apart at the size drawn?
+    how_to_check: Name the charts and what cannot be made out. Overlapping labels alone are LEG-01, not this.
+
+  # ---------------------------------------------------------------- labeling
+  - id: LBL-01
+    category: labeling
+    polarity: negative
+    points: -6
+    checker: judge
+    question: Is there a number on the page whose unit (currency, percent, count, duration) cannot be found anywhere near it — not in the value, its axis, its title, subtitle, or column?
+    how_to_check: Name the number or axis and where you looked. A plain count whose title says what is counted ("Orders per week") needs no unit; a currency, rate, or duration does.
+  - id: LBL-02
+    category: labeling
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Does any title, axis title, legend, or column header show a raw field name, code, or placeholder ("sum_amount", "fct_orders.region", "Untitled", "Chart 1")?
+    how_to_check: Quote it. Category values shown as the data has them ("new", "solved") are fine.
+  - id: LBL-03
+    category: labeling
+    polarity: negative
+    points: -6
+    checker: judge
+    question: Does the page fail to say what it covers, or is there no period (dates, month, year, "last 30 days") anywhere on it?
+  - id: LBL-04
+    category: labeling
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Is there a headline number whose period cannot be found — not on its tile and not stated for the page?
+    na_when: The page has no headline numbers.
+  - id: LBL-05
+    category: labeling
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Is there a chart or table with no title or label saying what it shows?
+  - id: LBL-07
+    category: labeling
+    polarity: negative
+    points: -3
+    checker: judge
+    question: Is there a percentage a reader could reasonably read against two different bases, with nothing saying which?
+    how_to_check: '"Win rate" on a sales page is conventional. "35% resolved" could be of tickets created or of tickets closed.'
+    na_when: The page shows no rates or shares.
+
+  - id: LBL-08
+    category: labeling
+    polarity: negative
+    points: -10
+    checker: judge
+    question: Does a label contradict what is plotted — a unit that does not fit the measure ($ ticks on a count), an axis or title naming a measure the chart does not show, or a stated finding the chart itself contradicts?
+    how_to_check: Quote the label and the plotted values that contradict it. A rate promised but counts shown is HON-02, not this.
+
+  - id: LBL-09
+    category: labeling
+    polarity: negative
+    points: -10
+    checker: judge
+    question: Do numbers or statements on the page contradict each other — a headline that disagrees with the table or chart it summarizes, parts that cannot add up to their total, two different as-of dates, or a note that points at content that is not there ("shown at right", "see tooltip" on a static page)?
+    how_to_check: Quote both sides of the contradiction. On a crash or empty page, intro text promising content that never drew is WRK-01, not this. An author's data-coverage date ("data through Aug 27") beside a tool's refresh timestamp ("data as of 09:25 UTC on 28 Sep") is not a contradiction; they state different things.
+
+  # ---------------------------------------------------------------- layout
+  - id: LAY-01
+    category: layout
+    polarity: negative
+    points: -5
+    checker: judge
+    question: Is there a large empty region the content does not need — a hole beside a tall chart, a half-empty row, a band of blank page?
+    how_to_check: Count only space between and around cards on the page itself. Headroom inside a chart's plot area, an app's own sidebar or margins, and blank page below the last card do not count.
+  - id: LAY-02
+    category: layout
+    polarity: negative
+    points: -5
+    checker: judge
+    question: Are cards visibly misaligned — edges that nearly line up but miss, ragged bottoms within one row, uneven gaps between cards?
+    how_to_check: Name the cards and which edge is off. Count only what a reader notices at a glance — a few pixels is not misaligned. Rows deliberately split differently (a 60/40 row above a 50/50 row) are fine.
+  - id: LAY-04
+    category: layout
+    polarity: negative
+    points: -5
+    checker: judge
+    question: Does detail outrank the summary — a raw table, a filter bar, or a minor chart placed above the page's main numbers or charts, or given far more space than them?
+  - id: LAY-05
+    category: layout
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Do borders, fills, colored headers, shadows, icons, or decoration carry more visual weight than the data?
+  - id: LAY-06
+    category: layout
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Is color used in a way that encodes nothing or misleads — bars of a single series cycling through a palette, a rainbow color scale for a quantity, colored or sized marks with no legend saying what color or size means?
+    how_to_check: Coloring each category the same way across charts is meaningful, not this; so is one accent on the subject. A category recolored between charts is HON-03, and tinted card backgrounds are LAY-05; neither is this.
+  - id: LAY-07
+    category: layout
+    polarity: negative
+    points: -4
+    checker: judge
+    question: Is there leftover scaffolding the author left in — placeholder or starter content, debug text, "lorem ipsum", stray test elements?
+    how_to_check: The app's or tool's own controls are never a defect — toolbars, menus, deploy or share buttons, breadcrumbs, framework footers, empty app sidebars. Raw field names as titles are LBL-02, and error output is WRK-01; neither is this.
+
+  # ---------------------------------------------------------------- excellence
+  - id: EXC-01
+    category: excellence
+    polarity: positive
+    points: 10
+    checker: judge
+    question: Does the page state its main finding in words — a title or sentence that says what happened ("Churn doubled in March"), not just what is shown ("Churn by month") — and do the charts bear it out?
+    how_to_check: Quote the sentence and the chart value that supports it. A title that only names the measure does not count. If the chart contradicts the claim, answer no (LBL-08 covers the contradiction).
+  - id: EXC-03
+    category: excellence
+    polarity: positive
+    points: 3
+    checker: judge
+    question: Do the headline numbers carry a comparison — a change vs a prior period, a target, or a peer?
+    how_to_check: Quote one headline number with its comparison.
+    na_when: The page has no headline numbers.
+  - id: EXC-04
+    category: excellence
+    polarity: positive
+    points: 6
+    checker: judge
+    question: Is a key point marked on a chart where it happens — an annotated spike or dip, a target line, a highlighted series or bar with the rest muted?
+    how_to_check: Name the chart and the mark.
+  - id: EXC-06
+    category: excellence
+    polarity: positive
+    points: 5
+    checker: judge
+    question: Is most of the data drawn in a neutral gray, with one accent color reserved for the subject — the series, bar, or period the page is about?
+    how_to_check: Name the accent and what it marks. A categorical palette used consistently is not this; it is a palette, not an accent.
+  - id: EXC-07
+    category: excellence
+    polarity: positive
+    points: 4
+    checker: judge
+    question: Are a chart's series or pie slices labeled directly (at line ends, on the slices) instead of through a legend the reader has to look back at?
+    how_to_check: Category names on a bar chart's axis are not this; it is about charts that would otherwise need a color legend.
+    na_when: No chart has more than one series.
+  - id: EXC-08
+    category: excellence
+    polarity: positive
+    points: 5
+    checker: judge
+    question: Does the page explain its numbers where they are shown — how a measure is defined, a filter or exclusion applied, a method note, or the sample size behind a rate?
+    how_to_check: Quote one definition, filter, method note, or n that sits beside the chart or number it explains. A title, or a date range alone, does not count.
