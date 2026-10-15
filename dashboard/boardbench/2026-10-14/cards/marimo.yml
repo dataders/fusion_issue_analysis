@@ -1,0 +1,782 @@
+artifact_id: marimo
+rubric_version: 2.8.0
+formula: baseline
+judges:
+- openai:gpt-5.6-terra
+rows:
+- criterion_id: DEL-01
+  category: delivery
+  checker: program
+  verdict: 'yes'
+  points_possible: 10
+  points_earned: 10.0
+  evidence: ''
+  agreement: null
+  votes: 0
+- criterion_id: DEL-02
+  category: delivery
+  checker: program
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 0 console errors
+  agreement: null
+  votes: 0
+- criterion_id: DEL-03
+  category: delivery
+  checker: program
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: ''
+  agreement: null
+  votes: 0
+- criterion_id: COR-01
+  category: correctness
+  checker: program
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: the brief has no reference numbers
+  agreement: null
+  votes: 0
+- criterion_id: BRF-01
+  category: answers_brief
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Checked all six brief questions against visible dashboard elements: 1) summary metric cards;
+    2) “Open issues over time” and “Opened vs closed per week”; 3) “Open issues by triage status and age,”
+    “New issues answered within 48 hours,” and “Triage queue — oldest first”; 4) “Open issues by area”
+    and “Open issues by adapter”; 5) “Open epics by % of sub-issues closed”; 6) “Most-requested open issues”
+    and “Open issues by assignee.”'
+  agreement: 1.0
+  votes: 1
+- criterion_id: BRF-02
+  category: answers_brief
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared visible dashboard content with the requested content. The page is predominantly occupied
+    by the requested metrics, charts, and tables; section headings, legends, subtitles, and the as-of
+    line are supporting context rather than substantial additional content.
+  agreement: 1.0
+  votes: 1
+- criterion_id: WRK-01
+  category: working
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed the full page and all visible dashboard sections for crash/error states, empty-shell
+    behavior, failed-load messages, or widespread missing data.
+  agreement: 1.0
+  votes: 1
+- criterion_id: WRK-02
+  category: working
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Reviewed every visible chart and table panel for blank states, error text, loading spinners,
+    or placeholders in place of data.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-01
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Checked the visible amount-encoding area and bar charts: open issues over time, opened vs.
+    closed per week, triage-status/age bars, area bars, adapter bars, and assignee bars.'
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-02
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared rate/share/% wording with plotted values, including the “Answered within 48h” card
+    and “New issues answered within 48 hours” percentage line chart.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-03
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Compared repeated type-category colors across charts, including Feature, Bug, Task, and Other
+    in the backlog, area, adapter, and assignee charts.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-04
+  category: honesty
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked visible charts for independent dual value axes and series-to-axis ambiguity.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-05
+  category: honesty
+  checker: judge
+  verdict: na
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked for side-by-side or small-multiple peer charts showing the same measure on undisclosed
+    different scales.
+  agreement: 1.0
+  votes: 1
+- criterion_id: HON-06
+  category: honesty
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked line charts for connections across unordered categories; the visible line chart is
+    ordered by week opened.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-01
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: All visible charts, including time series, ranked bars, stacked bars, and tables.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-02
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether two or more charts use comparison-hiding forms such as pies/donuts, 3D charts, trend
+    tables/pies, or ranking lines.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-03
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'Multi-series/category charts: issue type stacks, triage-age stacks, and area/adapter/assignee
+    charts.'
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-04
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Ranked category charts, especially open issues by area, adapter, and assignee.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-05
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether any single metric is rendered as a gauge or one-bar chart rather than a number.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-07
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether any two charts repeat the same data in the same visual form.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-08
+  category: form
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -8.0
+  evidence: “Opened vs closed per week” — the roughly 440 opened-issues spike around late May compresses
+    the usual weekly bars (generally tens of issues), making normal opened-versus-closed comparisons difficult
+    to read.
+  agreement: 1.0
+  votes: 1
+- criterion_id: FRM-06
+  category: form
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: 'All visible time series: “Open issues over time,” “Opened vs closed per week,” and “New issues
+    answered within 48 hours,” including their first and last periods against the 2026-10-14 as-of date.'
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-01
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked all chart titles, legends, axes, tick labels, and plotted labels in the full-resolution
+    tiles.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-02
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked whether overlapping text appears in three or more charts.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-03
+  category: legibility
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -4.0
+  evidence: 'Triage queue — oldest first table: "[FEAT] [VSCE] Prefer parent errors over downs..." | Triage
+    queue — oldest first table: "[FEAT] [VSCE] double-clicking a model from a..." | Triage queue — oldest
+    first table: "[FEAT] Add ability to output `show` results as ..." | Triage queue — oldest first table:
+    "[FEAT] Report on adapter.execute calls at pars..." | Triage queue — oldest first table: "[FEAT] Support
+    All Purpose Compute Clusters ..." | Most-requested open issues table: "Expose a Python API with Rust
+    bindings, enab..." | Most-requested open issues table: "[v2 Bug] BigQuery: nested column description..."
+    | Most-requested open issues table: "[FEAT] Highlight the current model in the line..." | Open epics
+    by % of sub-issues closed table: "[EPIC] BigQuery Structured and Semi-Structur..." | Open epics by
+    % of sub-issues closed table: "[EPIC] [Databricks] Data Sketching Functions (..." | Open epics by
+    % of sub-issues closed table: "[EPIC] [Databricks] Semi-structured & Variant ..." | Open epics by
+    % of sub-issues closed table: "[EPIC] [Databricks] Conditional & Type Conver..." | Open epics by %
+    of sub-issues closed table: "[EPIC] [Databricks] Array, Map & Window Func..." | Open epics by % of
+    sub-issues closed table: "[EPIC] [SPAN] Incorrect or missing error/warni..."'
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-04
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked text at the full-resolution tile size, including supporting copy, ticks, legends,
+    and table text.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LEG-05
+  category: legibility
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked the stacked-area, grouped-bar, stacked-bar, and line charts for indistinguishable
+    marks caused by insufficient chart size.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-01
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked headline tiles, chart axes, legends, subtitles, and table columns for unlabeled currency,
+    percentages, counts, or durations.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-02
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked titles, axes, legends, and table headers for raw field names, codes, or placeholders.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-03
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked whether the page states its subject and a reporting period/date.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-04
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked each headline tile for a period on the tile or elsewhere on the page; the page gives
+    “Data as of 2026-10-14.”
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-05
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked all visible charts and tables for descriptive titles or labels.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-07
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked visible rates and shares for their denominator/basis. The response chart states “By
+    week opened; unanswered issues count as misses,” and the epic table shows Closed and Sub-issues alongside
+    “% complete.”
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-08
+  category: labeling
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Checked chart titles, axes, legends, and plotted measures for mismatches or contradictions.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LBL-09
+  category: labeling
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -10.0
+  evidence: “Top 15, excluding unassigned” — the visible “Open issues by assignee” chart shows only eight
+    assignee rows (serramattuu through ragesh-g) before the page ends.
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-01
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -5.0
+  evidence: The KPI-card section has a half-empty second row containing only “Customer-reported open,”
+    leaving the rest of that row blank
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-02
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Alignment of KPI cards, charts, tables, and section edges
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-04
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visual order and relative space given to summary versus detail
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-05
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Visual weight of card borders, fills, shadows, and other decoration
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-06
+  category: layout
+  checker: judge
+  verdict: 'no'
+  points_possible: 0
+  points_earned: 0.0
+  evidence: Whether colors have explained, consistent data encodings
+  agreement: 1.0
+  votes: 1
+- criterion_id: LAY-07
+  category: layout
+  checker: judge
+  verdict: 'yes'
+  points_possible: 0
+  points_earned: -4.0
+  evidence: Unexplained vertical stack of small gray dash marks to the far right of the “Opened vs closed
+    per week” chart
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-01
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 10
+  points_earned: 0.0
+  evidence: Page title, section headings, and charts for a written conclusion supported by a chart.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-03
+  category: excellence
+  checker: judge
+  verdict: 'yes'
+  points_possible: 3
+  points_earned: 3.0
+  evidence: “Open issues 511” — “+52 in 28 days” | “Opened / closed (28d) 123 / 71”
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-04
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 6
+  points_earned: 0.0
+  evidence: Time-series and comparison charts for an annotation, target line, or a single visually highlighted
+    subject.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-06
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 5
+  points_earned: 0.0
+  evidence: Chart color treatment across the dashboard.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-07
+  category: excellence
+  checker: judge
+  verdict: 'no'
+  points_possible: 4
+  points_earned: 0.0
+  evidence: Multi-series charts for direct labeling of series at line ends or on marks rather than reliance
+    on a legend.
+  agreement: 1.0
+  votes: 1
+- criterion_id: EXC-08
+  category: excellence
+  checker: judge
+  verdict: 'yes'
+  points_possible: 5
+  points_earned: 5.0
+  evidence: “Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)” | “Complete weeks;
+    when closed > opened the backlog shrank” | “By week opened; unanswered issues count as misses” | “Issues
+    with several areas count in each” | “(none) = adapter-agnostic” | “Top 15, excluding unassigned”
+  agreement: 1.0
+  votes: 1
+score: 0.387
+category_scores:
+  delivery: 1.0
+  excellence: 0.242
+agreement: 1.0
+judge_errors: []
+votes:
+- criterion_id: BRF-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Checked all six brief questions against visible dashboard elements: 1) summary metric cards;
+    2) “Open issues over time” and “Opened vs closed per week”; 3) “Open issues by triage status and age,”
+    “New issues answered within 48 hours,” and “Triage queue — oldest first”; 4) “Open issues by area”
+    and “Open issues by adapter”; 5) “Open epics by % of sub-issues closed”; 6) “Most-requested open issues”
+    and “Open issues by assignee.”'
+  round: 1
+- criterion_id: BRF-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared visible dashboard content with the requested content. The page is predominantly occupied
+    by the requested metrics, charts, and tables; section headings, legends, subtitles, and the as-of
+    line are supporting context rather than substantial additional content.
+  round: 1
+- criterion_id: WRK-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed the full page and all visible dashboard sections for crash/error states, empty-shell
+    behavior, failed-load messages, or widespread missing data.
+  round: 1
+- criterion_id: WRK-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Reviewed every visible chart and table panel for blank states, error text, loading spinners,
+    or placeholders in place of data.
+  round: 1
+- criterion_id: HON-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Checked the visible amount-encoding area and bar charts: open issues over time, opened vs.
+    closed per week, triage-status/age bars, area bars, adapter bars, and assignee bars.'
+  round: 1
+- criterion_id: HON-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared rate/share/% wording with plotted values, including the “Answered within 48h” card
+    and “New issues answered within 48 hours” percentage line chart.
+  round: 1
+- criterion_id: HON-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Compared repeated type-category colors across charts, including Feature, Bug, Task, and Other
+    in the backlog, area, adapter, and assignee charts.
+  round: 1
+- criterion_id: HON-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Checked visible charts for independent dual value axes and series-to-axis ambiguity.
+  round: 1
+- criterion_id: HON-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: na
+  evidence: Checked for side-by-side or small-multiple peer charts showing the same measure on undisclosed
+    different scales.
+  round: 1
+- criterion_id: HON-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked line charts for connections across unordered categories; the visible line chart is
+    ordered by week opened.
+  round: 1
+- criterion_id: FRM-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: All visible charts, including time series, ranked bars, stacked bars, and tables.
+  round: 1
+- criterion_id: FRM-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Whether two or more charts use comparison-hiding forms such as pies/donuts, 3D charts, trend
+    tables/pies, or ranking lines.
+  round: 1
+- criterion_id: FRM-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'Multi-series/category charts: issue type stacks, triage-age stacks, and area/adapter/assignee
+    charts.'
+  round: 1
+- criterion_id: FRM-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Ranked category charts, especially open issues by area, adapter, and assignee.
+  round: 1
+- criterion_id: FRM-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Whether any single metric is rendered as a gauge or one-bar chart rather than a number.
+  round: 1
+- criterion_id: FRM-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Whether any two charts repeat the same data in the same visual form.
+  round: 1
+- criterion_id: FRM-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Opened vs closed per week” — the roughly 440 opened-issues spike around late May compresses
+    the usual weekly bars (generally tens of issues), making normal opened-versus-closed comparisons difficult
+    to read.
+  round: 1
+- criterion_id: FRM-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: 'All visible time series: “Open issues over time,” “Opened vs closed per week,” and “New issues
+    answered within 48 hours,” including their first and last periods against the 2026-10-14 as-of date.'
+  round: 1
+- criterion_id: LEG-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked all chart titles, legends, axes, tick labels, and plotted labels in the full-resolution
+    tiles.
+  round: 1
+- criterion_id: LEG-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked whether overlapping text appears in three or more charts.
+  round: 1
+- criterion_id: LEG-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: 'Triage queue — oldest first table: "[FEAT] [VSCE] Prefer parent errors over downs..." | Triage
+    queue — oldest first table: "[FEAT] [VSCE] double-clicking a model from a..." | Triage queue — oldest
+    first table: "[FEAT] Add ability to output `show` results as ..." | Triage queue — oldest first table:
+    "[FEAT] Report on adapter.execute calls at pars..." | Triage queue — oldest first table: "[FEAT] Support
+    All Purpose Compute Clusters ..." | Most-requested open issues table: "Expose a Python API with Rust
+    bindings, enab..." | Most-requested open issues table: "[v2 Bug] BigQuery: nested column description..."
+    | Most-requested open issues table: "[FEAT] Highlight the current model in the line..." | Open epics
+    by % of sub-issues closed table: "[EPIC] BigQuery Structured and Semi-Structur..." | Open epics by
+    % of sub-issues closed table: "[EPIC] [Databricks] Data Sketching Functions (..." | Open epics by
+    % of sub-issues closed table: "[EPIC] [Databricks] Semi-structured & Variant ..." | Open epics by
+    % of sub-issues closed table: "[EPIC] [Databricks] Conditional & Type Conver..." | Open epics by %
+    of sub-issues closed table: "[EPIC] [Databricks] Array, Map & Window Func..." | Open epics by % of
+    sub-issues closed table: "[EPIC] [SPAN] Incorrect or missing error/warni..."'
+  round: 1
+- criterion_id: LEG-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked text at the full-resolution tile size, including supporting copy, ticks, legends,
+    and table text.
+  round: 1
+- criterion_id: LEG-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked the stacked-area, grouped-bar, stacked-bar, and line charts for indistinguishable
+    marks caused by insufficient chart size.
+  round: 1
+- criterion_id: LBL-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked headline tiles, chart axes, legends, subtitles, and table columns for unlabeled currency,
+    percentages, counts, or durations.
+  round: 1
+- criterion_id: LBL-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked titles, axes, legends, and table headers for raw field names, codes, or placeholders.
+  round: 1
+- criterion_id: LBL-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked whether the page states its subject and a reporting period/date.
+  round: 1
+- criterion_id: LBL-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked each headline tile for a period on the tile or elsewhere on the page; the page gives
+    “Data as of 2026-10-14.”
+  round: 1
+- criterion_id: LBL-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked all visible charts and tables for descriptive titles or labels.
+  round: 1
+- criterion_id: LBL-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked visible rates and shares for their denominator/basis. The response chart states “By
+    week opened; unanswered issues count as misses,” and the epic table shows Closed and Sub-issues alongside
+    “% complete.”
+  round: 1
+- criterion_id: LBL-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Checked chart titles, axes, legends, and plotted measures for mismatches or contradictions.
+  round: 1
+- criterion_id: LBL-09
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Top 15, excluding unassigned” — the visible “Open issues by assignee” chart shows only eight
+    assignee rows (serramattuu through ragesh-g) before the page ends.
+  round: 1
+- criterion_id: LAY-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: The KPI-card section has a half-empty second row containing only “Customer-reported open,”
+    leaving the rest of that row blank
+  round: 1
+- criterion_id: LAY-02
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Alignment of KPI cards, charts, tables, and section edges
+  round: 1
+- criterion_id: LAY-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visual order and relative space given to summary versus detail
+  round: 1
+- criterion_id: LAY-05
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Visual weight of card borders, fills, shadows, and other decoration
+  round: 1
+- criterion_id: LAY-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Whether colors have explained, consistent data encodings
+  round: 1
+- criterion_id: LAY-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: Unexplained vertical stack of small gray dash marks to the far right of the “Opened vs closed
+    per week” chart
+  round: 1
+- criterion_id: EXC-01
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Page title, section headings, and charts for a written conclusion supported by a chart.
+  round: 1
+- criterion_id: EXC-03
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Open issues 511” — “+52 in 28 days” | “Opened / closed (28d) 123 / 71”
+  round: 1
+- criterion_id: EXC-04
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Time-series and comparison charts for an annotation, target line, or a single visually highlighted
+    subject.
+  round: 1
+- criterion_id: EXC-06
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Chart color treatment across the dashboard.
+  round: 1
+- criterion_id: EXC-07
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'no'
+  evidence: Multi-series charts for direct labeling of series at line ends or on marks rather than reliance
+    on a legend.
+  round: 1
+- criterion_id: EXC-08
+  judge: gpt-5.6-terra
+  sample: 0
+  verdict: 'yes'
+  evidence: “Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted)” | “Complete weeks;
+    when closed > opened the backlog shrank” | “By week opened; unanswered issues count as misses” | “Issues
+    with several areas count in each” | “(none) = adapter-agnostic” | “Top 15, excluding unassigned”
+  round: 1

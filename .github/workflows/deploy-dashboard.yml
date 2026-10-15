@@ -159,6 +159,11 @@ jobs:
       - name: Check dashboard framework versions
         run: uv run python dashboard/write_framework_versions.py
 
+      - name: Generate BoardBench report
+        id: boardbench
+        continue-on-error: true
+        run: uv run python dashboard/boardbench/build.py
+
       # Upload whatever built successfully; deploy job runs regardless of framework failures.
       - name: Upload Pages artifact
         if: always()
@@ -192,6 +197,7 @@ jobs:
             echo "| Mosaic (live) | static — no build step |"
             echo "| Semiotic (live) | static — no build step |"
             echo "| Observable (live) | $(icon '${{ steps.npm.outcome }}') |"
+            echo "| BoardBench report | $(icon '${{ steps.boardbench.outcome }}') |"
           } >> "$GITHUB_STEP_SUMMARY"
           # Fail the job so GitHub sends a notification email, but only after
           # the artifact has already been uploaded above.
@@ -204,7 +210,8 @@ jobs:
             '${{ steps.chartjs.outcome }}' \
             '${{ steps.marimo.outcome }}' \
             '${{ steps.quarto.outcome }}' \
-            '${{ steps.dbt_charts.outcome }}'; do
+            '${{ steps.dbt_charts.outcome }}' \
+            '${{ steps.boardbench.outcome }}'; do
             if [ "$outcome" = "failure" ]; then
               echo "One or more framework builds failed — see table above." >&2
               exit 1
