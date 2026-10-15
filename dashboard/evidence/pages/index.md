@@ -200,7 +200,7 @@ order by adapter_total desc, adapter
   seriesOrder={['Feature', 'Bug', 'Task', 'Other']}
   seriesColors={{Feature: '#2a78d6', Bug: '#eb6834', Task: '#1baf7a', Other: '#898781'}}
   title="Open issues by adapter"
-  subtitle="(none) = adapter-agnostic"
+  subtitle="Issues with adapter labels"
   yAxisTitle="Open issues"
 />
 

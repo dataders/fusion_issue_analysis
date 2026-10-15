@@ -122,7 +122,7 @@ sections:
         model: open_by_adapter
         order_by: adapter_total desc, adapter
         title: Open issues by adapter
-        subtitle: "(none) = adapter-agnostic"
+        subtitle: "Issues with adapter labels"
         form: horizontal_stacked_bar
         y: adapter
         x: issue_count

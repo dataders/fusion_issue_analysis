@@ -1,0 +1,6 @@
+kind: Fixes
+body: Exclude unlabeled issues from the shared adapter dashboard model so every dashboard shows only named adapters.
+time: 2026-10-14T23:14:49.940977-04:00
+custom:
+    Author: dataders
+    Issue: "125"

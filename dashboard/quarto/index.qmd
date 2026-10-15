@@ -268,7 +268,7 @@ category_bar("open_by_area", "area", "area_total")
 ```
 
 ### Open issues by adapter
-[(none) = adapter-agnostic]{.tile-subtitle}
+[Issues with adapter labels]{.tile-subtitle}
 
 ```{python}
 category_bar("open_by_adapter", "adapter", "adapter_total")

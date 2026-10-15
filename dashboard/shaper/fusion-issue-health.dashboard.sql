@@ -152,7 +152,7 @@ FROM open_by_area
 ORDER BY area_total DESC, area, CASE issue_category WHEN 'feature' THEN 1 WHEN 'bug' THEN 2 WHEN 'task' THEN 3 ELSE 4 END;
 
 SELECT 'Open issues by adapter'::LABEL,
-  '(none) = adapter-agnostic'::SUBTITLE;
+  'Issues with adapter labels'::SUBTITLE;
 
 SELECT
   adapter::YAXIS AS "Adapter",

@@ -104,7 +104,7 @@ models:
       - name: area_total
 
   - name: open_by_adapter
-    description: Open non-epic issues per adapter label, by type. Issues with several adapters count in each.
+    description: Open non-epic issues per adapter label, by type. Issues without adapter labels are excluded; issues with several adapters count in each.
     columns:
       - name: adapter
         tests: [not_null]
