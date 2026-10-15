@@ -17,6 +17,8 @@ ROOT = Path(__file__).resolve().parent
 RUBRIC = yaml.safe_load((ROOT / "rubric.yml").read_text())
 CRITERIA = {item["id"]: item for item in RUBRIC["criteria"]}
 BASELINE = RUBRIC["scoring"]["baseline"]
+# These published pages do not rebuild from the refreshed MotherDuck data.
+NON_DATA_VIEWS = {"graphene", "shaper"}
 CARD_LINK = re.compile(r"\[Card\]\(cards/([\w-]+)\.yml\)")
 VIEW_LINK = re.compile(r"\[([^]]+)\]\((https://[^)]+)\)")
 
@@ -155,7 +157,7 @@ def board_detail(board: Board) -> str:
     return f"""
     <section class="board-detail" id="{escape(board.id)}">
       <div class="detail-heading"><div><span class="kind">{escape(board.kind)}</span>
-        <h2>{escape(board.name)}</h2><p>{escape(board.note)}</p></div>
+        <h2>{escape(board.name)}</h2>{status_badge(board)}<p>{escape(board.note)}</p></div>
         <strong class="detail-score">{board.score:.1f}<small> / 100</small></strong></div>
       <p class="math"><strong>{BASELINE}</strong> starting points <span>+</span>
         <strong>{board.bonus:.1f}</strong> excellence bonus <span>−</span>
@@ -168,6 +170,14 @@ def board_detail(board: Board) -> str:
       <details><summary>Show the remaining {len(other)} checks, including clear, N/A, and uncertain results</summary>
         {criterion_table(other)}</details>
     </section>"""
+
+
+def status_badge(board: Board) -> str:
+    data_dependent = "false" if board.id in NON_DATA_VIEWS else "true"
+    return (
+        f'<span class="score-status unverified" data-score-status data-data-dependent="{data_dependent}" '
+        'title="The scored dashboard build was not fingerprinted">Freshness unverified</span>'
+    )
 
 
 def render_rules(boards: list[Board]) -> None:
@@ -341,7 +351,8 @@ def main() -> None:
             f'data-search="{escape(searchable.lower(), quote=True)}" '
             f'data-score="{board.score:.1f}" data-bonus="{board.bonus:.3f}" data-deductions="{board.deductions:.1f}">'
             f'<td class="number muted">{rank}</td>'
-            f'<td><a class="board-link" href="#{escape(board.id, quote=True)}">{escape(board.name)}</a></td>'
+            f'<td><a class="board-link" href="#{escape(board.id, quote=True)}">{escape(board.name)}</a>'
+            f"<br>{status_badge(board)}</td>"
             f'<td><span class="kind">{escape(board.kind)}</span></td>'
             f'<td class="number">{BASELINE}</td>'
             f'<td class="number bonus">+{board.bonus:.1f}</td>'
@@ -393,6 +404,9 @@ th {{ text-align:left; white-space:nowrap; color:var(--muted); background:var(--
 .results th {{ position:sticky; top:0; z-index:1; }} th button {{ all:unset; cursor:pointer; }} th button:focus-visible {{ outline:2px solid var(--accent); }}
 .results {{ min-width:1000px; }} .number {{ text-align:right; font-variant-numeric:tabular-nums; white-space:nowrap; }}
 .board-link {{ font-weight:750; text-decoration:none; white-space:nowrap; }} .board-link:hover {{ text-decoration:underline; }}
+.score-status {{ display:inline-block; margin-top:4px; padding:2px 8px; border-radius:999px; font-size:.7rem; font-weight:750; white-space:nowrap; background:var(--accent-bg); color:var(--accent); }}
+.score-status.needs-review {{ background:#fff0d0; color:#785100; }}
+@media (prefers-color-scheme: dark) {{ .score-status.needs-review {{ background:#483814; color:#ffd787; }} }}
 .kind {{ display:inline-block; white-space:nowrap; font-size:.75rem; font-weight:750; border-radius:999px; padding:2px 9px; background:var(--accent-bg); color:var(--accent); }}
 .bonus {{ color:var(--good); }} .deduction {{ color:var(--bad); }} .score {{ font-size:1.1rem; }}
 .muted, .top-defects {{ color:var(--muted); }} .top-defects {{ font-size:.88rem; }}
@@ -410,6 +424,7 @@ th {{ text-align:left; white-space:nowrap; color:var(--muted); background:var(--
 <header><div class="eyebrow">BoardBench · rubric {escape(RUBRIC["rubric_version"])}</div>
 <h1>Dashboard results</h1>
 <p class="lede">23 views of the dbt v2 issue dashboard bakeoff, captured 14 October 2026. Each was scored from its saved screenshot, page text, and console metadata by one OpenAI judge sample. Scores describe that capture, not the current deployed page.</p>
+<p class="lede">Score status uses the current dashboard data load as a change signal. “Needs review” means new data arrived after the capture; it does not mean the score is wrong. “Freshness unverified” means the captured build fingerprint was not recorded.</p>
 <p><a href="rules.html">Browse all {len(CRITERIA)} scoring rules →</a></p></header>
 <div class="overview">
   <div class="panel"><h2>How the score works</h2><div class="formula">60 starting points <span class="plus">+ excellence</span> <span class="minus">− defects</span> = score</div>
@@ -462,6 +477,25 @@ for (const button of document.querySelectorAll('[data-sort]')) button.addEventLi
 }});
 search.addEventListener('input', update);
 kind.addEventListener('change', update);
+async function updateScoreFreshness() {{
+  try {{
+    const response = await fetch('../../data_freshness.json', {{ cache: 'no-store' }});
+    if (!response.ok) return;
+    const metadata = await response.json();
+    const latestLoad = Date.parse(metadata.latest_load_at || '');
+    // The capture has a date but no exact time. A load on the following day is
+    // unambiguously newer; same-day loads keep the unverified label.
+    const followingDay = Date.parse('{ROOT.name}T00:00:00Z') + 86400000;
+    if (!Number.isFinite(latestLoad) || latestLoad < followingDay) return;
+    for (const badge of document.querySelectorAll('[data-score-status][data-data-dependent="true"]')) {{
+      badge.classList.remove('unverified');
+      badge.classList.add('needs-review');
+      badge.textContent = 'Needs review · new data';
+      badge.title = `Dashboard data loaded ${{metadata.latest_load_at}} after this score was captured.`;
+    }}
+  }} catch {{ /* Keep the honest unverified state when freshness metadata is unavailable. */ }}
+}}
+updateScoreFreshness();
 </script></body></html>"""
     (ROOT / "results.html").write_text(html)
     print(f"Rendered {len(boards)} cards to results.md/results.html and {len(CRITERIA)} rules to rules.md/rules.html")
