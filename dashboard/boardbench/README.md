@@ -13,13 +13,24 @@ workflow that checks out untrusted changes.
 
 ## Incremental judge refresh
 
-For a future trusted refresh workflow, capture every view at a fixed viewport
-and wait. Compute each view's fingerprint from its screenshot bytes, visible
-page text, and console metadata, together with the rubric, brief, judge model,
-and pinned evaluator version. Reuse a previous card only when that fingerprint
-matches and its judge completed without errors. Judge changed views, then save
-the cards and fingerprints as one reviewed snapshot. A capture failure should
-be reported as a failure, never silently represented by an older card.
+For a future trusted refresh workflow, start with the changes to each view's
+inputs. Compare the built HTML, JavaScript, CSS, and data artifacts against the
+last judged deployment, including shared shell and comparison code. A source
+diff can identify likely candidates early, but the built artifacts are the
+safer comparison: generated output and transitive dependencies may change even
+when a view's own source file does not. Live views also need a data version or
+snapshot digest; this repository deploys after extracts and on a daily schedule
+even without code changes.
+
+Skip views whose complete inputs are unchanged. For candidates, capture at a
+fixed viewport and wait, then compare the screenshot, visible page text, and
+console metadata locally. Reuse a previous card if the rendered evidence is
+unchanged and its judge completed without errors. Call the judge only for
+changed evidence, or when the rubric, brief, judge model, or evaluator version
+changes. Save cards and fingerprints as one reviewed snapshot. A capture or
+dependency-resolution failure should be reported as a failure, never silently
+represented by an older card. The rubric still judges rendered output; code
+diffs decide which views need another look, not their scores.
 
 The OpenAI-enabled evaluator currently lives in the separate private Dataface
 repository. This repository's GitHub Actions secrets do not include
