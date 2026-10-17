@@ -63,6 +63,7 @@
     //   - brush the backlog chart to filter the weekly-flow and response charts by week
     import {MDConnection} from 'https://esm.sh/@motherduck/wasm-client@1.5.5-r.1';
     import * as vg from 'https://esm.sh/@uwdata/vgplot@0.33.0';
+    import {tableFromJSON, tableToIPC} from 'https://esm.sh/apache-arrow@17.0.0';
     import yaml from 'https://esm.sh/js-yaml@4.1.0';
 
     const TOKEN = '__MOTHERDUCK_READ_TOKEN__';
@@ -83,6 +84,10 @@
       return {
         query: async ({sql, type}) => {
           if (type === 'exec') { await conn.evaluateQuery(sql); return undefined; }
+          if (type === 'arrow') {
+            // Mosaic expects IPC bytes; MotherDuck's materialized result exposes rows.
+            return tableToIPC(tableFromJSON(toRows(await conn.evaluateQuery(sql))));
+          }
           return toRows(await conn.evaluateQuery(sql));
         },
       };
@@ -116,13 +121,25 @@
       // plot has two marks over the same table (the weekly-flow opened/closed bars).
       vg.coordinator().manager.consolidate(false);
       await vg.coordinator().exec("ATTACH IF NOT EXISTS 'md:fusion_issues' AS fusion_issues;");
+      // vg.from quotes a dotted source as one identifier ("fusion_issues.main.model").
+      // Give interactive charts simple, session-local names over the dbt models.
+      const chartModels = [
+        'backlog_weekly', 'weekly_flow', 'triage_pipeline', 'response_weekly',
+        'open_by_area', 'open_by_adapter', 'assignee_workload',
+      ];
+      for (const model of chartModels) {
+        await vg.coordinator().exec(`CREATE OR REPLACE TEMP VIEW "${model}" AS SELECT * FROM ${T(model)}`);
+      }
       status.textContent = 'Connected. Rendering…';
 
       const tiles = new Map(contract.sections.flatMap(s => s.tiles.map(t => [t.id, t])));
       // Rows for non-crossfiltered tiles (KPIs, tables, axis order), as tiles.yml specifies.
       const rowsOf = async model => {
         const t = [...tiles.values()].find(t => t.model === model);
-        return toRows(await conn.evaluateQuery(`SELECT * FROM ${T(model)}` + (t?.order_by ? ` ORDER BY ${t.order_by}` : '')));
+        const source = model === 'dashboard_meta'
+          ? `(SELECT * REPLACE (CAST(as_of_date AS VARCHAR) AS as_of_date) FROM ${T(model)})`
+          : T(model);
+        return toRows(await conn.evaluateQuery(`SELECT * FROM ${source}` + (t?.order_by ? ` ORDER BY ${t.order_by}` : '')));
       };
 
       // ── Palette ─────────────────────────────────────────────────────────────
@@ -200,7 +217,7 @@
       hint('Click a type in the legend to filter the stacked charts on this page; brush the backlog chart to zoom the weekly charts.');
       const backlog = tiles.get('backlog_weekly');
       const backlogPlot = vg.plot(
-        vg.areaY(vg.from(T('backlog_weekly'), {filterBy: catSel}), {
+        vg.areaY(vg.from('backlog_weekly', {filterBy: catSel}), {
           x: WEEK(), y: backlog.y, fill: backlog.color, z: backlog.color, order: keys(backlog.color), tip: true,
         }),
         // Brush bounds arrive as timestamps, so filter on a real DATE (every weekly model has `week`).
@@ -210,7 +227,7 @@
       );
       const flow = tiles.get('weekly_flow');
       // Grouped bars on a time axis: opened in the first half of each week, closed in the second.
-      const flowMark = (series, x1, x2, fill) => vg.rectY(vg.from(T('weekly_flow'), {filterBy: weekSel}), {
+      const flowMark = (series, x1, x2, fill) => vg.rectY(vg.from('weekly_flow', {filterBy: weekSel}), {
         x1, x2, y: series, fill, inset: 0.5, tip: true,
         channels: Object.fromEntries(flow.tooltip.map(c => [c, c])),
       });
@@ -229,14 +246,14 @@
       question('triage');
       const pipe = tiles.get('triage_pipeline');
       const pipePlot = vg.plot(
-        vg.barX(vg.from(T('triage_pipeline')), {y: pipe.y, x: pipe.x, fill: pipe.color, z: pipe.color, order: keys(pipe.color), tip: true}),
+        vg.barX(vg.from('triage_pipeline'), {y: pipe.y, x: pipe.x, fill: pipe.color, z: pipe.color, order: keys(pipe.color), tip: true}),
         vg.name('pipeline'), ...colorScale(pipe.color), vg.yDomain(uniq(triageOrder, pipe.y)),
         vg.yLabel(null), vg.xLabel('Open issues'), vg.xGrid(true), vg.marginLeft(150), ...look, vg.width(W), vg.height(240),
       );
       const resp = tiles.get('response_weekly');
       const respPlot = vg.plot(
-        vg.lineY(vg.from(T('response_weekly'), {filterBy: weekSel}), {x: WEEK(), y: resp.y, stroke: SINGLE, strokeWidth: 2}),
-        vg.dot(vg.from(T('response_weekly'), {filterBy: weekSel}), {
+        vg.lineY(vg.from('response_weekly', {filterBy: weekSel}), {x: WEEK(), y: resp.y, stroke: SINGLE, strokeWidth: 2}),
+        vg.dot(vg.from('response_weekly', {filterBy: weekSel}), {
           x: WEEK(), y: resp.y, fill: SINGLE, r: 2.5, tip: true,
           channels: Object.fromEntries(resp.tooltip.map(c => [c, c])),
         }),
@@ -252,7 +269,7 @@
         const t = tiles.get(id);
         const domain = uniq(domainRows, t.y);
         return vg.plot(
-          vg.barX(vg.from(T(t.model), {filterBy: catSel}), {y: t.y, x: t.x, fill: t.color, z: t.color, order: keys(t.color), tip: true}),
+          vg.barX(vg.from(t.model, {filterBy: catSel}), {y: t.y, x: t.x, fill: t.color, z: t.color, order: keys(t.color), tip: true}),
           ...colorScale(t.color), vg.yDomain(domain),
           vg.yLabel(null), vg.xLabel('Open issues'), vg.xGrid(true), vg.marginLeft(150),
           ...look, vg.width(W), vg.height(Math.max(160, 26 * domain.length + 60)),
