@@ -67,6 +67,9 @@ test('Marimo comparison reflows native Plotly cells and stat cards with the sele
   await expect.poll(()=>columns('div:has(> marimo-stat)')).toBe(2);
   const plot=frame.locator('marimo-plotly .js-plotly-plot').first();
   await expect.poll(()=>plot.evaluate(el=>el.layout.paper_bgcolor)).toBe('#141a21');
+  // marimo re-renders plots with their original figure (e.g. after a resize); the theme must survive it.
+  await plot.evaluate(el=>el.ownerDocument.defaultView.Plotly.react(el,el.data,{...el.layout,paper_bgcolor:undefined,plot_bgcolor:undefined}));
+  await expect.poll(()=>plot.evaluate(el=>el.layout.paper_bgcolor)).toBe('#141a21');
   await expect(frame.locator('body')).toHaveClass(/dark-theme/);
   await page.locator('iframe').evaluate(el=>{el.style.width='1100px';});
   await expect.poll(()=>columns('div:has(> .marimo-cell)')).toBe(2);
