@@ -14,13 +14,13 @@ dependencies = [
     "pandas>=3.0.2",
     "plotly>=7.1.0",
     "fastmcp>=4.1.0",
-    "prefab-ui>=0.20.2",
+    "prefab-ui>=0.21.1",
     "pyyaml>=6.0.3",
 ]
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { fastmcp = false, fastmcp-slim = false }
+exclude-newer-package = { fastmcp = false, fastmcp-slim = false, prefab-ui = false }
 
 [dependency-groups]
 dev = [
