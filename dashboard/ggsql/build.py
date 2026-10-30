@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.10"
 # dependencies = [
-#     "duckdb>=1",
+#     "duckdb==1.5.6",  # 2.0 drops connection-level .pl(); matches pyproject
 #     "ggsql==0.5.2",
 #     "pandas>=2",
 #     "polars>=1",

@@ -21,6 +21,8 @@ jobs:
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
+          # mashumaro 3.14 (pinned via dbt-core) fails to import on 3.14, the runner default.
+          python-version: "3.13"
           enable-cache: true
           cache-dependency-glob: uv.lock
 
