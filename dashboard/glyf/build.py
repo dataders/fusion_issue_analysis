@@ -1,7 +1,7 @@
 # /// script
 # requires-python = ">=3.11"
 # dependencies = [
-#     "duckdb>=1.5.2",
+#     "duckdb==1.5.6",  # 2.0 drops connection-level .arrow(); matches pyproject
 #     "glyf-core==0.18.0",
 #     "pandas>=2",
 #     "pyyaml>=6",
