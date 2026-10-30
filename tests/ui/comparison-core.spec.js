@@ -64,6 +64,6 @@ test('Prefab decorative and reactive variants retain readable comparison surface
     await expect.poll(()=>frame.locator(grid).first().evaluate(el=>getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(1);
     await page.selectOption('#appearance','light');
     await expect(frame.locator('[data-slot="card"]').first()).toHaveCSS('background-color','rgb(255, 255, 255)');
-    await expect(frame.locator('.recharts-cartesian-axis-tick text').first()).toHaveCSS('fill','rgb(89, 101, 117)');
+    await expect(frame.locator('.recharts-cartesian-axis-tick-labels text').first()).toHaveCSS('fill','rgb(89, 101, 117)');
   }
 });

@@ -19,7 +19,7 @@
     html[data-bakeoff-core="prefab"] .title-bar span { color:#fff!important; }
     html[data-bakeoff-core="prefab"] .kpi-label, html[data-bakeoff-core="prefab"] .kpi-detail, html[data-bakeoff-core="prefab"] .status-mini { color:var(--comparison-muted)!important; }
     html[data-bakeoff-core="prefab"] th, html[data-bakeoff-core="prefab"] td { background:var(--comparison-surface)!important; }
-    html[data-bakeoff-core="prefab"] .recharts-cartesian-axis-tick text { fill:var(--comparison-muted)!important; }
+    html[data-bakeoff-core="prefab"] .recharts-cartesian-axis-tick text, html[data-bakeoff-core="prefab"] .recharts-cartesian-axis-tick-labels text { fill:var(--comparison-muted)!important; }
     html[data-bakeoff-core="prefab"] .pf-app-root:has(> .neon-card) { display:grid; grid-template-columns:repeat(2,minmax(0,1fr)); gap:16px; }
     html[data-bakeoff-core="prefab"] .pf-app-root:has(> .neon-card) > * { grid-column:1/-1; min-width:0; }
     html[data-bakeoff-core="prefab"] .pf-app-root:has(> .neon-card) > [data-slot="card"]:has(.recharts-wrapper) { grid-column:auto; }
