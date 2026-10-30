@@ -196,18 +196,26 @@
         });
         resize.observe(graph);
         state.disposers.push(() => resize.disconnect());
+        // marimo redraws plots from their original figure (Plotly.react), which drops our theme.
+        const redrawn = () => { if (state.active) syncMarimo(state); };
+        graph.on('plotly_afterplot',redrawn);
+        state.disposers.push(() => graph.removeListener('plotly_afterplot',redrawn));
       }
-      if (state.plotlyAppearances.get(graph) === state.appearance) continue;
+      const paper = dark ? '#141a21' : '#ffffff';
+      if (graph.layout.paper_bgcolor === paper || state.plotlyAppearances.get(graph) === state.appearance) continue;
       state.plotlyAppearances.set(graph,state.appearance);
       const ink = dark ? '#e4ebf2' : '#18232f', line = dark ? '#394958' : '#d5dee7';
-      const layout = {paper_bgcolor:dark?'#141a21':'#ffffff',plot_bgcolor:dark?'#141a21':'#ffffff','font.color':ink,autosize:true,width:null,'legend.font.color':ink};
+      const layout = {paper_bgcolor:paper,plot_bgcolor:paper,'font.color':ink,autosize:true,width:null,'legend.font.color':ink};
       for (const axis of Object.keys(graph.layout).filter(key => /^[xy]axis[0-9]*$/.test(key))) {
         for (const [part,value] of Object.entries({'color':ink,'tickfont.color':ink,'title.font.color':ink,'gridcolor':line,'zerolinecolor':line})) layout[`${axis}.${part}`]=value;
       }
       const appearance = state.appearance;
       const job = (state.plotlyJobs.get(graph) || Promise.resolve()).catch(() => {}).then(() => {
         if (state.active && state.appearance === appearance && graph.isConnected) return state.win.Plotly.relayout(graph,layout);
-      }).catch(() => {});
+      }).catch(() => {}).then(() => {
+        // Clear the in-flight marker so a later redraw that drops the theme is re-themed.
+        if (state.plotlyAppearances.get(graph) === appearance) state.plotlyAppearances.delete(graph);
+      });
       state.plotlyJobs.set(graph,job);
     }
   }
