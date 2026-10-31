@@ -1,4 +1,4 @@
-_schema_version: "0.9.0"  # written automatically by dct migrate
+_schema_version: "0.10.0"  # written automatically by dct migrate
 title: "dbt v2 issue health"
 notes: >
   Open engine:v2 issues in dbt-labs/dbt-core (epics excluded unless noted).
@@ -13,7 +13,11 @@ style:
   title: { font: { case: none } }
   charts:
     # Keep legends above the plot and let the renderer wrap at chart width.
-    legend: { position: top, direction: horizontal }
+    legend:
+      direction: horizontal
+      position:
+        edge: "top"
+        overlay: false
     category_colors:
       age_bucket:
         # Bind values explicitly so legend/stack ordering cannot shift colors.
@@ -73,21 +77,23 @@ charts:
     notes: As-of date; days_stale turns red when > 3 (tiles.yml stale_after_days) — the extract has probably stopped.
     query: dashboard_meta
     type: kpi
-    variant: inline
     value: as_of_date
     label: "Data as of"
     support:
       value: days_stale
-      format: "d"
       label: "days since latest activity (warning when > 3)"
     conditional_formatting:
       days_stale:
         when:
           - gt: 3
-            background: negative.bg
-            font: { color: negative.text, weight: "700" }
+            # dbt charts 0.10 restricts support-row rules to tone/font.color/glyph.
+            tone: negative
             glyph: "⚠"
             glyph_color: negative.solid
+    style:
+      variant: "inline"
+      support:
+        format: "d"
 
   # ---- Where do things stand? ----
   kpi_open_issues:
@@ -95,10 +101,13 @@ charts:
     type: kpi
     value: open_issues
     label: "Open issues"
-    style: { value: { format: integer } }
+    style:
+      value:
+        format: integer
+      support:
+        format: "+d"
     support:
       value: backlog_change_28d
-      format: "+d"
       label: "in 28 days"
 
   kpi_opened_closed:
@@ -106,10 +115,15 @@ charts:
     type: kpi
     value: opened_28d
     label: "Opened / closed (28d)"
-    style: { value: { format: { spec: "d", suffix: " opened" } } }
+    style:
+      value:
+        format:
+          spec: "d"
+          suffix: " opened"
+      support:
+        format: "d"
     support:
       value: closed_28d
-      format: "d"
       label: "closed"
 
   kpi_awaiting_triage:
@@ -117,10 +131,13 @@ charts:
     type: kpi
     value: awaiting_triage
     label: "Awaiting triage"
-    style: { value: { format: integer } }
+    style:
+      value:
+        format: integer
+      support:
+        format: ".0f"
     support:
       value: awaiting_triage_median_age_days
-      format: ".0f"
       label: "days median age"
 
   kpi_answered_48h:
@@ -128,10 +145,15 @@ charts:
     type: kpi
     value: pct_responded_48h_28d
     label: "Answered within 48h (28d)"
-    style: { value: { format: { spec: ".0f", suffix: "%" } } }
+    style:
+      value:
+        format:
+          spec: ".0f"
+          suffix: "%"
+      support:
+        format: ",.1~f"
     support:
       value: median_hours_to_first_response_28d
-      format: ",.1~f"
       label: "h median first reply"
 
   kpi_median_close:
@@ -139,17 +161,22 @@ charts:
     type: kpi
     value: median_days_to_close_28d
     label: "Median days to close (28d)"
-    style: { value: { format: ",.1~f" } }
+    style:
+      value:
+        format: ",.1~f"
 
   kpi_customer_reported:
     query: headline_kpis
     type: kpi
     value: open_customer_reported
     label: "Customer-reported open"
-    style: { value: { format: integer } }
+    style:
+      value:
+        format: integer
+      support:
+        format: "d"
     support:
       value: open_hard_blockers
-      format: "d"
       label: "hard blockers"
 
   # ---- Is the backlog shrinking? ----
@@ -204,8 +231,10 @@ charts:
       stack_order: data
       endpoint_labels: { visible: false }
       legend:
-        position: top
         values: ["0-7d", "8-30d", "31-90d", "91-180d", "180d+"]
+        position:
+          edge: "top"
+          overlay: false
 
   response_weekly_chart:
     query: response_weekly
@@ -255,7 +284,11 @@ charts:
         categorical:
           palette: *issue_category_palette
       endpoint_labels: { visible: false }
-      legend: { position: top, values: [feature, bug, task, other] }
+      legend:
+        values: [feature, bug, task, other]
+        position:
+          edge: "top"
+          overlay: false
 
   open_by_adapter_chart:
     query: open_by_adapter
@@ -275,7 +308,11 @@ charts:
         categorical:
           palette: *issue_category_palette
       endpoint_labels: { visible: false }
-      legend: { position: top, values: [feature, bug, task, other] }
+      legend:
+        values: [feature, bug, task, other]
+        position:
+          edge: "top"
+          overlay: false
 
   # ---- How close are the epics? ----
   epic_progress_table:
@@ -335,7 +372,11 @@ charts:
         categorical:
           palette: *issue_category_palette
       endpoint_labels: { visible: false }
-      legend: { position: top, values: [feature, bug, task, other] }
+      legend:
+        values: [feature, bug, task, other]
+        position:
+          edge: "top"
+          overlay: false
 
 rows:
   - data_as_of_kpi
